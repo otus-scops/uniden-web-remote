@@ -6,6 +6,16 @@
   <meta name="description" content="BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音">
   <title>BCT15X リモートスキャナー</title>
 
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BCT15X Remote">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +33,11 @@
         <span class="subtitle" id="scanner-model" data-i18n="header.subtitle">リモートスキャナー</span>
       </div>
       <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+        <!-- PWA Install Button -->
+        <button id="pwa-install-btn" class="btn btn-secondary" style="display: none; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.85rem;" title="Install App">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-i18n="header.installApp">アプリをインストール</span>
+        </button>
         <!-- Language Selector -->
         <div class="lang-selector">
           <select id="lang-select" class="lang-dropdown" onchange="i18n.setLanguage(this.value)" title="Language">

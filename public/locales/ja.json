@@ -5,7 +5,8 @@
     "editorBtn": "📝 エディタ起動",
     "returnToScanner": "◀ スキャナーに戻る",
     "connected": "接続中",
-    "disconnected": "切断中"
+    "disconnected": "切断中",
+    "installApp": "アプリをインストール"
   },
   "scanner": {
     "title": "📡 スキャナー",

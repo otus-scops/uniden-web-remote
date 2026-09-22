@@ -238,6 +238,49 @@ const app = (() => {
       }
     });
 
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registered with scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    }
+
+    // PWA Install prompt handling
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('pwa-install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent default mini-infobar
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBtn) {
+        installBtn.style.display = 'inline-flex';
+      }
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        installBtn.style.display = 'none';
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('[PWA] Install prompt outcome:', outcome);
+        deferredPrompt = null;
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] Application installed');
+      if (installBtn) {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+
     // Initial fetch of recording file list
     setTimeout(() => {
       if (typeof recordingPanel !== 'undefined') {

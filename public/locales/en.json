@@ -5,7 +5,8 @@
     "editorBtn": "📝 Memory Editor",
     "returnToScanner": "◀ Return to Scanner",
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "installApp": "Install App"
   },
   "scanner": {
     "title": "📡 Scanner",

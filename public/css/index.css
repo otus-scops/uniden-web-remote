@@ -2013,4 +2013,27 @@ body::before {
   color: var(--color-text-dim);
 }
 
+/* PWA Install Button */
+#pwa-install-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+#pwa-install-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
 

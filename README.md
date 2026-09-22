@@ -53,6 +53,7 @@ Rather than prioritizing ultra-low latency for direct desktop listening, our foc
 - 🎙️ **Automatic Transmission Recording**: Automatically records audio when squelch opens; tags and splits files per transmission (MP3 format) with in-browser playback and search.
 - 📋 **Activity Logging**: Chronological reception history logging with filterable query options and CSV export.
 - 🌐 **Internationalization (i18n)**: One-click instant language switching (English 🇺🇸 / Japanese 🇯🇵) with zero page reload.
+- 📱 **Progressive Web App (PWA) Ready**: Install directly on mobile (iOS/Android) or desktop (Chrome/Edge) as a standalone app with custom home icons, app manifest, and offline UI shell caching.
 - 🖥️ **Mock Simulation Mode**: Test and explore all UI features without connecting physical scanner hardware.
 
 ---

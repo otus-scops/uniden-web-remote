@@ -106,6 +106,13 @@ class AppServer {
     // Body parsers
     this._app.use(express.json());
 
+    // Service Worker route with explicit headers
+    this._app.get('/sw.js', (req, res) => {
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(path.join(__dirname, '../public/sw.js'));
+    });
+
     // Serve static client assets
     this._app.use(express.static(path.join(__dirname, '../public')));
 
