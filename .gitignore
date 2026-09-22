@@ -12,6 +12,9 @@ recordings/
 # User configurations & Backups
 config/config.json
 config/backups/
+.env
+.env.local
+.env.*.local
 
 # Logs & Temporary files
 *.log

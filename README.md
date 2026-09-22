@@ -73,7 +73,21 @@ ls /dev/ttyUSB*
 arecord -l
 ```
 
-### 2. Launch with Docker Compose
+```
+
+### 2. Configure Environment Variables (`.env`)
+
+Hardware paths, audio parameters, storage retention, and authentication credentials can be easily managed via a `.env` file.
+Copy the provided template to get started:
+
+```bash
+cp .env.example .env
+nano .env  # Edit with your preferred text editor
+```
+
+*Note: If no `.env` file is created, default values defined in `docker-compose.yml` will be used automatically.*
+
+### 3. Launch with Docker Compose
 
 ```bash
 # Clone or navigate to the repository
@@ -94,20 +108,53 @@ Open your browser and navigate to:
 
 ---
 
-## ⚙️ Environment Variables (`docker-compose.yml`)
+## ⚙️ Environment Variables Reference
 
+All configurable options supported in `.env` or `docker-compose.yml`.
+
+### Hardware & Connectivity
 | Variable | Default | Description |
 |:---|:---|:---|
-| `SERIAL_PORT` | `/dev/ttyUSB0` | BCT15X serial port device path |
-| `SERIAL_BAUD` | `115200` | Baud rate (default front port speed: 115200) |
-| `AUDIO_DEVICE` | `plughw:1,0` | ALSA audio capture device (e.g., `plughw:1,0`) |
-| `AUDIO_FORMAT` | `mp3` | Audio format (`mp3`) |
-| `AUDIO_SAMPLE_RATE` | `22050` | Audio sample rate (Hz) |
-| `AUDIO_BITRATE` | `64` | MP3 bitrate (kbps) |
-| `AUTO_RECORD` | `true` | Enable automatic transmission recording |
-| `FILENAME_TEMPLATE`| `{date}_{time}_{freq}_{system}_{channel}` | File naming convention template |
-| `MOCK_MODE` | `false` | Enable simulation mode without physical hardware |
+| `SERIAL_PORT` | `/dev/ttyUSB0` | BCT15X serial port device path (`dmesg` or `ls /dev/ttyUSB*`) |
+| `SERIAL_BAUD` | `115200` | Baud rate (must match scanner `Set Serial Port` setting) |
+| `AUDIO_DEVICE` | `plughw:1,0` | ALSA audio capture device (`arecord -l` to find card/device) |
+
+### Audio & Recording Quality
+| Variable | Default | Description |
+|:---|:---|:---|
+| `AUDIO_FORMAT` | `mp3` | Recording audio format (`mp3`) |
+| `AUDIO_SAMPLE_RATE` | `16000` | Sampling rate in Hz. Optimized for narrow-band radio voice communications |
+| `AUDIO_CHANNELS` | `1` | Channel count (1: Mono / 2: Stereo) |
+| `AUDIO_BITRATE` | `32` | MP3 bitrate in kbps. Preserves voice clarity while cutting storage by ~50% (~14.4MB/hr) |
+| `AUTO_RECORD` | `true` | Enable automatic transmission recording when squelch opens |
+| `SILENCE_THRESHOLD` | `1.0` | SoX silence detection threshold (%) |
+| `SILENCE_DURATION` | `3.0` | Silence duration to consider transmission ended (seconds) |
+| `FILENAME_TEMPLATE` | `{system}/{department}/{channel}/{date}_{time}_{freq}` | File & directory template (`/` creates automatic nested folders) |
+
+### Storage Retention Policy
+| Variable | Default | Description |
+|:---|:---|:---|
+| `RETENTION_DAYS` | `30` | Number of days to keep recordings before auto-cleanup (`0` = keep forever) |
+| `MAX_STORAGE_MB` | `0` | Max storage limit in MB. Oldest files are pruned when exceeded (`0` = unlimited) |
+| `CLEANUP_INTERVAL_HOURS` | `12` | Interval in hours between automated cleanup cycles |
+
+### Role-Based Access Authentication
+| Variable | Default | Description |
+|:---|:---|:---|
+| `AUTH_ENABLED` | `false` | Enable access protection (`true` enforces role separation, `false` gives full public control) |
+| `OPERATOR_PASSWORD`| (unset) | Password for Operator role (grants full scanner keypad control, memory editor, file deletion) |
+| `LISTENER_PASSWORD`| (unset) | Password for Listener role (grants status viewing and live/recorded audio streaming) |
+| `AUTH_SECRET` | (auto) | Secret string for HMAC-SHA256 session token generation |
+
+### Scanner Timing & System
+| Variable | Default | Description |
+|:---|:---|:---|
+| `POLL_INTERVAL` | `200` | Fast status polling interval in ms (GLG command) |
+| `STATUS_INTERVAL` | `1000` | Full status polling interval in ms (STS command) |
+| `RECEPTION_TIMEOUT`| `1500` | Signal drop threshold in ms to mark transmission as ended |
+| `MAX_LOG_ENTRIES` | `10000` | Maximum reception activity log records retained in memory |
 | `TZ` | `Asia/Tokyo` | Container timezone |
+| `MOCK_MODE` | `false` | Enable simulation mode without physical hardware |
 
 ---
 

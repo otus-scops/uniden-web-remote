@@ -69,7 +69,21 @@ ls /dev/ttyUSB*
 arecord -l
 ```
 
-### 2. 起動 (Docker Compose)
+```
+
+### 2. 環境変数の設定 (`.env`)
+
+本システムでは、シリアルポートやサウンドデバイス、認証パスワードなどの設定を `.env` ファイルで一元管理できます。
+リポジトリ直下のサンプルファイルをコピーして設定を作成してください：
+
+```bash
+cp .env.example .env
+nano .env  # お好みのエディタで編集
+```
+
+※ `.env` ファイルを作成しない場合でも、`docker-compose.yml` に定義されたデフォルト値でそのまま起動できます。
+
+### 3. 起動 (Docker Compose)
 
 ```bash
 # リポジトリのディレクトリに移動
@@ -90,20 +104,53 @@ docker compose logs -f scanner
 
 ---
 
-## ⚙️ 環境変数設定 (`docker-compose.yml`)
+## ⚙️ 環境変数設定一覧
 
+`.env` または `docker-compose.yml` でカスタマイズ可能な全設定項目です。
+
+### 接続・ハードウェア設定
 | 変数名 | デフォルト値 | 説明 |
 |:---|:---|:---|
-| `SERIAL_PORT` | `/dev/ttyUSB0` | BCT15X シリアルポートパス |
-| `SERIAL_BAUD` | `115200` | 通信速度 (bps) |
-| `AUDIO_DEVICE` | `plughw:1,0` | ALSA 録音デバイス名 (例: `plughw:1,0`) |
+| `SERIAL_PORT` | `/dev/ttyUSB0` | BCT15X シリアルポートパス (`dmesg` や `ls /dev/ttyUSB*` で確認) |
+| `SERIAL_BAUD` | `115200` | シリアル通信速度 (bps)。本体の `Set Serial Port` 設定と一致させてください |
+| `AUDIO_DEVICE` | `plughw:1,0` | ALSA 録音デバイス名 (`arecord -l` でカード・デバイス番号を確認) |
+
+### 録音・音質設定 (省サイズ最適化)
+| 変数名 | デフォルト値 | 説明 |
+|:---|:---|:---|
 | `AUDIO_FORMAT` | `mp3` | 録音フォーマット (`mp3`) |
-| `AUDIO_SAMPLE_RATE` | `22050` | サンプリングレート (Hz) |
-| `AUDIO_BITRATE` | `64` | MP3 ビットレート (kbps) |
-| `AUTO_RECORD` | `true` | 自動録音の有効化 |
-| `FILENAME_TEMPLATE`| `{date}_{time}_{freq}_{system}_{channel}` | 録音ファイル名テンプレート |
-| `MOCK_MODE` | `false` | 実機なしテストモード (`true`/`false`) |
+| `AUDIO_SAMPLE_RATE` | `16000` | サンプリングレート (Hz)。無線音声に特化し 16,000Hz で最適化 |
+| `AUDIO_CHANNELS` | `1` | チャンネル数 (1: モノラル / 2: ステレオ) |
+| `AUDIO_BITRATE` | `32` | MP3 ビットレート (kbps)。人の声の明瞭度を保ちつつ容量を約50%削減 (約14.4MB/時) |
+| `AUTO_RECORD` | `true` | スケルチ開口時の自動録音 (`true` / `false`) |
+| `SILENCE_THRESHOLD` | `1.0` | SoX の無音検知しきい値 (%) |
+| `SILENCE_DURATION` | `3.0` | 録音終了とみなす無音継続時間 (秒) |
+| `FILENAME_TEMPLATE` | `{system}/{department}/{channel}/{date}_{time}_{freq}` | 録音ファイル名・階層テンプレート (`/` でサブフォルダ自動生成) |
+
+### 自動リテンション設定 (ストレージ保護)
+| 変数名 | デフォルト値 | 説明 |
+|:---|:---|:---|
+| `RETENTION_DAYS` | `30` | 録音ファイルの保存日数。超過ファイルは自動削除 (`0` で無期限保存) |
+| `MAX_STORAGE_MB` | `0` | 録音フォルダの最大容量 (MB)。上限超過時に古い録音から自動パージ (`0` で無制限) |
+| `CLEANUP_INTERVAL_HOURS` | `12` | クリーンアップ定期ジョブの実行間隔 (時間) |
+
+### アクセス認証設定 (ロール分離)
+| 変数名 | デフォルト値 | 説明 |
+|:---|:---|:---|
+| `AUTH_ENABLED` | `false` | 認証の有効化 (`true` でロール分離を強制。`false` 時は誰でも全操作可能) |
+| `OPERATOR_PASSWORD`| (未設定) | オペレーター権限パスワード (キー操作、スキャナ制御、メモリ編集、録音削除が可能) |
+| `LISTENER_PASSWORD`| (未設定) | リスナー権限パスワード (画面閲覧・音声聴取のみ可能。空欄時は誰でも聴取可能) |
+| `AUTH_SECRET` | (自動生成) | セッショントークン署名用の秘密鍵 |
+
+### 制御・システム設定
+| 変数名 | デフォルト値 | 説明 |
+|:---|:---|:---|
+| `POLL_INTERVAL` | `200` | 高速状態取得 (GLG) のポーリング間隔 (ms) |
+| `STATUS_INTERVAL` | `1000` | 詳細状態取得 (STS) のポーリング間隔 (ms) |
+| `RECEPTION_TIMEOUT`| `1500` | 信号途絶判定までのタイムアウトしきい値 (ms) |
+| `MAX_LOG_ENTRIES` | `10000` | メモリ内に保持する受信ログの最大件数 |
 | `TZ` | `Asia/Tokyo` | タイムゾーン |
+| `MOCK_MODE` | `false` | 実機なしテストモード (`true` でハードウェアなしシミュレーション動作) |
 
 ---
 

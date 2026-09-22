@@ -11,9 +11,7 @@ services:
 
     devices:
       # BCT15X USB Serial Port
-      # Note: Device path may differ depending on your host environment
-      # Verify with `ls /dev/ttyUSB*` or `dmesg | grep tty`
-      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      - "${SERIAL_PORT:-/dev/ttyUSB0}:${SERIAL_PORT:-/dev/ttyUSB0}"
       # ALSA sound device (for audio streaming & recording)
       - "/dev/snd:/dev/snd"
 
@@ -25,43 +23,41 @@ services:
 
     environment:
       # Serial port configuration
-      - SERIAL_PORT=/dev/ttyUSB0
-      - SERIAL_BAUD=115200
+      - SERIAL_PORT=${SERIAL_PORT:-/dev/ttyUSB0}
+      - SERIAL_BAUD=${SERIAL_BAUD:-115200}
 
       # Audio device configuration
-      # Check available devices with `arecord -l`
-      # Example: plughw:1,0 (USB Audio Adapter), plughw:0,0 (Built-in Audio)
-      - AUDIO_DEVICE=plughw:1,0
+      - AUDIO_DEVICE=${AUDIO_DEVICE:-plughw:1,0}
 
       # Audio recording settings (optimized for radio scanner voice communications)
-      - AUDIO_FORMAT=mp3
-      - AUDIO_SAMPLE_RATE=16000
-      - AUDIO_CHANNELS=1
-      - AUDIO_BITRATE=32
-      - AUTO_RECORD=true
+      - AUDIO_FORMAT=${AUDIO_FORMAT:-mp3}
+      - AUDIO_SAMPLE_RATE=${AUDIO_SAMPLE_RATE:-16000}
+      - AUDIO_CHANNELS=${AUDIO_CHANNELS:-1}
+      - AUDIO_BITRATE=${AUDIO_BITRATE:-32}
+      - AUTO_RECORD=${AUTO_RECORD:-true}
 
       # Storage retention settings (automatic pruning of old recordings)
-      - RETENTION_DAYS=30
-      - MAX_STORAGE_MB=0
-      - CLEANUP_INTERVAL_HOURS=12
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - MAX_STORAGE_MB=${MAX_STORAGE_MB:-0}
+      - CLEANUP_INTERVAL_HOURS=${CLEANUP_INTERVAL_HOURS:-12}
 
       # Role-based access authentication (optional: set AUTH_ENABLED=true to enforce login)
-      - AUTH_ENABLED=false
-      # - OPERATOR_PASSWORD=your_operator_password
-      # - LISTENER_PASSWORD=your_listener_password
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - OPERATOR_PASSWORD=${OPERATOR_PASSWORD:-}
+      - LISTENER_PASSWORD=${LISTENER_PASSWORD:-}
 
       # Filename template (hierarchical directory structure: System / Department / Channel / Date_Time_Freq)
-      - FILENAME_TEMPLATE={system}/{department}/{channel}/{date}_{time}_{freq}
+      - FILENAME_TEMPLATE=${FILENAME_TEMPLATE:-{system}/{department}/{channel}/{date}_{time}_{freq}}
 
       # Scanner polling settings
-      - POLL_INTERVAL=200
-      - RECEPTION_TIMEOUT=1500
+      - POLL_INTERVAL=${POLL_INTERVAL:-200}
+      - RECEPTION_TIMEOUT=${RECEPTION_TIMEOUT:-1500}
 
       # Timezone
-      - TZ=Asia/Tokyo
+      - TZ=${TZ:-Asia/Tokyo}
 
       # Mock mode (set to true for UI development without physical hardware)
-      - MOCK_MODE=false
+      - MOCK_MODE=${MOCK_MODE:-false}
 
     # Add container to audio and dialout groups for device permissions
     group_add:
