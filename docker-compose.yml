@@ -33,15 +33,25 @@ services:
       # Example: plughw:1,0 (USB Audio Adapter), plughw:0,0 (Built-in Audio)
       - AUDIO_DEVICE=plughw:1,0
 
-      # Audio recording settings
+      # Audio recording settings (optimized for radio scanner voice communications)
       - AUDIO_FORMAT=mp3
-      - AUDIO_SAMPLE_RATE=22050
+      - AUDIO_SAMPLE_RATE=16000
       - AUDIO_CHANNELS=1
-      - AUDIO_BITRATE=64
+      - AUDIO_BITRATE=32
       - AUTO_RECORD=true
 
-      # Filename template
-      - FILENAME_TEMPLATE={date}_{time}_{freq}_{system}_{channel}
+      # Storage retention settings (automatic pruning of old recordings)
+      - RETENTION_DAYS=30
+      - MAX_STORAGE_MB=0
+      - CLEANUP_INTERVAL_HOURS=12
+
+      # Role-based access authentication (optional: set AUTH_ENABLED=true to enforce login)
+      - AUTH_ENABLED=false
+      # - OPERATOR_PASSWORD=your_operator_password
+      # - LISTENER_PASSWORD=your_listener_password
+
+      # Filename template (hierarchical directory structure: System / Department / Channel / Date_Time_Freq)
+      - FILENAME_TEMPLATE={system}/{department}/{channel}/{date}_{time}_{freq}
 
       # Scanner polling settings
       - POLL_INTERVAL=200
