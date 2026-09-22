@@ -4,6 +4,7 @@
  */
 
 const WebSocket = require('ws');
+const { verifyToken } = require('./authMiddleware');
 
 /**
  * WebSocket Handler Class
@@ -16,8 +17,9 @@ class WsHandler {
    * @param {import('../scanner/scannerState')} deps.scannerState - Scanner state manager
    * @param {import('../scanner/serialController')} deps.serialController - Serial controller
    * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
+   * @param {Object} [deps.authConfig={}] - Authentication configuration
    */
-  constructor({ server, scannerState, serialController, audioRecorder }) {
+  constructor({ server, scannerState, serialController, audioRecorder, authConfig = {} }) {
     /** @type {WebSocket.Server} WebSocket server instance */
     this._wss = new WebSocket.Server({ server, path: '/ws' });
 
@@ -29,6 +31,9 @@ class WsHandler {
 
     /** @type {import('../audio/audioRecorder')} */
     this._audioRecorder = audioRecorder;
+
+    /** @type {Object} */
+    this._authConfig = authConfig;
 
     /** @type {Set<WebSocket>} Connected client sockets */
     this._clients = new Set();
@@ -152,6 +157,19 @@ class WsHandler {
   async _onClientMessage(ws, message) {
     try {
       const msg = JSON.parse(message.toString());
+
+      // Check operator permission for control messages if auth is enabled
+      const operatorActions = ['command', 'key', 'toggleAutoRecord'];
+      if (this._authConfig && this._authConfig.enabled && operatorActions.includes(msg.type)) {
+        const payload = verifyToken(msg.token, this._authConfig.secret);
+        if (!payload || payload.role !== 'operator') {
+          this._sendToClient(ws, {
+            type: 'error',
+            data: { message: 'Operator role required for this action' },
+          });
+          return;
+        }
+      }
 
       switch (msg.type) {
         case 'command':

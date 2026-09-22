@@ -56,12 +56,12 @@ const defaultConfig = {
     device: process.env.AUDIO_DEVICE || 'hw:1,0',
     /** Audio format (mp3) */
     format: process.env.AUDIO_FORMAT || 'mp3',
-    /** Audio sample rate (Hz) */
-    sampleRate: parseInt(process.env.AUDIO_SAMPLE_RATE, 10) || 22050,
+    /** Audio sample rate (Hz) - 16000Hz is optimal for scanner voice communications */
+    sampleRate: parseInt(process.env.AUDIO_SAMPLE_RATE, 10) || 16000,
     /** Channels (1 = Mono) */
     channels: parseInt(process.env.AUDIO_CHANNELS, 10) || 1,
-    /** MP3 bitrate (kbps) */
-    mp3Bitrate: parseInt(process.env.AUDIO_BITRATE, 10) || 64,
+    /** MP3 bitrate (kbps) - 32kbps Mono cuts file size by 50% while preserving clear voice */
+    mp3Bitrate: parseInt(process.env.AUDIO_BITRATE, 10) || 32,
     /** Persistent recordings directory */
     recordingsDir: process.env.RECORDINGS_DIR || path.join(__dirname, '../../recordings'),
     /** Auto recording enabled flag */
@@ -70,6 +70,15 @@ const defaultConfig = {
     silenceThreshold: parseFloat(process.env.SILENCE_THRESHOLD) || 1.0,
     /** SoX silence duration (seconds) */
     silenceDuration: parseFloat(process.env.SILENCE_DURATION) || 3.0,
+    /** Automatic storage retention settings */
+    retention: {
+      /** Number of days to retain recordings (0 = keep forever, default: 30 days) */
+      retentionDays: parseInt(process.env.RETENTION_DAYS, 10) || 30,
+      /** Maximum storage capacity in megabytes (0 = unlimited) */
+      maxStorageMb: parseInt(process.env.MAX_STORAGE_MB, 10) || 0,
+      /** Cleanup job interval in hours */
+      cleanupIntervalHours: parseInt(process.env.CLEANUP_INTERVAL_HOURS, 10) || 12,
+    },
   },
 
   /** Filename template settings */
@@ -87,11 +96,23 @@ const defaultConfig = {
      *   {modulation} - Modulation mode
      *   {seq}        - Sequential number
      */
-    template: process.env.FILENAME_TEMPLATE || '{date}_{time}_{freq}_{system}_{channel}',
+    template: process.env.FILENAME_TEMPLATE || '{system}/{department}/{channel}/{date}_{time}_{freq}',
     /** Date format */
     dateFormat: 'YYYY-MM-DD',
     /** Time format */
     timeFormat: 'HH-mm-ss',
+  },
+
+  /** Authentication & Role-based Access Control settings */
+  auth: {
+    /** Enable / disable authentication (disabled by default) */
+    enabled: process.env.AUTH_ENABLED === 'true',
+    /** Operator (Admin) password with full control & editing privileges */
+    operatorPassword: process.env.ADMIN_PASSWORD || process.env.OPERATOR_PASSWORD || '',
+    /** Listener (Guest) password (leave empty to allow public listen-only access) */
+    listenerPassword: process.env.LISTENER_PASSWORD || '',
+    /** Secret key for token verification */
+    secret: process.env.AUTH_SECRET || 'bct15x-uniden-auth-secret-key',
   },
 
   /** Google Drive synchronization settings (Optional) */

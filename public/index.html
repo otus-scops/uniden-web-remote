@@ -38,6 +38,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span data-i18n="header.installApp">アプリをインストール</span>
         </button>
+        <!-- Role Badge & Auth Button -->
+        <div id="auth-status-container" style="display: inline-flex; align-items: center; gap: 6px;">
+          <span id="auth-role-badge" class="auth-badge public" data-i18n="auth.public">🌐 ゲスト</span>
+          <button id="btn-auth-toggle" class="btn btn-secondary btn-auth" onclick="app.onAuthBtnClick()" data-i18n="auth.login">ログイン</button>
+        </div>
         <!-- Language Selector -->
         <div class="lang-selector">
           <select id="lang-select" class="lang-dropdown" onchange="i18n.setLanguage(this.value)" title="Language">
@@ -356,12 +361,52 @@
         <button class="btn" onclick="recordingPanel.onRefresh()" data-i18n="recordings.refresh">🔄 更新</button>
       </div>
 
-      <!-- Recording Search Bar -->
-      <div class="recordings-filter">
-        <div class="recordings-filter-row">
-          <input type="text" id="rec-search-input" placeholder="🔍 ファイル名で検索..."
-                 data-i18n-placeholder="recordings.searchPlaceholder"
-                 oninput="recordingPanel.onSearchChange(this.value)">
+      <!-- Multi-Dimensional Filter Panel -->
+      <div class="recordings-filter-panel">
+        <div class="rec-filter-grid">
+          <div class="rec-filter-item">
+            <label for="rec-filter-date" data-i18n="recordings.datePreset">期間</label>
+            <select id="rec-filter-date" onchange="recordingPanel.onFilterChange()">
+              <option value="" data-i18n="recordings.allDates">すべての期間</option>
+              <option value="today" data-i18n="recordings.today">今日</option>
+              <option value="yesterday" data-i18n="recordings.yesterday">昨日</option>
+              <option value="24h" data-i18n="recordings.last24h">直近24時間</option>
+              <option value="7d" data-i18n="recordings.last7d">過去7日間</option>
+            </select>
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-system" data-i18n="recordings.system">システム</label>
+            <select id="rec-filter-system" onchange="recordingPanel.onFilterChange()">
+              <option value="" data-i18n="recordings.allSystems">すべてのシステム</option>
+            </select>
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-department" data-i18n="recordings.department">デパートメント</label>
+            <select id="rec-filter-department" onchange="recordingPanel.onFilterChange()">
+              <option value="" data-i18n="recordings.allDepartments">すべてのデパートメント</option>
+            </select>
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-channel" data-i18n="recordings.channel">チャンネル</label>
+            <select id="rec-filter-channel" onchange="recordingPanel.onFilterChange()">
+              <option value="" data-i18n="recordings.allChannels">すべてのチャンネル</option>
+            </select>
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-min-duration" data-i18n="recordings.minDuration">最小秒数</label>
+            <input type="number" id="rec-filter-min-duration" min="0" step="0.5" placeholder="0" onchange="recordingPanel.onFilterChange()">
+          </div>
+        </div>
+        <div class="rec-filter-bottom">
+          <div class="rec-filter-search">
+            <input type="text" id="rec-search-input" placeholder="🔍 ファイル名 / 局名で検索..."
+                   data-i18n-placeholder="recordings.searchPlaceholder"
+                   oninput="recordingPanel.onSearchChange(this.value)">
+          </div>
+          <div class="rec-filter-buttons">
+            <button class="btn btn-primary" onclick="recordingPanel.onApplyFilters()" data-i18n="recordings.applyFilter">フィルタ適用</button>
+            <button class="btn" onclick="recordingPanel.onResetFilters()" data-i18n="recordings.resetFilter">リセット</button>
+          </div>
         </div>
       </div>
 
@@ -370,10 +415,47 @@
         </ul>
         <div class="log-empty" id="recordings-empty" data-i18n="recordings.empty">録音ファイルはまだありません</div>
       </div>
-      <!-- Audio Player -->
-      <div class="audio-player-container hidden" id="audio-player-container">
-        <div class="now-playing"><span data-i18n="recordings.nowPlaying">🔊 再生中</span>: <span id="now-playing-name">---</span></div>
-        <audio controls id="audio-player"></audio>
+
+      <!-- Smart Continuous Audio Player -->
+      <div class="smart-player-container hidden" id="audio-player-container">
+        <div class="smart-player-header">
+          <div class="smart-player-now-playing">
+            <span data-i18n="recordings.nowPlaying">🔊 再生中</span>:
+            <span id="now-playing-name" class="smart-player-title">---</span>
+            <span id="now-playing-tags" class="smart-player-tags"></span>
+          </div>
+        </div>
+        <div class="smart-player-controls-row">
+          <div class="smart-player-transport">
+            <button class="btn" id="btn-player-prev" onclick="recordingPanel.onPlayPrev()" title="前の録音" data-i18n="recordings.prev">⏮ 前へ</button>
+            <button class="btn" id="btn-player-next" onclick="recordingPanel.onPlayNext()" title="次の録音" data-i18n="recordings.next">次へ ⏭</button>
+          </div>
+          <div class="smart-player-options">
+            <label>
+              <input type="checkbox" id="toggle-auto-play-next" checked onchange="recordingPanel.onToggleAutoPlayNext(this.checked)">
+              <span data-i18n="recordings.autoPlayNext">連続再生</span>
+            </label>
+            <label>
+              <span data-i18n="recordings.playOrder">順序</span>:
+              <select id="select-play-order" onchange="recordingPanel.onChangePlayOrder(this.value)">
+                <option value="desc" data-i18n="recordings.orderDesc">新しい順</option>
+                <option value="asc" data-i18n="recordings.orderAsc">古い順</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="recordings.playSpeed">速度</span>:
+              <select id="select-play-speed" onchange="recordingPanel.onChangePlaySpeed(this.value)">
+                <option value="1">1.0x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2.0x</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="smart-player-audio-wrapper">
+          <audio controls id="audio-player"></audio>
+        </div>
       </div>
     </section>
 
@@ -563,6 +645,31 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="memoryEditor.onCloseBackupsModal()" data-i18n="editor.backupsModal.close">閉じる</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Authentication Modal -->
+  <div class="auth-modal hidden" id="auth-modal">
+    <div class="auth-modal-backdrop" onclick="app.onCloseAuthModal()"></div>
+    <div class="auth-modal-dialog">
+      <div class="auth-modal-header">
+        <h3 data-i18n="auth.modalTitle">🔐 アクセス認証</h3>
+        <button class="btn" onclick="app.onCloseAuthModal()">✕</button>
+      </div>
+      <div class="auth-modal-desc" data-i18n="auth.modalDesc">
+        オペレーター権限またはリスナー権限でログインしてください。
+      </div>
+      <form id="auth-form" onsubmit="event.preventDefault(); app.onAuthSubmit();">
+        <div class="auth-form-group">
+          <label for="auth-password" data-i18n="auth.passwordLabel">パスワード</label>
+          <input type="password" id="auth-password" autocomplete="current-password" placeholder="••••••••" required>
+          <div class="auth-error-msg" id="auth-error-msg" data-i18n="auth.loginFailed">パスワードが正しくありません</div>
+        </div>
+        <div class="auth-modal-actions">
+          <button type="button" class="btn" onclick="app.onCloseAuthModal()" data-i18n="auth.close">閉じる</button>
+          <button type="submit" class="btn btn-primary" id="btn-auth-submit" data-i18n="auth.loginBtn">ログイン</button>
+        </div>
+      </form>
     </div>
   </div>
 

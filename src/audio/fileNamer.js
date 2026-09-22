@@ -59,9 +59,9 @@ function generateFilename(template, params = {}) {
     '{datetime}': datetimeStr,
     '{freq}': params.freq || 'unknown',
     '{tgid}': params.tgid || '',
-    '{system}': params.system || '',
-    '{department}': params.department || '',
-    '{channel}': params.channel || '',
+    '{system}': params.system || 'General',
+    '{department}': params.department || 'Default',
+    '{channel}': params.channel || (params.freq || 'Ch'),
     '{modulation}': params.modulation || '',
     '{seq}': params.seq !== undefined ? String(params.seq).padStart(4, '0') : '',
   };

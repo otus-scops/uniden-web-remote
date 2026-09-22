@@ -75,6 +75,7 @@ class AppServer {
       scannerState: this._scannerState,
       serialController: this._serialController,
       audioRecorder: this._audioRecorder,
+      authConfig: config.auth,
     });
 
     // Wire internal events between subsystems
@@ -117,6 +118,9 @@ class AppServer {
     this._app.use(express.static(path.join(__dirname, '../public')));
 
     // REST API routes
+    const createAuthRoutes = require('./api/authRoutes');
+    this._app.use('/api/auth', createAuthRoutes({ authConfig: config.auth }));
+
     const apiRoutes = createRoutes({
       serialController: this._serialController,
       scannerState: this._scannerState,
@@ -129,6 +133,7 @@ class AppServer {
     const createMemoryRoutes = require('./api/memoryRoutes');
     const memoryRoutes = createMemoryRoutes({
       programmingController: this._programmingController,
+      authConfig: config.auth,
     });
     this._app.use('/api/memory', memoryRoutes);
 

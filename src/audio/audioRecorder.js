@@ -2,13 +2,14 @@
  * @fileoverview Audio recording management
  * @description Manages starting, stopping, and handling recordings in coordination with AudioStreamer.
  * Does not spawn an independent SOX process; receives MP3 output from AudioStreamer and saves it to file.
- * Supports templates containing directory hierarchies.
+ * Supports directory hierarchies (system/department/channel) and sidecar JSON metadata.
  */
 
 const EventEmitter = require('events');
 const path = require('path');
 const fs = require('fs');
 const { generateFilename, getUniqueFilename, fromReceptionData } = require('./fileNamer');
+const RecordingStore = require('./recordingStore');
 
 /**
  * Audio recorder management class
@@ -24,8 +25,9 @@ class AudioRecorder extends EventEmitter {
    * @param {Object} fileNamingConfig - File naming configuration
    * @param {import('./audioStreamer')} audioStreamer - AudioStreamer instance
    * @param {boolean} [mockMode=false] - Mock mode flag
+   * @param {RecordingStore} [recordingStore=null] - RecordingStore instance
    */
-  constructor(audioConfig, fileNamingConfig, audioStreamer, mockMode = false) {
+  constructor(audioConfig, fileNamingConfig, audioStreamer, mockMode = false, recordingStore = null) {
     super();
 
     /** @type {Object} Audio configuration */
@@ -39,6 +41,12 @@ class AudioRecorder extends EventEmitter {
 
     /** @type {boolean} Mock mode flag */
     this._mockMode = mockMode;
+
+    /** @type {RecordingStore} Storage engine */
+    this._recordingStore = recordingStore || new RecordingStore({
+      recordingsDir: audioConfig.recordingsDir,
+      retention: audioConfig.retention,
+    });
 
     /** @type {boolean} Recording in-progress flag */
     this._isRecording = false;
@@ -194,6 +202,50 @@ class AudioRecorder extends EventEmitter {
       } catch {
         // Ignore error
       }
+      // Write sidecar JSON metadata and add to store
+      try {
+        const jsonPath = this._currentFilePath.replace(/\.[^.]+$/, '.json');
+        const metadata = {
+          filename: result.filename,
+          startTime: this._recordingStartTime ? this._recordingStartTime.toISOString() : null,
+          endTime: endTime.toISOString(),
+          durationSec: result.durationSec,
+          system: this._currentReception ? this._currentReception.system || '' : '',
+          department: this._currentReception ? this._currentReception.department || '' : '',
+          channel: this._currentReception ? this._currentReception.channel || '' : '',
+          frequency: this._currentReception ? this._currentReception.freqTgid || this._currentReception.rawFreqTgid || '' : '',
+          freqForFilename: this._currentReception ? this._currentReception.freqForFilename || '' : '',
+          modulation: this._currentReception ? this._currentReception.modulation || '' : '',
+          tone: this._currentReception ? this._currentReception.ctcssDcs || '' : '',
+        };
+        fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2), 'utf8');
+
+        // Add to recording store
+        if (this._recordingStore) {
+          let stat = { size: 0, birthtime: new Date(), mtime: new Date() };
+          try {
+            stat = fs.statSync(this._currentFilePath);
+          } catch {
+            // Ignore
+          }
+          this._recordingStore.add({
+            filename: result.filename,
+            size: stat.size,
+            sizeFormatted: formatFileSize(stat.size),
+            createdAt: metadata.startTime || stat.birthtime.toISOString(),
+            modifiedAt: metadata.endTime || stat.mtime.toISOString(),
+            durationSec: result.durationSec,
+            system: metadata.system || 'General',
+            department: metadata.department || 'Default',
+            channel: metadata.channel || 'Ch',
+            frequency: metadata.frequency || '',
+            modulation: metadata.modulation || '',
+            meta: metadata,
+          });
+        }
+      } catch (err) {
+        console.warn('[AudioRecorder] Failed to write sidecar metadata or update store:', err.message);
+      }
     }
 
     this._currentFilePath = null;
@@ -212,51 +264,27 @@ class AudioRecorder extends EventEmitter {
   }
 
   /**
-   * Retrieve list of recordings (recursively searches subdirectories)
+   * Retrieve list of recordings with multi-dimensional filtering
+   * Delegated to RecordingStore with automatic reconciliation and cleanup.
    * @param {Object} [filters={}] - Filter criteria
-   * @param {string} [filters.dateFrom] - Start date/time (ISO format)
-   * @param {string} [filters.dateTo] - End date/time (ISO format)
-   * @param {string} [filters.search] - Filename search keyword (substring match)
    * @returns {Array<Object>} List of file metadata
    */
   getRecordings(filters = {}) {
-    const dir = this._audioConfig.recordingsDir;
-
-    if (!fs.existsSync(dir)) {
-      return [];
+    if (this._recordingStore) {
+      return this._recordingStore.query(filters);
     }
+    return [];
+  }
 
-    // Collect files recursively
-    const files = this._collectRecordingFiles(dir, dir);
-
-    // Apply filters
-    let filtered = files;
-
-    // Date range filter
-    if (filters.dateFrom) {
-      const from = new Date(filters.dateFrom);
-      if (!isNaN(from.getTime())) {
-        filtered = filtered.filter((f) => new Date(f.createdAt) >= from);
-      }
+  /**
+   * Extract distinct systems, departments, and channels across all recordings
+   * @returns {Object} Distinct metadata sets { systems: string[], departments: string[], channels: string[] }
+   */
+  getRecordingTags() {
+    if (this._recordingStore) {
+      return this._recordingStore.getTags();
     }
-
-    if (filters.dateTo) {
-      const to = new Date(filters.dateTo);
-      if (!isNaN(to.getTime())) {
-        filtered = filtered.filter((f) => new Date(f.createdAt) <= to);
-      }
-    }
-
-    // Filename search filter (case-insensitive substring match)
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter((f) => f.filename.toLowerCase().includes(searchLower));
-    }
-
-    // Sort descending by creation date
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    return filtered;
+    return { systems: [], departments: [], channels: [] };
   }
 
   /**
@@ -291,12 +319,53 @@ class AudioRecorder extends EventEmitter {
             const stat = fs.statSync(fullPath);
             // Relative path from base directory (normalized to `/`)
             const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
+
+            // Look for sidecar JSON metadata
+            const jsonPath = fullPath.replace(/\.[^.]+$/, '.json');
+            let meta = null;
+            if (fs.existsSync(jsonPath)) {
+              try {
+                meta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              } catch {
+                // Ignore parse errors
+              }
+            }
+
+            // Fallback: extract system, department, channel from directory hierarchy
+            let system = meta ? meta.system : '';
+            let department = meta ? meta.department : '';
+            let channel = meta ? meta.channel : '';
+            let frequency = meta ? meta.frequency : '';
+            let modulation = meta ? meta.modulation : '';
+            let durationSec = meta && meta.durationSec !== undefined ? meta.durationSec : null;
+
+            if (!meta) {
+              const segments = relativePath.split('/');
+              if (segments.length >= 4) {
+                // System / Department / Channel / filename.mp3
+                system = segments[0];
+                department = segments[1];
+                channel = segments[2];
+              } else if (segments.length === 3) {
+                // System / Channel / filename.mp3
+                system = segments[0];
+                channel = segments[1];
+              }
+            }
+
             results.push({
               filename: relativePath,
               size: stat.size,
               sizeFormatted: formatFileSize(stat.size),
-              createdAt: stat.birthtime.toISOString(),
-              modifiedAt: stat.mtime.toISOString(),
+              createdAt: meta && meta.startTime ? meta.startTime : stat.birthtime.toISOString(),
+              modifiedAt: meta && meta.endTime ? meta.endTime : stat.mtime.toISOString(),
+              durationSec,
+              system: system || '',
+              department: department || '',
+              channel: channel || '',
+              frequency: frequency || '',
+              modulation: modulation || '',
+              meta: meta || null,
             });
           } catch {
             // Skip files whose stats cannot be retrieved
@@ -341,19 +410,14 @@ class AudioRecorder extends EventEmitter {
   }
 
   /**
-   * Delete a recording file (supports subdirectories)
+   * Delete a recording file (and its sidecar metadata)
+   * Delegated to RecordingStore.
    * @param {string} relativePath - Relative path from base directory
    * @returns {boolean} True if deleted successfully
    */
   deleteRecording(relativePath) {
-    const filePath = this.getRecordingPath(relativePath);
-    if (filePath) {
-      fs.unlinkSync(filePath);
-
-      // Automatically remove empty parent directories
-      this._removeEmptyParentDirs(path.dirname(filePath));
-
-      return true;
+    if (this._recordingStore) {
+      return this._recordingStore.delete(relativePath);
     }
     return false;
   }
@@ -400,6 +464,9 @@ class AudioRecorder extends EventEmitter {
    */
   destroy() {
     this.stopRecording();
+    if (this._recordingStore) {
+      this._recordingStore.destroy();
+    }
     this.removeAllListeners();
   }
 }

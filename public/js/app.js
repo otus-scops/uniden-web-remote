@@ -23,6 +23,187 @@ const app = (() => {
   /** @type {Object} Latest scanner status snapshot */
   let currentStatus = {};
 
+  /** @type {string} Stored authentication token */
+  let authToken = localStorage.getItem('bct15x_auth_token') || '';
+
+  /** @type {boolean} Auth requirement enabled */
+  let authEnabled = false;
+
+  /** @type {'operator'|'listener'|'public'} Current authenticated role */
+  let currentUserRole = 'public';
+
+  /**
+   * Check authentication status from server
+   */
+  async function checkAuthStatus() {
+    try {
+      const data = await fetchApi('/auth/status');
+      authEnabled = !!data.enabled;
+      currentUserRole = data.role || 'public';
+      updateAuthUI();
+    } catch {
+      // Ignore if auth status endpoint fails
+    }
+  }
+
+  /**
+   * Authenticate with password
+   * @param {string} password
+   */
+  async function login(password) {
+    const errorMsg = document.getElementById('auth-error-msg');
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    try {
+      const data = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      });
+
+      if (data.token) {
+        authToken = data.token;
+        localStorage.setItem('bct15x_auth_token', authToken);
+        currentUserRole = data.role;
+        updateAuthUI();
+        onCloseAuthModal();
+      }
+    } catch (err) {
+      if (errorMsg) {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = typeof i18n !== 'undefined'
+          ? i18n.t('auth.loginFailed')
+          : 'パスワードが正しくありません';
+      }
+    }
+  }
+
+  /**
+   * Log out of current session
+   */
+  async function logout() {
+    try {
+      await fetchApi('/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore
+    }
+    authToken = '';
+    localStorage.removeItem('bct15x_auth_token');
+    currentUserRole = 'public';
+    updateAuthUI();
+  }
+
+  /**
+   * Update header authentication badge and button
+   */
+  function updateAuthUI() {
+    const badge = document.getElementById('auth-role-badge');
+    const btn = document.getElementById('btn-auth-toggle');
+
+    if (!badge || !btn) return;
+
+    if (!authEnabled) {
+      badge.style.display = 'none';
+      btn.style.display = 'none';
+      return;
+    }
+
+    badge.style.display = 'inline-flex';
+    btn.style.display = 'inline-flex';
+
+    badge.className = `auth-badge ${currentUserRole}`;
+
+    const roleLabels = {
+      operator: typeof i18n !== 'undefined' ? i18n.t('auth.operator') : '👑 オペレーター',
+      listener: typeof i18n !== 'undefined' ? i18n.t('auth.listener') : '🎧 リスナー',
+      public: typeof i18n !== 'undefined' ? i18n.t('auth.public') : '🌐 ゲスト',
+    };
+
+    badge.innerText = roleLabels[currentUserRole] || roleLabels.public;
+
+    if (currentUserRole !== 'public') {
+      btn.innerText = typeof i18n !== 'undefined' ? i18n.t('auth.logout') : 'ログアウト';
+    } else {
+      btn.innerText = typeof i18n !== 'undefined' ? i18n.t('auth.login') : 'ログイン';
+    }
+  }
+
+  /**
+   * Handle authentication button click in header
+   */
+  function onAuthBtnClick() {
+    if (currentUserRole !== 'public') {
+      const confirmMsg = typeof i18n !== 'undefined' ? i18n.t('auth.logout') : 'ログアウトしますか？';
+      if (confirm(confirmMsg + '?')) {
+        logout();
+      }
+    } else {
+      onOpenAuthModal();
+    }
+  }
+
+  /**
+   * Open login modal
+   * @param {string} [hint]
+   */
+  function onOpenAuthModal(hint) {
+    const modal = document.getElementById('auth-modal');
+    const pwdInput = document.getElementById('auth-password');
+    const errorMsg = document.getElementById('auth-error-msg');
+
+    if (errorMsg) {
+      if (hint) {
+        errorMsg.innerText = hint;
+        errorMsg.style.display = 'block';
+      } else {
+        errorMsg.style.display = 'none';
+      }
+    }
+
+    if (pwdInput) pwdInput.value = '';
+    if (modal) modal.classList.remove('hidden');
+    if (pwdInput) setTimeout(() => pwdInput.focus(), 100);
+  }
+
+  /**
+   * Close login modal
+   */
+  function onCloseAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  /**
+   * Handle login form submission
+   */
+  function onAuthSubmit() {
+    const pwdInput = document.getElementById('auth-password');
+    if (pwdInput && pwdInput.value) {
+      login(pwdInput.value);
+    }
+  }
+
+  /**
+   * Check if current user has operator permissions
+   * @returns {boolean}
+   */
+  function isOperator() {
+    return !authEnabled || currentUserRole === 'operator';
+  }
+
+  /**
+   * Guard an operator action
+   * @param {Function} action - Callback to run if operator
+   */
+  function requireOperator(action) {
+    if (isOperator()) {
+      return action();
+    }
+    const hint = typeof i18n !== 'undefined'
+      ? i18n.t('auth.operatorRequired')
+      : 'この操作にはオペレーター権限が必要です。ログインしてください。';
+    onOpenAuthModal(hint);
+  }
+
   /**
    * Establish WebSocket connection
    */
@@ -176,24 +357,46 @@ const app = (() => {
    */
   function send(type, data = {}) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type, data }));
+      const payload = { type, ...data };
+      if (authToken) {
+        payload.token = authToken;
+      }
+      ws.send(JSON.stringify(payload));
     } else {
       console.warn('[App] Cannot send message: WebSocket is not open');
     }
   }
 
   /**
-   * Make REST API request
+   * Make REST API request with authorization header
    * @param {string} endpoint - API endpoint path
    * @param {Object} [options={}] - Fetch options
    * @returns {Promise<Object>} JSON response
    */
   async function fetchApi(endpoint, options = {}) {
-    const defaultOpts = {
-      headers: { 'Content-Type': 'application/json' },
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
     };
 
-    const response = await fetch(`/api${endpoint}`, { ...defaultOpts, ...options });
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(`/api${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401 && authEnabled) {
+      // Clear expired or invalid token
+      authToken = '';
+      localStorage.removeItem('bct15x_auth_token');
+      currentUserRole = 'public';
+      updateAuthUI();
+      onOpenAuthModal();
+      throw new Error('Unauthorized');
+    }
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
@@ -217,10 +420,14 @@ const app = (() => {
       await i18n.init();
     }
 
+    // Check system auth requirements and role
+    await checkAuthStatus();
+
     connect();
 
     // Global listener for language changes
     window.addEventListener('languageChanged', () => {
+      updateAuthUI();
       // Update connection status label
       const statusText = document.getElementById('connection-text');
       if (statusText) {
@@ -295,6 +502,13 @@ const app = (() => {
     send,
     fetchApi,
     getStatus,
+    onAuthBtnClick,
+    onOpenAuthModal,
+    onCloseAuthModal,
+    onAuthSubmit,
+    isOperator,
+    requireOperator,
+    get userRole() { return currentUserRole; },
     toggleEditorMode: () => {
       if (typeof memoryEditor !== 'undefined') memoryEditor.toggleMode();
     },

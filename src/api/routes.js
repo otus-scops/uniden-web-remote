@@ -6,6 +6,7 @@
 const express = require('express');
 const path = require('path');
 const { generatePreview } = require('../audio/fileNamer');
+const { requireOperator, requireListener } = require('./authMiddleware');
 
 /**
  * Create Express router for API routes
@@ -13,25 +14,27 @@ const { generatePreview } = require('../audio/fileNamer');
  * @param {import('../scanner/serialController')} deps.serialController - Serial controller
  * @param {import('../scanner/scannerState')} deps.scannerState - Scanner state
  * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
+ * @param {import('../audio/audioStreamer')} deps.audioStreamer - Audio streamer
  * @param {Object} deps.config - System config
  * @returns {express.Router} Express router
  */
 function createRoutes({ serialController, scannerState, audioRecorder, audioStreamer, config }) {
   const router = express.Router();
+  const authConfig = config.auth || {};
 
   // ------ Scanner Status ------
 
   /**
    * GET /api/status - Get current scanner status snapshot
    */
-  router.get('/status', (req, res) => {
+  router.get('/status', requireListener(authConfig), (req, res) => {
     res.json(scannerState.getStatus());
   });
 
   /**
    * GET /api/info - Get scanner hardware information (model, firmware)
    */
-  router.get('/info', async (req, res) => {
+  router.get('/info', requireListener(authConfig), async (req, res) => {
     try {
       res.json({
         model: scannerState.model,
@@ -49,7 +52,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * POST /api/scanner/command - Send raw serial command
    * @body {string} command - Command string
    */
-  router.post('/scanner/command', async (req, res) => {
+  router.post('/scanner/command', requireOperator(authConfig), async (req, res) => {
     try {
       const { command } = req.body;
       if (!command) {
@@ -68,7 +71,12 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * @body {string} key - Key name identifier
    * @body {string} [action='P'] - Key action ('P'ress, 'H'old, 'R'elease)
    */
-  router.post('/scanner/key', async (req, res) => {
+  /**
+   * POST /api/scanner/key - Simulate front panel keypad press
+   * @body {string} key - Key name identifier
+   * @body {string} [action='P'] - Key action ('P'ress, 'H'old, 'R'elease)
+   */
+  router.post('/scanner/key', requireOperator(authConfig), async (req, res) => {
     try {
       const { key, action = 'P' } = req.body;
       if (!key) {
@@ -85,7 +93,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * POST /api/scanner/scan - Start scanning
    */
-  router.post('/scanner/scan', async (req, res) => {
+  router.post('/scanner/scan', requireOperator(authConfig), async (req, res) => {
     try {
       const response = await serialController.startScan();
       res.json({ action: 'scan', response });
@@ -97,7 +105,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * POST /api/scanner/hold - Hold current frequency/channel
    */
-  router.post('/scanner/hold', async (req, res) => {
+  router.post('/scanner/hold', requireOperator(authConfig), async (req, res) => {
     try {
       const response = await serialController.hold();
       res.json({ action: 'hold', response });
@@ -110,7 +118,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * POST /api/scanner/vol - Set scanner volume
    * @body {number} level - Volume level (0-15)
    */
-  router.post('/scanner/vol', async (req, res) => {
+  router.post('/scanner/vol', requireOperator(authConfig), async (req, res) => {
     try {
       const { level } = req.body;
       if (level === undefined || level < 0 || level > 15) {
@@ -127,7 +135,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * POST /api/scanner/sql - Set scanner squelch
    * @body {number} level - Squelch level (0-15)
    */
-  router.post('/scanner/sql', async (req, res) => {
+  router.post('/scanner/sql', requireOperator(authConfig), async (req, res) => {
     try {
       const { level } = req.body;
       if (level === undefined || level < 0 || level > 15) {
@@ -147,7 +155,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * Delivers continuous MP3 audio chunk stream.
    * Cleans up client resources on disconnect.
    */
-  router.get('/audio/stream', (req, res) => {
+  router.get('/audio/stream', requireListener(authConfig), (req, res) => {
     // Set streaming HTTP response headers
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Transfer-Encoding', 'chunked');
@@ -179,7 +187,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * GET /api/audio/status - Get streaming subsystem status
    */
-  router.get('/audio/status', (req, res) => {
+  router.get('/audio/status', requireListener(authConfig), (req, res) => {
     res.json({
       isStreaming: audioStreamer.isStreaming(),
       clientCount: audioStreamer.getClientCount(),
@@ -190,15 +198,25 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
 
   /**
    * GET /api/recordings - Get recording file list with filtering
+   * @query {string} [datePreset] - Date preset ('today', 'yesterday', '24h', '7d')
    * @query {string} [dateFrom] - Start date (ISO)
    * @query {string} [dateTo] - End date (ISO)
-   * @query {string} [search] - Substring search on filename
+   * @query {string} [system] - System name filter
+   * @query {string} [department] - Department name filter
+   * @query {string} [channel] - Channel name filter
+   * @query {number} [minDuration] - Minimum duration in seconds
+   * @query {string} [search] - Substring search on filename or metadata
    */
-  router.get('/recordings', (req, res) => {
+  router.get('/recordings', requireListener(authConfig), (req, res) => {
     const filters = {};
 
+    if (req.query.datePreset) filters.datePreset = req.query.datePreset;
     if (req.query.dateFrom) filters.dateFrom = req.query.dateFrom;
     if (req.query.dateTo) filters.dateTo = req.query.dateTo;
+    if (req.query.system) filters.system = req.query.system;
+    if (req.query.department) filters.department = req.query.department;
+    if (req.query.channel) filters.channel = req.query.channel;
+    if (req.query.minDuration) filters.minDuration = req.query.minDuration;
     if (req.query.search) filters.search = req.query.search;
 
     const recordings = audioRecorder.getRecordings(filters);
@@ -210,19 +228,26 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * GET /api/recordings/* - Download or stream recording file
-   * Supports subdirectory paths (e.g. /api/recordings/2026-08-08/Dispatch/file.mp3)
+   * GET /api/recordings/tags - Extract unique systems, departments, channels for filter suggestions
    */
-  router.get('/recordings/*', (req, res) => {
+  router.get('/recordings/tags', requireListener(authConfig), (req, res) => {
+    res.json(audioRecorder.getRecordingTags());
+  });
+
+  /**
+   * GET /api/recordings/* - Download or stream recording file
+   * Supports subdirectory paths (e.g. /api/recordings/System/Dept/Ch/file.mp3)
+   */
+  router.get('/recordings/*', requireListener(authConfig), (req, res) => {
     // Extract relative file path from wildcard capture
     const relativePath = req.params[0];
     if (!relativePath) {
-      return res.status(400).json({ error: 'ファイルパスが必要です' });
+      return res.status(400).json({ error: 'Recording path is required' });
     }
 
     const filePath = audioRecorder.getRecordingPath(relativePath);
     if (!filePath) {
-      return res.status(404).json({ error: 'ファイルが見つかりません' });
+      return res.status(404).json({ error: 'Recording not found' });
     }
 
     // Set Content-Type header based on file extension
@@ -242,24 +267,24 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * DELETE /api/recordings/* - Delete recording file
    * Supports subdirectory paths
    */
-  router.delete('/recordings/*', (req, res) => {
+  router.delete('/recordings/*', requireOperator(authConfig), (req, res) => {
     const relativePath = req.params[0];
     if (!relativePath) {
-      return res.status(400).json({ error: 'ファイルパスが必要です' });
+      return res.status(400).json({ error: 'Recording path is required' });
     }
 
     const deleted = audioRecorder.deleteRecording(relativePath);
     if (deleted) {
       res.json({ deleted: true, filename: relativePath });
     } else {
-      res.status(404).json({ error: 'ファイルが見つかりません' });
+      res.status(404).json({ error: 'Recording not found' });
     }
   });
 
   /**
    * POST /api/recordings/toggle - Toggle auto-recording mode
    */
-  router.post('/recordings/toggle', (req, res) => {
+  router.post('/recordings/toggle', requireOperator(authConfig), (req, res) => {
     scannerState.autoRecordEnabled = !scannerState.autoRecordEnabled;
     res.json({ autoRecordEnabled: scannerState.autoRecordEnabled });
   });
@@ -278,7 +303,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * @query {string} [modulation] - Modulation mode filter
    * @query {number} [minDuration] - Minimum duration in seconds
    */
-  router.get('/log', (req, res) => {
+  router.get('/log', requireListener(authConfig), (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 100;
     const offset = parseInt(req.query.offset, 10) || 0;
 
@@ -298,7 +323,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * DELETE /api/log - Clear reception history log
    */
-  router.delete('/log', (req, res) => {
+  router.delete('/log', requireOperator(authConfig), (req, res) => {
     scannerState.clearLog();
     res.json({ cleared: true });
   });
@@ -308,9 +333,13 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * GET /api/config - Get current system configuration
    */
-  router.get('/config', (req, res) => {
+  router.get('/config', requireListener(authConfig), (req, res) => {
     // Return safe configuration subset
     res.json({
+      auth: {
+        enabled: config.auth ? !!config.auth.enabled : false,
+      },
+      retention: config.audio && config.audio.retention ? config.audio.retention : null,
       serial: {
         path: config.serial.path,
         baudRate: config.serial.baudRate,
@@ -340,7 +369,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   /**
    * PUT /api/config - Update configuration
    */
-  router.put('/config', (req, res) => {
+  router.put('/config', requireOperator(authConfig), (req, res) => {
     const updates = req.body;
 
     // Update filename template pattern
@@ -366,10 +395,10 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * POST /api/config/template-preview - Generate filename template preview
    * @body {string} template - Template pattern string to evaluate
    */
-  router.post('/config/template-preview', (req, res) => {
+  router.post('/config/template-preview', requireOperator(authConfig), (req, res) => {
     const { template } = req.body;
     if (!template) {
-      return res.status(400).json({ error: 'templateパラメータが必要です' });
+      return res.status(400).json({ error: 'template parameter is required' });
     }
 
     const preview = generatePreview(template);

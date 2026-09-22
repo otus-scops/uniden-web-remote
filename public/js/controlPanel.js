@@ -11,22 +11,26 @@ const controlPanel = (() => {
    * Handle Scan button click
    */
   async function onScan() {
-    try {
-      await app.fetchApi('/scanner/scan', { method: 'POST' });
-    } catch (err) {
-      console.error('[ControlPanel] Scan command error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/scan', { method: 'POST' });
+      } catch (err) {
+        console.error('[ControlPanel] Scan command error:', err);
+      }
+    });
   }
 
   /**
    * Handle Hold button click
    */
   async function onHold() {
-    try {
-      await app.fetchApi('/scanner/hold', { method: 'POST' });
-    } catch (err) {
-      console.error('[ControlPanel] Hold command error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/hold', { method: 'POST' });
+      } catch (err) {
+        console.error('[ControlPanel] Hold command error:', err);
+      }
+    });
   }
 
   /**
@@ -35,14 +39,16 @@ const controlPanel = (() => {
    * @param {string} action - Key action ('P' for Press, 'H' for Hold, 'R' for Release)
    */
   async function onKey(key, action) {
-    try {
-      await app.fetchApi('/scanner/key', {
-        method: 'POST',
-        body: JSON.stringify({ key, action }),
-      });
-    } catch (err) {
-      console.error('[ControlPanel] Key command error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/key', {
+          method: 'POST',
+          body: JSON.stringify({ key, action }),
+        });
+      } catch (err) {
+        console.error('[ControlPanel] Key command error:', err);
+      }
+    });
   }
 
   /**
@@ -50,16 +56,18 @@ const controlPanel = (() => {
    * @param {boolean} checked - Checkbox state
    */
   async function onToggleAutoRecord(checked) {
-    try {
-      await app.fetchApi('/config', {
-        method: 'PUT',
-        body: JSON.stringify({
-          audio: { autoRecord: checked },
-        }),
-      });
-    } catch (err) {
-      console.error('[ControlPanel] Config update error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/config', {
+          method: 'PUT',
+          body: JSON.stringify({
+            audio: { autoRecord: checked },
+          }),
+        });
+      } catch (err) {
+        console.error('[ControlPanel] Config update error:', err);
+      }
+    });
   }
 
   /**
@@ -67,15 +75,17 @@ const controlPanel = (() => {
    * @param {number} level - 0-15
    */
   async function onVolumeChange(level) {
-    try {
-      await app.fetchApi('/scanner/vol', {
-        method: 'POST',
-        body: JSON.stringify({ level: parseInt(level, 10) })
-      });
-      document.getElementById('vol-level-display').textContent = level;
-    } catch (err) {
-      console.error('[ControlPanel] Volume change error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/vol', {
+          method: 'POST',
+          body: JSON.stringify({ level: parseInt(level, 10) })
+        });
+        document.getElementById('vol-level-display').textContent = level;
+      } catch (err) {
+        console.error('[ControlPanel] Volume change error:', err);
+      }
+    });
   }
 
   /**
@@ -83,15 +93,17 @@ const controlPanel = (() => {
    * @param {number} level - 0-15
    */
   async function onSquelchChange(level) {
-    try {
-      await app.fetchApi('/scanner/sql', {
-        method: 'POST',
-        body: JSON.stringify({ level: parseInt(level, 10) })
-      });
-      document.getElementById('sql-level-display').textContent = level;
-    } catch (err) {
-      console.error('[ControlPanel] Squelch change error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/sql', {
+          method: 'POST',
+          body: JSON.stringify({ level: parseInt(level, 10) })
+        });
+        document.getElementById('sql-level-display').textContent = level;
+      } catch (err) {
+        console.error('[ControlPanel] Squelch change error:', err);
+      }
+    });
   }
 
   /** @type {number|null} Debounce timer ID for filename template preview */
@@ -102,16 +114,18 @@ const controlPanel = (() => {
    * @param {string} template - New template string
    */
   async function onTemplateChange(template) {
-    try {
-      await app.fetchApi('/config', {
-        method: 'PUT',
-        body: JSON.stringify({
-          fileNaming: { template },
-        }),
-      });
-    } catch (err) {
-      console.error('[ControlPanel] Template update error:', err);
-    }
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/config', {
+          method: 'PUT',
+          body: JSON.stringify({
+            fileNaming: { template },
+          }),
+        });
+      } catch (err) {
+        console.error('[ControlPanel] Template update error:', err);
+      }
+    });
   }
 
   /**
@@ -150,14 +164,15 @@ const controlPanel = (() => {
    * Send custom raw serial command
    */
   async function onSendCommand() {
-    const input = document.getElementById('command-input');
-    const output = document.getElementById('command-output');
-    const command = input.value.trim();
+    app.requireOperator(async () => {
+      const input = document.getElementById('command-input');
+      const output = document.getElementById('command-output');
+      const command = input.value.trim();
 
-    if (!command) return;
+      if (!command) return;
 
-    const sendingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Sending...' : '送信中...';
-    output.textContent = `> ${command}\n${sendingMsg}`;
+      const sendingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Sending...' : '送信中...';
+      output.textContent = `> ${command}\n${sendingMsg}`;
 
     try {
       const result = await app.fetchApi('/scanner/command', {
@@ -174,6 +189,7 @@ const controlPanel = (() => {
 
     input.value = '';
     input.focus();
+    });
   }
 
   /**

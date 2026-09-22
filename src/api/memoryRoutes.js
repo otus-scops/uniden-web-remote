@@ -6,13 +6,15 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { requireOperator, requireListener } = require('./authMiddleware');
 
 /**
  * Create memory manager router
  * @param {Object} deps
  * @param {import('../scanner/programmingController')} deps.programmingController
+ * @param {Object} [deps.authConfig={}]
  */
-function createMemoryRoutes({ programmingController }) {
+function createMemoryRoutes({ programmingController, authConfig = {} }) {
   const router = express.Router();
 
   // Cached sync progress state
@@ -20,7 +22,7 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- Programming Mode Control ---
 
-  router.post('/mode', async (req, res) => {
+  router.post('/mode', requireOperator(authConfig), async (req, res) => {
     try {
       const { action } = req.body;
       if (action === 'enter') {
@@ -39,7 +41,7 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- Download all memory systems from scanner ---
 
-  router.get('/all', async (req, res) => {
+  router.get('/all', requireListener(authConfig), async (req, res) => {
     try {
       currentProgress = { active: true, step: 'reading', percent: 0, message: 'Reading memory from scanner...' };
       const memoryTree = await programmingController.getAllMemory((prog) => {
@@ -59,7 +61,7 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- Upload all memory systems to scanner ---
 
-  router.post('/all', async (req, res) => {
+  router.post('/all', requireOperator(authConfig), async (req, res) => {
     try {
       const { systems } = req.body;
       if (!systems || !Array.isArray(systems)) {
@@ -80,13 +82,13 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- Check progress (polling) ---
 
-  router.get('/progress', (req, res) => {
+  router.get('/progress', requireListener(authConfig), (req, res) => {
     res.json(currentProgress);
   });
 
   // --- Backup file list and restore ---
 
-  router.get('/backups', (req, res) => {
+  router.get('/backups', requireListener(authConfig), (req, res) => {
     try {
       const backupDir = path.join(process.cwd(), 'config', 'backups');
       if (!fs.existsSync(backupDir)) {
@@ -110,7 +112,7 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  router.get('/backups/:filename', (req, res) => {
+  router.get('/backups/:filename', requireListener(authConfig), (req, res) => {
     try {
       const backupDir = path.join(process.cwd(), 'config', 'backups');
       const safeFilename = path.basename(req.params.filename);
@@ -127,7 +129,7 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- CSV Export ---
 
-  router.get('/export/csv', async (req, res) => {
+  router.get('/export/csv', requireListener(authConfig), async (req, res) => {
     try {
       const systems = await programmingController.getAllMemory();
       const rows = [
@@ -166,7 +168,7 @@ function createMemoryRoutes({ programmingController }) {
 
   // --- CSV Import ---
 
-  router.post('/import/csv', express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }), (req, res) => {
+  router.post('/import/csv', requireOperator(authConfig), express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }), (req, res) => {
     try {
       const csvText = req.body;
       if (!csvText || typeof csvText !== 'string') {

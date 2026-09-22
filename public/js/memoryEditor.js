@@ -605,45 +605,47 @@ const memoryEditor = (function () {
      * Write all memory systems to physical scanner hardware
      */
     async onUploadToScanner() {
-      if (memorySystems.length === 0) {
-        alert(t('editor.dialogs.noSystemData', {}, '書き込むシステムデータがありません。'));
-        return;
-      }
+      app.requireOperator(async () => {
+        if (memorySystems.length === 0) {
+          alert(t('editor.dialogs.noSystemData', {}, '書き込むシステムデータがありません。'));
+          return;
+        }
 
-      const warnMsg = t(
-        'editor.dialogs.uploadWarning',
-        {},
-        '【警告】スキャナーの既存メモリを上書きします。\n※安全のため、実行前に現在の実機メモリがローカルに自動バックアップされます。\n\n書き込みを実行しますか？'
-      );
-      const confirmed = confirm(warnMsg);
-      if (!confirmed) return;
+        const warnMsg = t(
+          'editor.dialogs.uploadWarning',
+          {},
+          '【警告】スキャナーの既存メモリを上書きします。\n※安全のため、実行前に現在の実機メモリがローカルに自動バックアップされます。\n\n書き込みを実行しますか？'
+        );
+        const confirmed = confirm(warnMsg);
+        if (!confirmed) return;
 
-      const modal = document.getElementById('modal-progress');
-      const title = document.getElementById('progress-modal-title');
-      const footer = document.getElementById('progress-modal-footer');
-      const barFill = document.getElementById('progress-bar-fill');
-      const percentEl = document.getElementById('progress-percent');
-      const statusTextEl = document.getElementById('progress-status-text');
+        const modal = document.getElementById('modal-progress');
+        const title = document.getElementById('progress-modal-title');
+        const footer = document.getElementById('progress-modal-footer');
+        const barFill = document.getElementById('progress-bar-fill');
+        const percentEl = document.getElementById('progress-percent');
+        const statusTextEl = document.getElementById('progress-status-text');
 
-      if (title) title.innerText = t('editor.progressModal.titleWriting', {}, '📤 スキャナーへメモリ書き込み中...');
-      if (barFill) barFill.style.width = '0%';
-      if (percentEl) percentEl.innerText = '0%';
-      if (statusTextEl) statusTextEl.innerText = t('editor.dialogs.prepBackup', {}, '事前バックアップ取得中...');
-      if (footer) footer.style.display = 'none';
-      if (modal) modal.classList.remove('hidden');
+        if (title) title.innerText = t('editor.progressModal.titleWriting', {}, '📤 スキャナーへメモリ書き込み中...');
+        if (barFill) barFill.style.width = '0%';
+        if (percentEl) percentEl.innerText = '0%';
+        if (statusTextEl) statusTextEl.innerText = t('editor.dialogs.prepBackup', {}, '事前バックアップ取得中...');
+        if (footer) footer.style.display = 'none';
+        if (modal) modal.classList.remove('hidden');
 
-      startProgressPolling();
+        startProgressPolling();
 
-      try {
-        await app.fetchApi('/memory/all', {
-          method: 'POST',
-          body: JSON.stringify({ systems: memorySystems }),
-        });
-      } catch (err) {
-        alert(t('editor.dialogs.writeError', { error: err.message }, '書き込みエラー: ' + err.message));
-      } finally {
-        if (footer) footer.style.display = 'flex';
-      }
+        try {
+          await app.fetchApi('/memory/all', {
+            method: 'POST',
+            body: JSON.stringify({ systems: memorySystems }),
+          });
+        } catch (err) {
+          alert(t('editor.dialogs.writeError', { error: err.message }, '書き込みエラー: ' + err.message));
+        } finally {
+          if (footer) footer.style.display = 'flex';
+        }
+      });
     },
 
     /**
