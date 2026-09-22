@@ -1,0 +1,139 @@
+{
+  "header": {
+    "title": "BCT15X",
+    "subtitle": "Remote Scanner",
+    "editorBtn": "📝 Memory Editor",
+    "returnToScanner": "◀ Return to Scanner",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "scanner": {
+    "title": "📡 Scanner",
+    "badgeScan": "Scan",
+    "badgeReceiving": "Receiving",
+    "badgeRecording": "Record",
+    "system": "System",
+    "department": "Department",
+    "channel": "Channel",
+    "modulation": "Mod",
+    "ctcssDcs": "Tone/Code",
+    "attenuator": "ATT",
+    "squelch": "Squelch",
+    "mute": "Mute",
+    "open": "OPEN",
+    "closed": "CLOSE",
+    "on": "ON",
+    "off": "OFF",
+    "liveAudio": "Live Audio",
+    "liveAudioStart": "▶ Live Audio",
+    "liveAudioStop": "⏹ Stop",
+    "liveAudioConnecting": "⏳ Connecting...",
+    "liveAudioRetry": "Click to retry"
+  },
+  "control": {
+    "title": "Controls",
+    "scan": "SCAN",
+    "hold": "HOLD",
+    "autoRecord": "Auto Record",
+    "filenameTemplate": "Filename Template",
+    "templateHelp": "/ can be used to split into subdirectories",
+    "preview": "Preview",
+    "consoleTitle": "Command Console",
+    "consolePlaceholder": "Enter command (e.g. GLG, STS)",
+    "send": "Send",
+    "waiting": "Waiting..."
+  },
+  "log": {
+    "title": "📋 Reception Log",
+    "filter": "Filter",
+    "columnSettings": "Columns",
+    "csv": "📥 CSV",
+    "clear": "🗑",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "search": "Search",
+    "searchPlaceholder": "Frequency, system, channel...",
+    "freqMin": "Min Freq (MHz)",
+    "freqMax": "Max Freq (MHz)",
+    "applyFilter": "Apply Filter",
+    "resetFilter": "Reset",
+    "empty": "No reception logs yet",
+    "colTime": "Time",
+    "colFreq": "Frequency",
+    "colSystem": "System",
+    "colGroup": "Group",
+    "colChannel": "Channel",
+    "colMod": "Mod",
+    "colTone": "Tone",
+    "colSignal": "Signal",
+    "colDuration": "Duration",
+    "colAudio": "Audio"
+  },
+  "recordings": {
+    "title": "🎙️ Recordings",
+    "refresh": "🔄 Refresh",
+    "searchPlaceholder": "🔍 Search by filename...",
+    "empty": "No recordings yet",
+    "nowPlaying": "🔊 Playing"
+  },
+  "editor": {
+    "toolbar": {
+      "download": "📥 Read from Scanner",
+      "upload": "📤 Write to Scanner",
+      "importJson": "📂 Load JSON",
+      "exportJson": "💾 Save JSON",
+      "importCsv": "📊 Import CSV",
+      "exportCsv": "📊 Export CSV",
+      "backups": "🛡️ Backup History",
+      "stats": "Systems: {sys} | Groups: {grp} | Channels: {chn}"
+    },
+    "tree": {
+      "title": "📂 Systems / Groups",
+      "addSystem": "➕ System",
+      "loading": "Loading data...",
+      "empty": "No systems found. Click 'Read from Scanner' or '➕ System'."
+    },
+    "grid": {
+      "title": "📻 Channels",
+      "selectGroupPrompt": "Select a group",
+      "selectGroupNotice": "Select a group from the left tree to view and edit its channels.",
+      "editGroup": "✏️ Group Settings",
+      "addRow": "➕ Add Row",
+      "paste": "📋 Batch Paste",
+      "colNum": "#",
+      "colName": "Name (Alpha Tag)",
+      "colFreq": "Frequency (MHz)",
+      "colMod": "Modulation",
+      "colTone": "Tone / Code",
+      "colLockout": "L/O",
+      "colPriority": "PRI",
+      "colAttenuator": "ATT",
+      "colActions": "Actions",
+      "empty": "No channels yet. Click '➕ Add Row' or '📋 Batch Paste' to add channels.",
+      "clearAll": "🗑️ Clear All Rows",
+      "excelPaste": "📋 Paste from Excel",
+      "channelCount": "{count} channels"
+    },
+    "pasteModal": {
+      "title": "📋 Batch Paste from Excel / Text",
+      "hint": "Paste rows copied from Excel or a spreadsheet (tab-separated or comma-separated).<br>Example column order: <code>Name</code> <code>Frequency</code> <code>Modulation (AM/FM/NFM)</code> <code>Tone</code>",
+      "placeholder": "Tokyo TWR\t118.1000\tAM\tNone\nTokyo APP\t119.1000\tAM\tNone",
+      "cancel": "Cancel",
+      "execute": "Import"
+    },
+    "progressModal": {
+      "titleReading": "📥 Reading all memory from scanner...",
+      "titleWriting": "📤 Writing memory to scanner...",
+      "warning": "※ Please do not operate the scanner during communication.",
+      "close": "Close"
+    },
+    "backupsModal": {
+      "title": "🛡️ Auto Backup History",
+      "hint": "List of automatic backups created before writing to scanner. Select a backup to restore.",
+      "loading": "Loading backup history...",
+      "empty": "No backup history found",
+      "restore": "Restore",
+      "close": "Close"
+    }
+  }
+}

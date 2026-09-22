@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  scanner:
+    build: .
+    container_name: uniden-web-remote
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    devices:
+      # BCT15X USBシリアルポート
+      # 注意: デバイス名はホスト環境によって異なる場合があります
+      # `ls /dev/ttyUSB*` または `dmesg | grep tty` で確認してください
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      # ALSAサウンドデバイス（録音用）
+      - "/dev/snd:/dev/snd"
+
+    volumes:
+      # 録音ファイル永続化
+      - ./recordings:/app/recordings
+      # 設定ファイル永続化
+      - ./config:/app/config
+
+    environment:
+      # シリアルポート設定
+      - SERIAL_PORT=/dev/ttyUSB0
+      - SERIAL_BAUD=115200
+
+      # 音声デバイス設定
+      # `arecord -l` で確認し、適切なデバイスを指定してください
+      # 例: plughw:1,0 (USBオーディオ), plughw:0,0 (内蔵オーディオ)
+      - AUDIO_DEVICE=plughw:1,0
+
+      # 録音設定
+      - AUDIO_FORMAT=mp3
+      - AUDIO_SAMPLE_RATE=22050
+      - AUDIO_CHANNELS=1
+      - AUDIO_BITRATE=64
+      - AUTO_RECORD=true
+
+      # ファイル名テンプレート
+      - FILENAME_TEMPLATE={date}_{time}_{freq}_{system}_{channel}
+
+      # スキャナー設定
+      - POLL_INTERVAL=200
+      - RECEPTION_TIMEOUT=1500
+
+      # タイムゾーン
+      - TZ=Asia/Tokyo
+
+      # モックモード（実機なしでのテスト用: true に変更）
+      - MOCK_MODE=false
+
+    # audio と dialout グループに追加
+    group_add:
+      - audio
+      - dialout
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

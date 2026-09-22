@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音">
+  <title>BCT15X リモートスキャナー</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+  <div class="app-container" id="app">
+
+    <!-- ヘッダー -->
+    <header class="app-header" id="app-header">
+      <div class="app-title">
+        <h1>BCT15X</h1>
+        <span class="subtitle" id="scanner-model" data-i18n="header.subtitle">リモートスキャナー</span>
+      </div>
+      <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+        <!-- 言語セレクタ -->
+        <div class="lang-selector">
+          <select id="lang-select" class="lang-dropdown" onchange="i18n.setLanguage(this.value)" title="Language">
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="en">🇺🇸 English</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btn-toggle-editor" onclick="app.toggleEditorMode()" data-i18n="header.editorBtn">📝 エディタ起動</button>
+        <div class="connection-status" id="connection-status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="connection-text" data-i18n="header.disconnected">切断中</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 通常のスキャナービュー -->
+    <div id="scanner-view" class="app-grid">
+    <!-- スキャナーディスプレイ -->
+    <section class="panel scanner-panel" id="scanner-panel">
+      <div class="panel-header">
+        <h2 data-i18n="scanner.title">📡 スキャナー</h2>
+        <div class="status-badges" id="status-badges">
+          <span class="badge" id="badge-scan"><span class="badge-dot"></span><span data-i18n="scanner.badgeScan">スキャン</span></span>
+          <span class="badge" id="badge-receiving"><span class="badge-dot"></span><span data-i18n="scanner.badgeReceiving">受信中</span></span>
+          <span class="badge" id="badge-recording"><span class="badge-dot"></span><span data-i18n="scanner.badgeRecording">録音</span></span>
+        </div>
+      </div>
+      <div class="panel-body scanner-display" id="scanner-display">
+        <!-- 周波数表示 -->
+        <div class="frequency-display" id="frequency-display">----.---- MHz</div>
+
+        <!-- チャンネル情報 -->
+        <div class="channel-info" id="channel-info">
+          <div class="info-item">
+            <div class="info-label" data-i18n="scanner.system">システム</div>
+            <div class="info-value" id="info-system">---</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label" data-i18n="scanner.department">デパートメント</div>
+            <div class="info-value" id="info-department">---</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">チャンネル</div>
+            <div class="info-value" id="info-channel">---</div>
+          </div>
+        </div>
+
+        <!-- 追加情報 -->
+        <div class="channel-info">
+          <div class="info-item">
+            <div class="info-label">モード</div>
+            <div class="info-value" id="info-modulation">---</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">CTCSS/DCS</div>
+            <div class="info-value" id="info-ctcss">---</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">P25 NAC</div>
+            <div class="info-value" id="info-nac">---</div>
+          </div>
+        </div>
+
+        <!-- RSSI メーター -->
+        <div class="rssi-container">
+          <div class="rssi-label">信号強度 (RSSI): <span id="rssi-value" class="text-cyan text-mono">0</span></div>
+          <div class="rssi-bar-wrapper">
+            <div class="rssi-bar" id="rssi-bar"></div>
+          </div>
+        </div>
+
+        <!-- ライブ音声プレイヤー -->
+        <div class="live-audio-container" id="live-audio-container">
+          <div class="live-audio-header">
+            <span class="live-audio-title">🔊 ライブ音声</span>
+            <span class="live-audio-status" id="live-audio-status">停止中</span>
+          </div>
+          <div class="live-audio-controls">
+            <button class="btn live-audio-btn" id="btn-live-audio" onclick="scannerDisplay.onToggleLiveAudio()">
+              <span id="live-audio-icon">▶</span> 受信音声を聞く
+            </button>
+            <div class="volume-control">
+              <span class="volume-icon" id="volume-icon">🔊</span>
+              <input type="range" id="live-audio-volume" class="volume-slider"
+                     min="0" max="100" value="80"
+                     oninput="scannerDisplay.onVolumeChange(this.value)">
+              <span class="volume-value" id="volume-value">80%</span>
+            </div>
+          </div>
+          <audio id="live-audio-player" preload="none"></audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- 操作パネル -->
+    <section class="panel control-panel" id="control-panel">
+      <div class="panel-header">
+        <h2>🎛️ コントロール</h2>
+      </div>
+      <div class="panel-body">
+        <!-- スキャン制御 -->
+        <div class="control-section">
+          <div class="control-section-title">スキャン制御</div>
+          <div class="button-grid button-grid-2">
+            <button class="btn btn-primary" id="btn-scan" onclick="controlPanel.onScan()">▶ スキャン</button>
+            <button class="btn btn-danger" id="btn-hold" onclick="controlPanel.onHold()">⏸ ホールド</button>
+          </div>
+        </div>
+
+        <!-- オーディオ / RF 制御 (VOL/SQ) -->
+        <div class="control-section">
+          <div class="control-section-title">レベル制御</div>
+          <div class="slider-group">
+            <div class="slider-row">
+              <span class="slider-label">VOL</span>
+              <input type="range" class="control-slider" min="0" max="15" value="8" onchange="controlPanel.onVolumeChange(this.value)">
+              <span class="slider-value" id="vol-level-display">8</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">SQ</span>
+              <input type="range" class="control-slider" min="0" max="15" value="2" onchange="controlPanel.onSquelchChange(this.value)">
+              <span class="slider-value" id="sql-level-display">2</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 専用サーチキー & ファンクション -->
+        <div class="control-section">
+          <div class="control-section-title">サービスサーチ & 機能</div>
+          <div class="button-grid button-grid-3">
+            <button class="btn" onclick="controlPanel.onKey('P','P')">POL</button>
+            <button class="btn" onclick="controlPanel.onKey('H','P')">HP</button>
+            <button class="btn" onclick="controlPanel.onKey('W','P')">WX</button>
+            <button class="btn" onclick="controlPanel.onKey('T','P')">STATE</button>
+            <button class="btn" onclick="controlPanel.onKey('S','P')">SRCH</button>
+            <button class="btn btn-warning" onclick="controlPanel.onKey('L','P')">L/O</button>
+          </div>
+        </div>
+
+        <!-- D-Padナビゲーション & テンキー -->
+        <div class="control-section">
+          <div class="keypad-layout">
+            <!-- 左側: D-Pad -->
+            <div class="d-pad-container">
+              <button class="btn btn-dpad dpad-up" onclick="controlPanel.onKey('^','P')">▲</button>
+              <button class="btn btn-dpad dpad-left" onclick="controlPanel.onKey('<','P')">◀</button>
+              <button class="btn btn-dpad dpad-center" onclick="controlPanel.onKey('E','P')">E</button>
+              <button class="btn btn-dpad dpad-right" onclick="controlPanel.onKey('>','P')">▶</button>
+              <button class="btn btn-dpad dpad-down" onclick="controlPanel.onKey('V','P')">▼</button>
+            </div>
+            
+            <!-- 右側: テンキー -->
+            <div class="numpad-container">
+              <button class="btn" onclick="controlPanel.onKey('1','P')">1</button>
+              <button class="btn" onclick="controlPanel.onKey('2','P')">2</button>
+              <button class="btn" onclick="controlPanel.onKey('3','P')">3</button>
+              
+              <button class="btn" onclick="controlPanel.onKey('4','P')">4</button>
+              <button class="btn" onclick="controlPanel.onKey('5','P')">5</button>
+              <button class="btn" onclick="controlPanel.onKey('6','P')">6</button>
+              
+              <button class="btn" onclick="controlPanel.onKey('7','P')">7</button>
+              <button class="btn" onclick="controlPanel.onKey('8','P')">8</button>
+              <button class="btn" onclick="controlPanel.onKey('9','P')">9</button>
+              
+              <button class="btn" onclick="controlPanel.onKey('.','P')">.</button>
+              <button class="btn" onclick="controlPanel.onKey('0','P')">0</button>
+              <button class="btn" onclick="controlPanel.onKey('F','P')">FUNC</button>
+              <button class="btn btn-menu" onclick="controlPanel.onKey('M','P')">MENU</button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- 録音設定 -->
+        <div class="control-section">
+          <div class="control-section-title">録音設定</div>
+          <div class="toggle-row">
+            <span class="toggle-label">自動録音</span>
+            <label class="toggle" id="toggle-auto-record">
+              <input type="checkbox" checked onchange="controlPanel.onToggleAutoRecord(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="input-group">
+            <label for="filename-template">ファイル名テンプレート</label>
+            <input type="text" id="filename-template"
+                   value="{date}_{time}_{freq}_{system}_{channel}"
+                   onchange="controlPanel.onTemplateChange(this.value)"
+                   oninput="controlPanel.onTemplatePreview(this.value)">
+            <div class="template-help">
+              <code>/</code> でディレクトリ分割可能（例: <code>{date}/{channel}/{time}_{freq}</code>）
+            </div>
+            <div class="template-preview" id="template-preview">
+              <span class="preview-label">プレビュー</span>
+              <span id="template-preview-text">---</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- コマンドコンソール -->
+        <div class="control-section">
+          <div class="control-section-title">コマンドコンソール</div>
+          <div class="command-console">
+            <div class="command-input-row">
+              <input type="text" id="command-input" placeholder="コマンドを入力 (例: GLG, STS)"
+                     onkeydown="if(event.key==='Enter') controlPanel.onSendCommand()">
+              <button class="btn btn-primary" onclick="controlPanel.onSendCommand()">送信</button>
+            </div>
+            <div class="command-output" id="command-output">待機中...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 受信ログ -->
+    <section class="panel log-panel" id="log-panel">
+      <div class="panel-header">
+        <h2>📋 受信ログ</h2>
+        <div>
+          <button class="btn btn-filter-toggle" id="btn-log-filter" onclick="activityLog.onToggleFilter()" title="フィルタ">🔍</button>
+          <button class="btn" id="btn-column-settings" onclick="activityLog.onOpenColumnSettings()" title="カラム設定">⚙️</button>
+          <button class="btn" id="btn-export-log" onclick="activityLog.onExportCsv()" style="margin-left: 4px;">📥 CSV</button>
+          <button class="btn btn-danger" onclick="activityLog.onClearLog()" style="margin-left: 4px;">🗑</button>
+        </div>
+      </div>
+
+      <!-- ログフィルタバー -->
+      <div class="filter-bar collapsed" id="log-filter-bar">
+        <div class="filter-bar-content">
+          <div class="filter-field">
+            <label for="log-filter-date-from">開始日時</label>
+            <input type="datetime-local" id="log-filter-date-from">
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-date-to">終了日時</label>
+            <input type="datetime-local" id="log-filter-date-to">
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-freq">周波数/TGID</label>
+            <input type="text" id="log-filter-freq" placeholder="155.7">
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-system">システム</label>
+            <input type="text" id="log-filter-system" placeholder="Police">
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-channel">チャンネル</label>
+            <input type="text" id="log-filter-channel" placeholder="Dispatch">
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-modulation">モード</label>
+            <select id="log-filter-modulation">
+              <option value="">全て</option>
+              <option value="FM">FM</option>
+              <option value="NFM">NFM</option>
+              <option value="AM">AM</option>
+              <option value="WFM">WFM</option>
+              <option value="P25">P25</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="log-filter-min-duration">最小秒数</label>
+            <input type="number" id="log-filter-min-duration" min="0" step="0.5" placeholder="0">
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary" onclick="activityLog.onApplyFilter()">適用</button>
+            <button class="btn" onclick="activityLog.onResetFilter()">リセット</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- フィルタ結果件数 -->
+      <div class="filter-count hidden" id="log-filter-count"></div>
+
+      <div class="panel-body" style="padding: 0;">
+        <div class="log-table-wrapper" id="log-table-wrapper">
+          <table class="log-table" id="log-table">
+            <thead>
+              <!-- カラムはJS側で動的生成 -->
+            </thead>
+            <tbody id="log-tbody">
+            </tbody>
+          </table>
+          <div class="log-empty" id="log-empty">受信ログはまだありません</div>
+        </div>
+      </div>
+
+      <!-- カラム設定モーダル -->
+      <div class="column-settings-modal hidden" id="column-settings-modal">
+        <div class="column-settings-overlay" onclick="activityLog.onCloseColumnSettings()"></div>
+        <div class="column-settings-content">
+          <div class="column-settings-header">
+            <h3>📋 表示カラム設定</h3>
+            <button class="btn" onclick="activityLog.onCloseColumnSettings()">✕</button>
+          </div>
+          <div class="column-settings-body">
+            <p class="column-settings-hint">表示するカラムを選択し、ドラッグで順序を変更できます。</p>
+            <div class="column-settings-list" id="column-settings-list">
+              <!-- JS側で動的生成 -->
+            </div>
+          </div>
+          <div class="column-settings-footer">
+            <button class="btn" onclick="activityLog.onResetColumns()">🔄 デフォルトに戻す</button>
+            <button class="btn btn-primary" onclick="activityLog.onCloseColumnSettings()">完了</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 録音ファイル -->
+    <section class="panel recordings-panel" id="recordings-panel">
+      <div class="panel-header">
+        <h2>🎙️ 録音ファイル</h2>
+        <button class="btn" onclick="recordingPanel.onRefresh()">🔄 更新</button>
+      </div>
+
+      <!-- 録音ファイル検索バー -->
+      <div class="recordings-filter">
+        <div class="recordings-filter-row">
+          <input type="text" id="rec-search-input" placeholder="🔍 ファイル名で検索..."
+                 oninput="recordingPanel.onSearchChange(this.value)">
+        </div>
+      </div>
+
+      <div class="panel-body" style="padding: 0;">
+        <ul class="recording-list" id="recording-list">
+        </ul>
+        <div class="log-empty" id="recordings-empty">録音ファイルはまだありません</div>
+      </div>
+      <!-- オーディオプレイヤー -->
+      <div class="audio-player-container hidden" id="audio-player-container">
+        <div class="now-playing">🔊 再生中: <span id="now-playing-name">---</span></div>
+        <audio controls id="audio-player"></audio>
+      </div>
+    </section>
+
+  </div><!-- /#scanner-view -->
+
+  <!-- エディタモードビュー -->
+  <div id="editor-view" class="editor-container hidden">
+    <!-- エディタ上部ツールバー -->
+    <div class="editor-toolbar">
+      <div class="toolbar-group">
+        <button class="btn btn-primary" id="btn-editor-download" onclick="memoryEditor.onDownloadFromScanner()" data-i18n="editor.toolbar.download">
+          📥 スキャナーから読込
+        </button>
+        <button class="btn btn-success" id="btn-editor-upload" onclick="memoryEditor.onUploadToScanner()" data-i18n="editor.toolbar.upload">
+          📤 スキャナーへ書込
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <label class="btn btn-secondary file-btn" data-i18n-title="editor.toolbar.importJson" title="JSONファイルを読み込む">
+          <span data-i18n="editor.toolbar.importJson">📂 JSON読込</span>
+          <input type="file" id="file-import-json" accept=".json" style="display: none;" onchange="memoryEditor.onImportJson(event)">
+        </label>
+        <button class="btn btn-secondary" onclick="memoryEditor.onExportJson()" data-i18n-title="editor.toolbar.exportJson" data-i18n="editor.toolbar.exportJson" title="JSONファイルとしてダウンロード">
+          💾 JSON保存
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <label class="btn btn-secondary file-btn" data-i18n-title="editor.toolbar.importCsv" title="CSVファイルをインポート">
+          <span data-i18n="editor.toolbar.importCsv">📊 CSV読込</span>
+          <input type="file" id="file-import-csv" accept=".csv,.txt" style="display: none;" onchange="memoryEditor.onImportCsv(event)">
+        </label>
+        <button class="btn btn-secondary" onclick="memoryEditor.onExportCsv()" data-i18n-title="editor.toolbar.exportCsv" data-i18n="editor.toolbar.exportCsv" title="CSVファイルとしてダウンロード">
+          📊 CSV保存
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button class="btn btn-secondary" onclick="memoryEditor.onOpenBackupsModal()" data-i18n-title="editor.toolbar.backups" data-i18n="editor.toolbar.backups" title="自動バックアップ履歴を表示">
+          🛡️ バックアップ履歴
+        </button>
+      </div>
+
+      <div class="toolbar-group-right">
+        <span class="editor-stats" id="editor-stats">システム: 0 | グループ: 0 | チャンネル: 0</span>
+      </div>
+    </div>
+
+    <!-- エディタメインレイアウト（左:ツリー、右:スプレッドシート） -->
+    <div class="editor-workspace">
+      <!-- 左ペイン: システム・グループ階層ナビゲーション -->
+      <aside class="panel editor-tree-panel">
+        <div class="panel-header">
+          <h2 data-i18n="editor.tree.title">📂 システム / グループ</h2>
+          <div class="header-actions">
+            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddNewSystem()" data-i18n="editor.tree.addSystem" title="新規システム追加">➕ システム</button>
+          </div>
+        </div>
+        <div class="panel-body tree-scroll-body">
+          <ul id="memory-tree" class="tree-root">
+            <li class="tree-item loading" data-i18n="editor.tree.loading">データを読み込んでいます...</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- 右ペイン: チャンネルスプレッドシート（グリッド） -->
+      <main class="panel editor-grid-panel">
+        <div class="panel-header">
+          <div class="grid-title-area">
+            <h2 id="grid-current-path" data-i18n="editor.grid.title">📻 チャンネル一覧</h2>
+            <span class="grid-subtitle" id="grid-current-info" data-i18n="editor.grid.selectGroupPrompt">グループを選択してください</span>
+          </div>
+          <div class="header-actions" id="grid-header-actions" style="display: none;">
+            <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onEditCurrentGroup()" data-i18n="editor.grid.editGroup">✏️ グループ設定</button>
+            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddChannelRow()" data-i18n="editor.grid.addRow">➕ 行追加</button>
+            <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onOpenPasteModal()" data-i18n="editor.grid.paste" title="Excel等から表をまとめて貼り付け">📋 一括貼付</button>
+          </div>
+        </div>
+
+        <div class="panel-body grid-scroll-body" id="grid-body-container">
+          <!-- スプレッドシートテーブル -->
+          <div class="spreadsheet-container" id="spreadsheet-container">
+            <table class="channel-table" id="channel-table">
+              <thead>
+                <tr>
+                  <th class="col-num" data-i18n="editor.grid.colNum">#</th>
+                  <th class="col-name" data-i18n="editor.grid.colName">名前 (Alpha Tag)</th>
+                  <th class="col-freq" data-i18n="editor.grid.colFreq">周波数 (MHz)</th>
+                  <th class="col-mod" data-i18n="editor.grid.colMod">変調</th>
+                  <th class="col-tone" data-i18n="editor.grid.colTone">トーン / コード</th>
+                  <th class="col-chk" title="ロックアウト" data-i18n="editor.grid.colLockout">L/O</th>
+                  <th class="col-chk" title="優先チャンネル" data-i18n="editor.grid.colPriority">PRI</th>
+                  <th class="col-chk" title="アッテネータ(減衰)" data-i18n="editor.grid.colAttenuator">ATT</th>
+                  <th class="col-actions" data-i18n="editor.grid.colActions">操作</th>
+                </tr>
+              </thead>
+              <tbody id="channel-tbody">
+                <!-- JSで動的にチャンネル行を生成 -->
+              </tbody>
+            </table>
+            <div class="grid-empty-message" id="grid-empty-message" data-i18n="editor.grid.empty">
+              左のツリーからグループを選択するか、上部の「📥 スキャナーから読込」を押してください。
+            </div>
+          </div>
+        </div>
+
+        <!-- グリッド下部アクションバー -->
+        <div class="grid-footer-bar" id="grid-footer-bar" style="display: none;">
+          <div class="footer-left">
+            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddChannelRow()" data-i18n="editor.grid.addRow">➕ 行追加</button>
+            <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onOpenPasteModal()" data-i18n="editor.grid.excelPaste">📋 Excel貼り付け</button>
+            <button class="btn btn-sm btn-danger" onclick="memoryEditor.onClearCurrentChannels()" data-i18n="editor.grid.clearAll">🗑️ 全行削除</button>
+          </div>
+          <div class="footer-right">
+            <span id="channel-count-display">0 チャンネル</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div><!-- /#editor-view -->
+
+  <!-- クリップボード貼り付け用モーダル -->
+  <div class="modal-overlay hidden" id="modal-paste">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 data-i18n="editor.pasteModal.title">📋 Excel / テキストから一括貼り付け</h3>
+        <button class="modal-close-btn" onclick="memoryEditor.onClosePasteModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint" data-i18n-html="editor.pasteModal.hint">
+          Excelやスプレッドシートでコピーした行（タブ区切りまたはカンマ区切り）をここに貼り付けてください。<br>
+          列順序の例: <code>名前</code> <code>周波数</code> <code>変調(AM/FM/NFM)</code> <code>トーン</code>
+        </p>
+        <textarea id="paste-textarea" class="modal-textarea" rows="10" placeholder="Tokyo TWR	118.1000	AM	None&#10;Tokyo APP	119.1000	AM	None"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="memoryEditor.onClosePasteModal()" data-i18n="editor.pasteModal.cancel">キャンセル</button>
+        <button class="btn btn-primary" onclick="memoryEditor.onExecutePaste()" data-i18n="editor.pasteModal.execute">取り込み実行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 実機通信プログレスモーダル -->
+  <div class="modal-overlay hidden" id="modal-progress">
+    <div class="modal-card modal-progress-card">
+      <div class="modal-header">
+        <h3 id="progress-modal-title">⏳ スキャナーと通信中...</h3>
+      </div>
+      <div class="modal-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-percent" id="progress-percent">0%</span>
+          <span class="progress-status-text" id="progress-status-text">準備中...</span>
+        </div>
+        <p class="progress-warning" data-i18n="editor.progressModal.warning">※通信中はスキャナーの操作を行わないでください。</p>
+      </div>
+      <div class="modal-footer" id="progress-modal-footer" style="display: none;">
+        <button class="btn btn-primary" onclick="memoryEditor.onCloseProgressModal()" data-i18n="editor.progressModal.close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- バックアップ履歴モーダル -->
+  <div class="modal-overlay hidden" id="modal-backups">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 data-i18n="editor.backupsModal.title">🛡️ 自動バックアップ履歴</h3>
+        <button class="modal-close-btn" onclick="memoryEditor.onCloseBackupsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint" data-i18n="editor.backupsModal.hint">実機への書き込み前に自動保存されたバックアップ一覧です。復元したいファイルを選択できます。</p>
+        <div class="backups-list-container">
+          <ul class="backups-list" id="backups-list">
+            <li class="loading" data-i18n="editor.backupsModal.loading">履歴を読み込んでいます...</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="memoryEditor.onCloseBackupsModal()" data-i18n="editor.backupsModal.close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/memoryEditor.js"></script>
+  <script src="/js/scannerDisplay.js"></script>
+  <script src="/js/controlPanel.js"></script>
+  <script src="/js/recordingPanel.js"></script>
+  <script src="/js/activityLog.js"></script>
+</body>
+</html>

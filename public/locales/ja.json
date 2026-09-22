@@ -1,0 +1,139 @@
+{
+  "header": {
+    "title": "BCT15X",
+    "subtitle": "リモートスキャナー",
+    "editorBtn": "📝 エディタ起動",
+    "returnToScanner": "◀ スキャナーに戻る",
+    "connected": "接続中",
+    "disconnected": "切断中"
+  },
+  "scanner": {
+    "title": "📡 スキャナー",
+    "badgeScan": "スキャン",
+    "badgeReceiving": "受信中",
+    "badgeRecording": "録音",
+    "system": "システム",
+    "department": "デパートメント",
+    "channel": "チャンネル",
+    "modulation": "変調",
+    "ctcssDcs": "トーン/コード",
+    "attenuator": "アッテネータ",
+    "squelch": "スケルチ",
+    "mute": "ミュート",
+    "open": "開",
+    "closed": "閉",
+    "on": "ON",
+    "off": "OFF",
+    "liveAudio": "LIVE音声",
+    "liveAudioStart": "▶ LIVE再生",
+    "liveAudioStop": "⏹ 停止",
+    "liveAudioConnecting": "⏳ 接続中...",
+    "liveAudioRetry": "クリックして再試行"
+  },
+  "control": {
+    "title": "コントロール",
+    "scan": "SCAN",
+    "hold": "HOLD",
+    "autoRecord": "自動録音",
+    "filenameTemplate": "ファイル名テンプレート",
+    "templateHelp": "/ でディレクトリ分割可能",
+    "preview": "プレビュー",
+    "consoleTitle": "コマンドコンソール",
+    "consolePlaceholder": "コマンドを入力 (例: GLG, STS)",
+    "send": "送信",
+    "waiting": "待機中..."
+  },
+  "log": {
+    "title": "📋 受信ログ",
+    "filter": "フィルタ",
+    "columnSettings": "カラム設定",
+    "csv": "📥 CSV",
+    "clear": "🗑",
+    "startDate": "開始日時",
+    "endDate": "終了日時",
+    "search": "検索",
+    "searchPlaceholder": "周波数、システム、チャンネル...",
+    "freqMin": "周波数下限 (MHz)",
+    "freqMax": "周波数上限 (MHz)",
+    "applyFilter": "絞り込み",
+    "resetFilter": "リセット",
+    "empty": "受信ログはまだありません",
+    "colTime": "時刻",
+    "colFreq": "周波数",
+    "colSystem": "システム",
+    "colGroup": "グループ",
+    "colChannel": "チャンネル",
+    "colMod": "変調",
+    "colTone": "トーン",
+    "colSignal": "シグナル",
+    "colDuration": "時間",
+    "colAudio": "録音"
+  },
+  "recordings": {
+    "title": "🎙️ 録音ファイル",
+    "refresh": "🔄 更新",
+    "searchPlaceholder": "🔍 ファイル名で検索...",
+    "empty": "録音ファイルはまだありません",
+    "nowPlaying": "🔊 再生中"
+  },
+  "editor": {
+    "toolbar": {
+      "download": "📥 スキャナーから読込",
+      "upload": "📤 スキャナーへ書込",
+      "importJson": "📂 JSON読込",
+      "exportJson": "💾 JSON保存",
+      "importCsv": "📊 CSV読込",
+      "exportCsv": "📊 CSV保存",
+      "backups": "🛡️ バックアップ履歴",
+      "stats": "システム: {sys} | グループ: {grp} | チャンネル: {chn}"
+    },
+    "tree": {
+      "title": "📂 システム / グループ",
+      "addSystem": "➕ システム",
+      "loading": "データを読み込んでいます...",
+      "empty": "システムがありません。「📥 スキャナーから読込」または「➕ システム」を押してください。"
+    },
+    "grid": {
+      "title": "📻 チャンネル一覧",
+      "selectGroupPrompt": "グループを選択してください",
+      "selectGroupNotice": "左のツリーからグループを選択するとチャンネルを編集できます。",
+      "editGroup": "✏️ グループ設定",
+      "addRow": "➕ 行追加",
+      "paste": "📋 一括貼付",
+      "colNum": "#",
+      "colName": "名前 (Alpha Tag)",
+      "colFreq": "周波数 (MHz)",
+      "colMod": "変調",
+      "colTone": "トーン / コード",
+      "colLockout": "L/O",
+      "colPriority": "PRI",
+      "colAttenuator": "ATT",
+      "colActions": "操作",
+      "empty": "チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。",
+      "clearAll": "🗑️ 全行削除",
+      "excelPaste": "📋 Excel貼り付け",
+      "channelCount": "{count} チャンネル"
+    },
+    "pasteModal": {
+      "title": "📋 Excel / テキストから一括貼り付け",
+      "hint": "Excelやスプレッドシートでコピーした行（タブ区切りまたはカンマ区切り）をここに貼り付けてください。<br>列順序の例: <code>名前</code> <code>周波数</code> <code>変調(AM/FM/NFM)</code> <code>トーン</code>",
+      "placeholder": "Tokyo TWR\t118.1000\tAM\tNone\nTokyo APP\t119.1000\tAM\tNone",
+      "cancel": "キャンセル",
+      "execute": "取り込み実行"
+    },
+    "progressModal": {
+      "titleReading": "📥 スキャナーから全メモリを読込中...",
+      "titleWriting": "📤 スキャナーへメモリ書き込み中...",
+      "warning": "※通信中はスキャナーの操作を行わないでください。",
+      "close": "閉じる"
+    },
+    "backupsModal": {
+      "title": "🛡️ 自動バックアップ履歴",
+      "hint": "実機への書き込み前に自動保存されたバックアップ一覧です。復元したいファイルを選択できます。",
+      "loading": "履歴を読み込んでいます...",
+      "empty": "バックアップ履歴はありません",
+      "restore": "復元",
+      "close": "閉じる"
+    }
+  }
+}

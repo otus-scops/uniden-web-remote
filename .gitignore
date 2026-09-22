@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data & Recordings
+recordings/
+*.mp3
+*.wav
+
+# User configurations & Backups
+config/config.json
+config/backups/
+
+# Logs & Temporary files
+*.log
+*.gdoc
+logs.txt
+scanner.log
+入出力設定.txt
+.tempmediaStorage/
+
+# Test & Duplicate directories
+_local_test/
+test_run/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Private / Local only files
+docker-compose.pro.yml
+.agents/
+.vscode/
+.idea/

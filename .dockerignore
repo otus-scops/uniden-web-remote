@@ -1,0 +1,12 @@
+node_modules/
+recordings/
+config/config.json
+config/backups/
+_local_test/
+docs/
+.git/
+.gitignore
+docker-compose.pro.yml
+*.log
+*.gdoc
+.env

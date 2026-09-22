@@ -1,0 +1,21 @@
+{
+  "name": "uniden-web-remote",
+  "version": "1.0.0",
+  "description": "Uniden DMA Scanner Web Remote & Memory Editor - Docker + Web UI",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "mock": "MOCK_MODE=true node src/server.js"
+  },
+  "keywords": ["uniden", "scanner", "remote", "bct15x", "bcd996xt", "dma", "web-remote", "memory-editor", "recording"],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "^4.21.0",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "serialport": "^12.0.0"
+  }
+}
