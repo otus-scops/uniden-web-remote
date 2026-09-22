@@ -1,5 +1,5 @@
 /**
- * @fileoverview FreeSCAN代替 本格メモリエディタ フロントエンドロジック (Vanilla JS)
+ * @fileoverview 本格スプレッドシート型メモリエディタ フロントエンドロジック (Vanilla JS)
  * @description システム・グループ階層ツリーナビゲーション、スプレッドシート型チャンネル一覧編集、
  * Excel/TSV一括貼り付け、実機DMA同期、自動バックアップ復元、JSON/CSV入出力
  */

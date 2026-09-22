@@ -2,13 +2,36 @@
 
 [English] | [日本語](README.ja.md)
 
-A modern, containerized Web application for remote control, low-latency live audio streaming, automatic hit recording, and **FreeSCAN-alternative spreadsheet memory programming** for **Uniden Bearcat Scanners** (BCT15X and compatible DMA models).
+A modern, containerized Web application for remote control, Web-based live audio streaming, automatic hit recording, and **spreadsheet-style memory programming** for **Uniden Bearcat Scanners** (BCT15X and compatible DMA models).
 
 Runs seamlessly on Docker and is accessible from any modern Web browser (desktop, tablet, or mobile). Built-in multi-language support (English & Japanese).
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](docker-compose.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-v20-339933.svg?logo=nodedotjs&logoColor=white)](package.json)
+
+---
+
+## 🎯 Design Philosophy & Target Use Case
+
+Unlike traditional desktop applications designed primarily for direct, tethered operation beside a local PC, **`uniden-web-remote` is designed with the philosophy of running a scanner 24/7 on a home server for continuous recording, while providing convenient remote listening and virtual control from any browser**.
+
+Rather than prioritizing ultra-low latency for direct desktop listening, our focus is placed on **unattended 24/7 recording reliability, effortless setup via Docker containerization, and the flexibility to access your scanner from any client device across your home network**. Consequently, a reasonable buffering latency over network streaming is deliberately accepted as a natural trade-off.
+
+- **Intended Usage Style**:
+  Deploy the Docker container on a home server, Linux box, mini-PC, or Raspberry Pi connected to the scanner, then access the Web interface from any machine on your LAN (desktop, laptop, tablet, or smartphone) via `http://<server-local-ip>:3000`. (Running locally on a single machine via `http://localhost:3000` is also fully supported).
+
+---
+
+## ⚠️ Notes on Live Audio Latency & Remote Operation Feel
+
+- **Buffering Latency in Web Streaming**:
+  Because this system is built around remote distribution from a home server, standard HTML5 chunked audio streaming is used with a small buffer to ensure smooth, dropout-free playback in standard Web browsers. Compared to native desktop applications or listening directly to the scanner's speaker, audible latency is an expected characteristic.
+- **Operational Command vs. Audio Feedback**:
+  When executing commands such as **Temporary Lockout (L/O)**, **Hold**, or **Scan**, serial control signals reach the scanner hardware almost instantaneously. However, **the resulting change in audio will only be heard after the buffered audio arrives at your browser**. 
+- Please keep this inherent operational feeling of remote Web streaming in mind when controlling the radio remotely.
+
+---
 
 ### 📻 Supported Models
 - **Tested & Verified**: **Uniden Bearcat BCT15X**
@@ -19,9 +42,9 @@ Runs seamlessly on Docker and is accessible from any modern Web browser (desktop
 ## 🌟 Key Features (Community Edition / Open Source)
 
 - 📡 **Virtual Control & Real-Time Display**: Live frequency/TGID display, alpha tags (System / Group / Channel), modulation, tone/code (CTCSS/DCS), and RSSI signal level meter.
-- 🔊 **Ultra Low-Latency Live Audio**: Listen to scanner audio directly in your browser with HTML5 chunked audio streaming.
+- 🔊 **Web Live Audio Streaming**: Listen to scanner audio directly in your browser with chunked audio streaming.
 - 🎛️ **Full Keypad & Menu Control**: Interactive virtual panel simulating Scan, Hold, Menu, Function, and Direct Numpad entry with volume and squelch adjustments.
-- 📝 **FreeSCAN Alternative: Memory Editor**:
+- 📝 **Spreadsheet Memory Editor**:
   - **Full Scanner Memory Sync**: Complete download and upload of Systems, Groups, and Channels using Uniden DMA (Dynamic Memory Architecture) serial protocol.
   - **Spreadsheet-Style Grid Editor**: Inline editing for Channel Name, Frequency (MHz), Modulation (AUTO/AM/FM/NFM/WFM), Tone/Code (CTCSS/DCS), Lockout, Priority, and Attenuator.
   - **Excel / Spreadsheet Batch Paste**: Easily copy dozens or hundreds of channels from Excel or Google Sheets and batch-import them in one click.
@@ -63,7 +86,10 @@ docker compose logs -f scanner
 ```
 
 Open your browser and navigate to:
-**`http://localhost:3000`**
+- **From another device on your LAN (Recommended / Primary use case)**:
+  `http://<server-local-ip>:3000` (e.g., `http://192.168.1.50:3000`)
+- **From the server itself**:
+  `http://localhost:3000`
 
 ---
 
