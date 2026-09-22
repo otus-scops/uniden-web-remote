@@ -96,9 +96,12 @@
     "searchPlaceholder": "🔍 Search by filename...",
     "empty": "No recordings yet",
     "nowPlaying": "🔊 Playing",
-    "nowPlayingPrefix": "🔊 Playing: "
+    "nowPlayingPrefix": "🔊 Playing: ",
+    "deleteConfirm": "Delete \"{filename}\"?",
+    "deleteFailed": "Failed to delete: {error}"
   },
   "editor": {
+    "statsInitial": "Systems: 0 | Groups: 0 | Channels: 0",
     "toolbar": {
       "download": "📥 Read from Scanner",
       "upload": "📤 Write to Scanner",
@@ -113,7 +116,13 @@
       "title": "📂 Systems / Groups",
       "addSystem": "➕ System",
       "loading": "Loading data...",
-      "empty": "No systems found. Click 'Read from Scanner' or '➕ System'."
+      "empty": "No systems found. Click 'Read from Scanner' or '➕ System'.",
+      "addGroupTitle": "Add Group",
+      "editSystemTitle": "Edit System",
+      "deleteSystemTitle": "Delete System",
+      "editGroupTitle": "Edit Group",
+      "deleteGroupTitle": "Delete Group",
+      "groupChannelCount": "{count} Channels"
     },
     "grid": {
       "title": "📻 Channels",
@@ -134,7 +143,9 @@
       "empty": "No channels yet. Click '➕ Add Row' or '📋 Batch Paste' to add channels.",
       "clearAll": "🗑️ Clear All Rows",
       "excelPaste": "📋 Paste from Excel",
-      "channelCount": "{count} channels"
+      "channelCount": "Channels: {count}",
+      "duplicateRowTitle": "Duplicate Row",
+      "deleteRowTitle": "Delete Row"
     },
     "pasteModal": {
       "title": "📋 Batch Paste from Excel / Text",
@@ -144,8 +155,10 @@
       "execute": "Import"
     },
     "progressModal": {
+      "title": "⏳ Communicating with Scanner...",
       "titleReading": "📥 Reading all memory from scanner...",
       "titleWriting": "📤 Writing memory to scanner...",
+      "preparing": "Preparing...",
       "warning": "※ Please do not operate the scanner during communication.",
       "close": "Close"
     },
@@ -180,7 +193,14 @@
       "backupRestored": "Backup restored successfully.",
       "backupMeta": "Date: {date} | Size: {size} KB",
       "prepBackup": "Creating safety backup...",
-      "connecting": "Connecting & initializing..."
+      "connecting": "Connecting & initializing...",
+      "enterProgModeFailed": "Failed to enter programming mode:\n{error}",
+      "writeError": "Write error: {error}",
+      "jsonLoadError": "JSON load error: {error}",
+      "csvImportError": "CSV import error: {error}",
+      "fetchError": "Fetch error: {error}",
+      "restoreError": "Restore error: {error}",
+      "communicating": "Communicating..."
     }
   }
 }

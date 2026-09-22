@@ -233,7 +233,7 @@
                      onkeydown="if(event.key==='Enter') controlPanel.onSendCommand()">
               <button class="btn btn-primary" onclick="controlPanel.onSendCommand()" data-i18n="control.send">送信</button>
             </div>
-            <div class="command-output" id="command-output">待機中...</div>
+            <div class="command-output" id="command-output" data-i18n="control.waiting">待機中...</div>
           </div>
         </div>
       </div>
@@ -410,7 +410,7 @@
       </div>
 
       <div class="toolbar-group-right">
-        <span class="editor-stats" id="editor-stats">システム: 0 | グループ: 0 | チャンネル: 0</span>
+        <span class="editor-stats" id="editor-stats" data-i18n="editor.statsInitial">システム: 0 | グループ: 0 | チャンネル: 0</span>
       </div>
     </div>
 
@@ -512,7 +512,7 @@
   <div class="modal-overlay hidden" id="modal-progress">
     <div class="modal-card modal-progress-card">
       <div class="modal-header">
-        <h3 id="progress-modal-title">⏳ スキャナーと通信中...</h3>
+        <h3 id="progress-modal-title" data-i18n="editor.progressModal.title">⏳ スキャナーと通信中...</h3>
       </div>
       <div class="modal-body">
         <div class="progress-bar-container">
@@ -520,7 +520,7 @@
         </div>
         <div class="progress-meta">
           <span class="progress-percent" id="progress-percent">0%</span>
-          <span class="progress-status-text" id="progress-status-text">準備中...</span>
+          <span class="progress-status-text" id="progress-status-text" data-i18n="editor.progressModal.preparing">準備中...</span>
         </div>
         <p class="progress-warning" data-i18n="editor.progressModal.warning">※通信中はスキャナーの操作を行わないでください。</p>
       </div>

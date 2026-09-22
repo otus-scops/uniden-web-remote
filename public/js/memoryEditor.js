@@ -185,11 +185,7 @@ const memoryEditor = (function () {
 
     const statsEl = document.getElementById('editor-stats');
     if (statsEl) {
-      if (typeof i18n !== 'undefined') {
-        statsEl.innerText = i18n.t('editor.toolbar.stats', { sys: sysCount, grp: grpCount, chn: chnCount });
-      } else {
-        statsEl.innerText = `システム: ${sysCount} | グループ: ${grpCount} | チャンネル: ${chnCount}`;
-      }
+      statsEl.innerText = t('editor.toolbar.stats', { sys: sysCount, grp: grpCount, chn: chnCount }, `システム: ${sysCount} | グループ: ${grpCount} | チャンネル: ${chnCount}`);
     }
   }
 
@@ -201,9 +197,7 @@ const memoryEditor = (function () {
     if (!root) return;
 
     if (memorySystems.length === 0) {
-      const emptyText = typeof i18n !== 'undefined'
-        ? i18n.t('editor.tree.empty')
-        : 'システムがありません。<br>「📥 スキャナーから読込」または「➕ システム」を押してください。';
+      const emptyText = t('editor.tree.empty', {}, 'システムがありません。<br>「📥 スキャナーから読込」または「➕ システム」を押してください。');
       root.innerHTML = `
         <li class="tree-item" style="padding: 16px 8px; text-align: center; color: var(--color-text-dim);">
           ${emptyText}
@@ -241,9 +235,9 @@ const memoryEditor = (function () {
           ${qkBadge}
         </div>
         <div class="tree-actions">
-          <button class="btn-icon-xs" title="グループ追加" onclick="event.stopPropagation(); memoryEditor.onAddNewGroup(${sys.id})">➕</button>
-          <button class="btn-icon-xs" title="システム編集" onclick="event.stopPropagation(); memoryEditor.onEditSystem(${sys.id})">✏️</button>
-          <button class="btn-icon-xs" title="システム削除" onclick="event.stopPropagation(); memoryEditor.onDeleteSystem(${sys.id})">🗑️</button>
+          <button class="btn-icon-xs" title="${t('editor.tree.addGroupTitle', {}, 'グループ追加')}" onclick="event.stopPropagation(); memoryEditor.onAddNewGroup(${sys.id})">➕</button>
+          <button class="btn-icon-xs" title="${t('editor.tree.editSystemTitle', {}, 'システム編集')}" onclick="event.stopPropagation(); memoryEditor.onEditSystem(${sys.id})">✏️</button>
+          <button class="btn-icon-xs" title="${t('editor.tree.deleteSystemTitle', {}, 'システム削除')}" onclick="event.stopPropagation(); memoryEditor.onDeleteSystem(${sys.id})">🗑️</button>
         </div>
       `;
 
@@ -283,8 +277,8 @@ const memoryEditor = (function () {
               ${grpQkBadge}
             </div>
             <div class="tree-actions">
-              <button class="btn-icon-xs" title="グループ編集" onclick="event.stopPropagation(); memoryEditor.onEditGroup(${sys.id}, ${grp.id})">✏️</button>
-              <button class="btn-icon-xs" title="グループ削除" onclick="event.stopPropagation(); memoryEditor.onDeleteGroup(${sys.id}, ${grp.id})">🗑️</button>
+              <button class="btn-icon-xs" title="${t('editor.tree.editGroupTitle', {}, 'グループ編集')}" onclick="event.stopPropagation(); memoryEditor.onEditGroup(${sys.id}, ${grp.id})">✏️</button>
+              <button class="btn-icon-xs" title="${t('editor.tree.deleteGroupTitle', {}, 'グループ削除')}" onclick="event.stopPropagation(); memoryEditor.onDeleteGroup(${sys.id}, ${grp.id})">🗑️</button>
             </div>
           `;
 
@@ -316,14 +310,14 @@ const memoryEditor = (function () {
     const tbody = document.getElementById('channel-tbody');
     const emptyMsg = document.getElementById('grid-empty-message');
 
-    if (titleEl) titleEl.innerText = `📁 ${sys ? sys.name : (typeof i18n !== 'undefined' ? i18n.t('scanner.system') : 'システム')}`;
-    if (infoEl) infoEl.innerText = typeof i18n !== 'undefined' ? i18n.t('editor.grid.selectGroupNotice') : 'グループを選択するとチャンネルを編集できます。';
+    if (titleEl) titleEl.innerText = `📁 ${sys ? sys.name : t('scanner.system', {}, 'システム')}`;
+    if (infoEl) infoEl.innerText = t('editor.grid.selectGroupNotice', {}, 'グループを選択するとチャンネルを編集できます。');
     if (actionsEl) actionsEl.style.display = 'none';
     if (footerEl) footerEl.style.display = 'none';
     if (tbody) tbody.innerHTML = '';
     if (emptyMsg) {
       emptyMsg.style.display = 'block';
-      emptyMsg.innerText = typeof i18n !== 'undefined' ? i18n.t('editor.grid.selectGroupPrompt') : '左のツリーからグループを選択してください。';
+      emptyMsg.innerText = t('editor.grid.selectGroupPrompt', {}, '左のツリーからグループを選択してください。');
     }
   }
 
@@ -358,11 +352,7 @@ const memoryEditor = (function () {
     if (titleEl) titleEl.innerText = `📂 ${sys ? sys.name : ''} > ${grp.name}`;
     const chnCount = (grp.channels || []).length;
     if (infoEl) {
-      if (typeof i18n !== 'undefined') {
-        infoEl.innerText = i18n.t('editor.grid.channelCount', { count: chnCount });
-      } else {
-        infoEl.innerText = `チャンネル数: ${chnCount}件`;
-      }
+      infoEl.innerText = t('editor.grid.channelCount', { count: chnCount }, `チャンネル数: ${chnCount}件`);
     }
     if (actionsEl) actionsEl.style.display = 'flex';
     if (footerEl) footerEl.style.display = 'flex';
@@ -372,20 +362,14 @@ const memoryEditor = (function () {
     }
 
     if (countEl) {
-      if (typeof i18n !== 'undefined') {
-        countEl.innerText = i18n.t('editor.grid.channelCount', { count: grp.channels.length });
-      } else {
-        countEl.innerText = `${grp.channels.length} チャンネル`;
-      }
+      countEl.innerText = t('editor.tree.groupChannelCount', { count: grp.channels.length }, `${grp.channels.length} チャンネル`);
     }
 
     if (grp.channels.length === 0) {
       if (tbody) tbody.innerHTML = '';
       if (emptyMsg) {
         emptyMsg.style.display = 'block';
-        emptyMsg.innerText = typeof i18n !== 'undefined'
-          ? i18n.t('editor.grid.empty')
-          : 'チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。';
+        emptyMsg.innerText = t('editor.grid.empty', {}, 'チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。');
       }
       return;
     }
@@ -449,8 +433,8 @@ const memoryEditor = (function () {
                  onchange="memoryEditor.onChannelFieldChange(${idx}, 'attenuator', this.checked)">
         </td>
         <td class="col-actions">
-          <button class="btn-icon-xs" title="行複製" onclick="memoryEditor.onDuplicateChannelRow(${idx})">📄</button>
-          <button class="btn-icon-xs" title="行削除" onclick="memoryEditor.onDeleteChannelRow(${idx})">🗑️</button>
+          <button class="btn-icon-xs" title="${t('editor.grid.duplicateRowTitle', {}, '行複製')}" onclick="memoryEditor.onDuplicateChannelRow(${idx})">📄</button>
+          <button class="btn-icon-xs" title="${t('editor.grid.deleteRowTitle', {}, '行削除')}" onclick="memoryEditor.onDeleteChannelRow(${idx})">🗑️</button>
         </td>
       `;
 
@@ -489,7 +473,7 @@ const memoryEditor = (function () {
         if (prog) {
           if (barFill) barFill.style.width = `${prog.percent || 0}%`;
           if (percentEl) percentEl.innerText = `${prog.percent || 0}%`;
-          if (statusTextEl) statusTextEl.innerText = prog.message || '通信中...';
+          if (statusTextEl) statusTextEl.innerText = prog.message || t('editor.dialogs.communicating', {}, '通信中...');
 
           if (!prog.active && (prog.step === 'done' || prog.step === 'error')) {
             clearInterval(progressPollTimer);
@@ -553,7 +537,7 @@ const memoryEditor = (function () {
             updateStats();
           }
         } catch (err) {
-          alert('プログラミングモードへの移行に失敗しました:\n' + err.message);
+          alert(t('editor.dialogs.enterProgModeFailed', { error: err.message }, 'プログラミングモードへの移行に失敗しました:\n' + err.message));
           isEditorMode = false;
         }
       } else {
@@ -656,7 +640,7 @@ const memoryEditor = (function () {
           body: JSON.stringify({ systems: memorySystems }),
         });
       } catch (err) {
-        alert('書き込みエラー: ' + err.message);
+        alert(t('editor.dialogs.writeError', { error: err.message }, '書き込みエラー: ' + err.message));
       } finally {
         if (footer) footer.style.display = 'flex';
       }
@@ -1057,7 +1041,7 @@ const memoryEditor = (function () {
             alert(t('editor.dialogs.invalidJson', {}, '無効なJSON形式です。システムの配列である必要があります。'));
           }
         } catch (err) {
-          alert('JSON読み込みエラー: ' + err.message);
+          alert(t('editor.dialogs.jsonLoadError', { error: err.message }, 'JSON読み込みエラー: ' + err.message));
         }
       };
       reader.readAsText(file);
@@ -1092,7 +1076,7 @@ const memoryEditor = (function () {
             alert(t('editor.dialogs.csvImported', { count: res.count }, `CSVから ${res.count} 件のシステムをインポートしました。`));
           }
         } catch (err) {
-          alert('CSVインポートエラー: ' + err.message);
+          alert(t('editor.dialogs.csvImportError', { error: err.message }, 'CSVインポートエラー: ' + err.message));
         }
       };
       reader.readAsText(file);
@@ -1134,7 +1118,7 @@ const memoryEditor = (function () {
           listEl.appendChild(li);
         });
       } catch (err) {
-        if (listEl) listEl.innerHTML = `<li class="loading error">取得エラー: ${err.message}</li>`;
+        if (listEl) listEl.innerHTML = `<li class="loading error">${t('editor.dialogs.fetchError', { error: err.message }, '取得エラー: ' + err.message)}</li>`;
       }
     },
 
@@ -1160,7 +1144,7 @@ const memoryEditor = (function () {
           alert(t('editor.dialogs.backupRestored', {}, 'バックアップを復元しました。'));
         }
       } catch (err) {
-        alert('復元エラー: ' + err.message);
+        alert(t('editor.dialogs.restoreError', { error: err.message }, '復元エラー: ' + err.message));
       }
     },
   };

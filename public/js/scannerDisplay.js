@@ -81,19 +81,23 @@ const scannerDisplay = (() => {
     updateBadges(el, status);
   }
 
+  /** @type {boolean} 最新の接続状態 */
+  let lastConnectedState = false;
+
   /**
    * 接続状態UIを更新する
    * @param {Object} el - DOM要素
    * @param {boolean} connected - 接続状態
    */
   function updateConnectionStatus(el, connected) {
+    lastConnectedState = connected;
     if (connected) {
       el.statusDot.classList.add('connected');
-      el.connectionText.textContent = '接続中';
+      el.connectionText.textContent = typeof i18n !== 'undefined' ? i18n.t('header.connected') : '接続中';
       el.connectionText.style.color = 'var(--color-accent-green)';
     } else {
       el.statusDot.classList.remove('connected');
-      el.connectionText.textContent = '切断中';
+      el.connectionText.textContent = typeof i18n !== 'undefined' ? i18n.t('header.disconnected') : '切断中';
       el.connectionText.style.color = 'var(--color-accent-red)';
     }
   }
@@ -299,13 +303,14 @@ const scannerDisplay = (() => {
 
     // 先にUIを更新（ユーザーフィードバックを即座に返す）
     isLiveAudioPlaying = true;
-    updateLiveAudioUI(true, '接続中...');
+    updateLiveAudioUI(true, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioConnecting') : '接続中...');
 
     // イベントハンドラーをsrc設定前にセット
     player.onerror = () => {
       if (isLiveAudioPlaying) {
         console.log('[ScannerDisplay] ストリームエラー、3秒後に再接続...');
-        updateLiveAudioUI(true, '再接続中...');
+        const reconnectingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Reconnecting...' : '再接続中...';
+        updateLiveAudioUI(true, reconnectingMsg);
         liveAudioReconnectTimer = setTimeout(() => {
           if (isLiveAudioPlaying) {
             startLiveAudio();
@@ -351,7 +356,7 @@ const scannerDisplay = (() => {
         console.error('[ScannerDisplay] ライブ音声再生エラー:', err.message);
         // ブラウザのautoplayポリシーによるエラーの場合
         isLiveAudioPlaying = false;
-        updateLiveAudioUI(false, 'クリックして再試行');
+        updateLiveAudioUI(false, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioRetry') : 'クリックして再試行');
       });
     }
   }
@@ -456,6 +461,8 @@ const scannerDisplay = (() => {
 
   // 言語切り替えリスナー
   window.addEventListener('languageChanged', () => {
+    const el = getElements();
+    updateConnectionStatus(el, lastConnectedState);
     updateLiveAudioUI(isLiveAudioPlaying);
   });
 

@@ -125,7 +125,10 @@ const recordingPanel = (() => {
    * @param {string} filename - ファイル名
    */
   async function onDelete(filename) {
-    if (!confirm(`「${filename}」を削除しますか？`)) return;
+    const confirmMsg = typeof i18n !== 'undefined'
+      ? i18n.t('recordings.deleteConfirm', { filename })
+      : `「${filename}」を削除しますか？`;
+    if (!confirm(confirmMsg)) return;
 
     try {
       await app.fetchApi(`/recordings/${encodeURIComponent(filename)}`, {
@@ -146,7 +149,10 @@ const recordingPanel = (() => {
       renderList();
     } catch (err) {
       console.error('[RecordingPanel] 削除エラー:', err);
-      alert('削除に失敗しました: ' + err.message);
+      const errMsg = typeof i18n !== 'undefined'
+        ? i18n.t('recordings.deleteFailed', { error: err.message })
+        : `削除に失敗しました: ${err.message}`;
+      alert(errMsg);
     }
   }
 

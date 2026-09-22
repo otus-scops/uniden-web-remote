@@ -96,9 +96,12 @@
     "searchPlaceholder": "🔍 ファイル名で検索...",
     "empty": "録音ファイルはまだありません",
     "nowPlaying": "🔊 再生中",
-    "nowPlayingPrefix": "🔊 再生中: "
+    "nowPlayingPrefix": "🔊 再生中: ",
+    "deleteConfirm": "「{filename}」を削除しますか？",
+    "deleteFailed": "削除に失敗しました: {error}"
   },
   "editor": {
+    "statsInitial": "システム: 0 | グループ: 0 | チャンネル: 0",
     "toolbar": {
       "download": "📥 スキャナーから読込",
       "upload": "📤 スキャナーへ書込",
@@ -113,7 +116,13 @@
       "title": "📂 システム / グループ",
       "addSystem": "➕ システム",
       "loading": "データを読み込んでいます...",
-      "empty": "システムがありません。「📥 スキャナーから読込」または「➕ システム」を押してください。"
+      "empty": "システムがありません。「📥 スキャナーから読込」または「➕ システム」を押してください。",
+      "addGroupTitle": "グループ追加",
+      "editSystemTitle": "システム編集",
+      "deleteSystemTitle": "システム削除",
+      "editGroupTitle": "グループ編集",
+      "deleteGroupTitle": "グループ削除",
+      "groupChannelCount": "{count} チャンネル"
     },
     "grid": {
       "title": "📻 チャンネル一覧",
@@ -134,7 +143,9 @@
       "empty": "チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。",
       "clearAll": "🗑️ 全行削除",
       "excelPaste": "📋 Excel貼り付け",
-      "channelCount": "{count} チャンネル"
+      "channelCount": "チャンネル数: {count}件",
+      "duplicateRowTitle": "行複製",
+      "deleteRowTitle": "行削除"
     },
     "pasteModal": {
       "title": "📋 Excel / テキストから一括貼り付け",
@@ -144,8 +155,10 @@
       "execute": "取り込み実行"
     },
     "progressModal": {
+      "title": "⏳ スキャナーと通信中...",
       "titleReading": "📥 スキャナーから全メモリを読込中...",
       "titleWriting": "📤 スキャナーへメモリ書き込み中...",
+      "preparing": "準備中...",
       "warning": "※通信中はスキャナーの操作を行わないでください。",
       "close": "閉じる"
     },
@@ -180,7 +193,14 @@
       "backupRestored": "バックアップを復元しました。",
       "backupMeta": "日時: {date} | サイズ: {size} KB",
       "prepBackup": "事前バックアップ取得中...",
-      "connecting": "接続・初期化中..."
+      "connecting": "接続・初期化中...",
+      "enterProgModeFailed": "プログラミングモードへの移行に失敗しました:\n{error}",
+      "writeError": "書き込みエラー: {error}",
+      "jsonLoadError": "JSON読み込みエラー: {error}",
+      "csvImportError": "CSVインポートエラー: {error}",
+      "fetchError": "取得エラー: {error}",
+      "restoreError": "復元エラー: {error}",
+      "communicating": "通信中..."
     }
   }
 }

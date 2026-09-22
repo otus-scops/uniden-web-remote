@@ -140,7 +140,8 @@ const controlPanel = (() => {
           previewEl.textContent = res.preview;
         }
       } catch (err) {
-        previewEl.textContent = 'エラー: ' + err.message;
+        const errPrefix = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Error: ' : 'エラー: ';
+        previewEl.textContent = errPrefix + err.message;
       }
     }, 300);
   }
@@ -155,7 +156,8 @@ const controlPanel = (() => {
 
     if (!command) return;
 
-    output.textContent = `> ${command}\n送信中...`;
+    const sendingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Sending...' : '送信中...';
+    output.textContent = `> ${command}\n${sendingMsg}`;
 
     try {
       const result = await app.fetchApi('/scanner/command', {
@@ -166,7 +168,8 @@ const controlPanel = (() => {
       output.textContent = `> ${command}\n< ${result.response}`;
       output.scrollTop = output.scrollHeight;
     } catch (err) {
-      output.textContent = `> ${command}\nエラー: ${err.message}`;
+      const errPrefix = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Error: ' : 'エラー: ';
+      output.textContent = `> ${command}\n${errPrefix}${err.message}`;
     }
 
     input.value = '';
@@ -196,6 +199,14 @@ const controlPanel = (() => {
       toggle.checked = status.autoRecordEnabled;
     }
   }
+
+  // 言語切り替え時に待機中テキスト等を同期
+  window.addEventListener('languageChanged', () => {
+    const output = document.getElementById('command-output');
+    if (output && (output.textContent === '待機中...' || output.textContent === 'Waiting...')) {
+      output.textContent = typeof i18n !== 'undefined' ? i18n.t('control.waiting') : '待機中...';
+    }
+  });
 
   // 公開API
   return {
