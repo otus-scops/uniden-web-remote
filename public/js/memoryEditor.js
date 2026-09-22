@@ -21,6 +21,24 @@ const memoryEditor = (function () {
   let progressPollTimer = null;
 
   /**
+   * 多言語翻訳ヘルパー
+   * @param {string} key
+   * @param {Object} [params]
+   * @param {string} [fallback]
+   * @returns {string}
+   */
+  function t(key, params = {}, fallback = '') {
+    if (typeof i18n !== 'undefined') {
+      const res = i18n.t(key, params);
+      if (res !== key) return res;
+    }
+    if (params && typeof params === 'object') {
+      return fallback.replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined ? params[k] : m));
+    }
+    return fallback || key;
+  }
+
+  /**
    * 主要なCTCSS/DCSトーンリスト（セレクトボックス用）
    */
   const COMMON_TONES = [
@@ -569,10 +587,10 @@ const memoryEditor = (function () {
       const percentEl = document.getElementById('progress-percent');
       const statusTextEl = document.getElementById('progress-status-text');
 
-      if (title) title.innerText = '📥 スキャナーから全メモリを読込中...';
+      if (title) title.innerText = t('editor.progressModal.titleReading', {}, '📥 スキャナーから全メモリを読込中...');
       if (barFill) barFill.style.width = '0%';
       if (percentEl) percentEl.innerText = '0%';
-      if (statusTextEl) statusTextEl.innerText = '接続・初期化中...';
+      if (statusTextEl) statusTextEl.innerText = t('editor.dialogs.connecting', {}, '接続・初期化中...');
       if (footer) footer.style.display = 'none';
       if (modal) modal.classList.remove('hidden');
 
@@ -593,7 +611,7 @@ const memoryEditor = (function () {
           }
         }
       } catch (err) {
-        alert('メモリ読み出し失敗: ' + err.message);
+        alert(err.message);
       } finally {
         if (footer) footer.style.display = 'flex';
       }
@@ -604,15 +622,16 @@ const memoryEditor = (function () {
      */
     async onUploadToScanner() {
       if (memorySystems.length === 0) {
-        alert('書き込むシステムデータがありません。');
+        alert(t('editor.dialogs.noSystemData', {}, '書き込むシステムデータがありません。'));
         return;
       }
 
-      const confirmed = confirm(
-        '【警告】スキャナーの既存メモリを上書きします。\n' +
-          '※安全のため、実行前に現在の実機メモリがローカルに自動バックアップされます。\n\n' +
-          '書き込みを実行しますか？'
+      const warnMsg = t(
+        'editor.dialogs.uploadWarning',
+        {},
+        '【警告】スキャナーの既存メモリを上書きします。\n※安全のため、実行前に現在の実機メモリがローカルに自動バックアップされます。\n\n書き込みを実行しますか？'
       );
+      const confirmed = confirm(warnMsg);
       if (!confirmed) return;
 
       const modal = document.getElementById('modal-progress');
@@ -622,10 +641,10 @@ const memoryEditor = (function () {
       const percentEl = document.getElementById('progress-percent');
       const statusTextEl = document.getElementById('progress-status-text');
 
-      if (title) title.innerText = '📤 スキャナーへメモリ書き込み中...';
+      if (title) title.innerText = t('editor.progressModal.titleWriting', {}, '📤 スキャナーへメモリ書き込み中...');
       if (barFill) barFill.style.width = '0%';
       if (percentEl) percentEl.innerText = '0%';
-      if (statusTextEl) statusTextEl.innerText = '事前バックアップ取得中...';
+      if (statusTextEl) statusTextEl.innerText = t('editor.dialogs.prepBackup', {}, '事前バックアップ取得中...');
       if (footer) footer.style.display = 'none';
       if (modal) modal.classList.remove('hidden');
 
@@ -683,7 +702,7 @@ const memoryEditor = (function () {
     onAddChannelRow() {
       const grp = getCurrentGroup();
       if (!grp) {
-        alert('先に左のツリーからグループを選択してください。');
+        alert(t('editor.dialogs.selectGroupFirst', {}, '先に左のツリーからグループを選択してください。'));
         return;
       }
 
@@ -747,7 +766,8 @@ const memoryEditor = (function () {
       const grp = getCurrentGroup();
       if (!grp || !grp.channels || grp.channels.length === 0) return;
 
-      if (confirm(`グループ「${grp.name}」の全 ${grp.channels.length} チャンネルを削除しますか？`)) {
+      const msg = t('editor.dialogs.clearGroupConfirm', { name: grp.name, count: grp.channels.length }, `グループ「${grp.name}」の全 ${grp.channels.length} チャンネルを削除しますか？`);
+      if (confirm(msg)) {
         grp.channels = [];
         renderChannelTable();
         updateStats();
@@ -759,7 +779,7 @@ const memoryEditor = (function () {
     onOpenPasteModal() {
       const grp = getCurrentGroup();
       if (!grp) {
-        alert('先にグループを選択してください。');
+        alert(t('editor.dialogs.selectGroupFirst', {}, '先にグループを選択してください。'));
         return;
       }
       const modal = document.getElementById('modal-paste');
@@ -779,7 +799,7 @@ const memoryEditor = (function () {
 
       const textarea = document.getElementById('paste-textarea');
       if (!textarea || !textarea.value.trim()) {
-        alert('テキストを入力してください。');
+        alert(t('editor.dialogs.enterText', {}, 'テキストを入力してください。'));
         return;
       }
 
@@ -852,16 +872,16 @@ const memoryEditor = (function () {
       this.onClosePasteModal();
       renderChannelTable();
       updateStats();
-      alert(`${count} 件のチャンネルを追加しました。`);
+      alert(t('editor.dialogs.channelsAdded', { count }, `${count} 件のチャンネルを追加しました。`));
     },
 
     // --- システム / グループ 操作 ---
 
     onAddNewSystem() {
-      const name = prompt('新規システム名を入力してください:', 'Airband');
+      const name = prompt(t('editor.dialogs.newSystemName', {}, '新規システム名を入力してください:'), 'Airband');
       if (!name) return;
 
-      const qkStr = prompt('クイックキー (0-99、未設定は空欄):', '');
+      const qkStr = prompt(t('editor.dialogs.quickKeyPrompt', {}, 'クイックキー (0-99、未設定は空欄):'), '');
       const quickKey = qkStr && !isNaN(parseInt(qkStr, 10)) ? parseInt(qkStr, 10) : null;
 
       const newSysId = Date.now() + Math.floor(Math.random() * 1000);
@@ -896,10 +916,10 @@ const memoryEditor = (function () {
       const sys = memorySystems.find((s) => String(s.id) === String(sysId));
       if (!sys) return;
 
-      const newName = prompt('システム名を編集:', sys.name);
+      const newName = prompt(t('editor.dialogs.editSystemName', {}, 'システム名を編集:'), sys.name);
       if (newName !== null) sys.name = newName.substring(0, 16);
 
-      const qkStr = prompt('クイックキー (0-99、未設定は空欄):', sys.quickKey !== null ? sys.quickKey : '');
+      const qkStr = prompt(t('editor.dialogs.quickKeyPrompt', {}, 'クイックキー (0-99、未設定は空欄):'), sys.quickKey !== null ? sys.quickKey : '');
       if (qkStr !== null) {
         sys.quickKey = qkStr.trim() !== '' && !isNaN(parseInt(qkStr, 10)) ? parseInt(qkStr, 10) : null;
       }
@@ -911,7 +931,8 @@ const memoryEditor = (function () {
       const sys = memorySystems.find((s) => String(s.id) === String(sysId));
       if (!sys) return;
 
-      if (confirm(`システム「${sys.name}」とその中の全グループ・チャンネルを削除しますか？`)) {
+      const msg = t('editor.dialogs.deleteSystemConfirm', { name: sys.name }, `システム「${sys.name}」とその中の全グループ・チャンネルを削除しますか？`);
+      if (confirm(msg)) {
         memorySystems = memorySystems.filter((s) => String(s.id) !== String(sysId));
         if (String(selectedSystemId) === String(sysId)) {
           selectedSystemId = null;
@@ -927,10 +948,11 @@ const memoryEditor = (function () {
       const sys = memorySystems.find((s) => String(s.id) === String(sysId));
       if (!sys) return;
 
-      const name = prompt(`システム「${sys.name}」に追加するグループ名:`, 'Tower');
+      const promptMsg = t('editor.dialogs.newGroupName', { sysName: sys.name }, `システム「${sys.name}」に追加するグループ名:`);
+      const name = prompt(promptMsg, 'Tower');
       if (!name) return;
 
-      const qkStr = prompt('グループクイックキー (1-10、未設定は空欄):', '');
+      const qkStr = prompt(t('editor.dialogs.groupQuickKeyPrompt', {}, 'グループクイックキー (1-10、未設定は空欄):'), '');
       const quickKey = qkStr && !isNaN(parseInt(qkStr, 10)) ? parseInt(qkStr, 10) : null;
 
       const newGrpId = Date.now() + Math.floor(Math.random() * 1000);
@@ -958,10 +980,10 @@ const memoryEditor = (function () {
       const grp = sys.groups.find((g) => String(g.id) === String(grpId));
       if (!grp) return;
 
-      const newName = prompt('グループ名を編集:', grp.name);
+      const newName = prompt(t('editor.dialogs.editGroupName', {}, 'グループ名を編集:'), grp.name);
       if (newName !== null) grp.name = newName.substring(0, 16);
 
-      const qkStr = prompt('グループクイックキー (1-10、未設定は空欄):', grp.quickKey !== null ? grp.quickKey : '');
+      const qkStr = prompt(t('editor.dialogs.groupQuickKeyPrompt', {}, 'グループクイックキー (1-10、未設定は空欄):'), grp.quickKey !== null ? grp.quickKey : '');
       if (qkStr !== null) {
         grp.quickKey = qkStr.trim() !== '' && !isNaN(parseInt(qkStr, 10)) ? parseInt(qkStr, 10) : null;
       }
@@ -984,7 +1006,8 @@ const memoryEditor = (function () {
       const grp = sys.groups.find((g) => String(g.id) === String(grpId));
       if (!grp) return;
 
-      if (confirm(`グループ「${grp.name}」とそのチャンネルを削除しますか？`)) {
+      const msg = t('editor.dialogs.deleteGroupConfirm', { name: grp.name }, `グループ「${grp.name}」とそのチャンネルを削除しますか？`);
+      if (confirm(msg)) {
         sys.groups = sys.groups.filter((g) => String(g.id) !== String(grpId));
         if (String(selectedGroupId) === String(grpId)) {
           selectedGroupId = null;
@@ -999,7 +1022,7 @@ const memoryEditor = (function () {
 
     onExportJson() {
       if (memorySystems.length === 0) {
-        alert('保存するデータがありません。');
+        alert(t('editor.dialogs.noDataToSave', {}, '保存するデータがありません。'));
         return;
       }
       const dataStr = JSON.stringify(memorySystems, null, 2);
@@ -1029,9 +1052,9 @@ const memoryEditor = (function () {
             if (memorySystems.length > 0 && memorySystems[0].groups && memorySystems[0].groups.length > 0) {
               selectGroup(memorySystems[0].id, memorySystems[0].groups[0].id);
             }
-            alert('JSONデータを読み込みました。');
+            alert(t('editor.dialogs.jsonLoaded', {}, 'JSONデータを読み込みました。'));
           } else {
-            alert('無効なJSON形式です。システムの配列である必要があります。');
+            alert(t('editor.dialogs.invalidJson', {}, '無効なJSON形式です。システムの配列である必要があります。'));
           }
         } catch (err) {
           alert('JSON読み込みエラー: ' + err.message);
@@ -1066,7 +1089,7 @@ const memoryEditor = (function () {
             if (memorySystems.length > 0 && memorySystems[0].groups && memorySystems[0].groups.length > 0) {
               selectGroup(memorySystems[0].id, memorySystems[0].groups[0].id);
             }
-            alert(`CSVから ${res.count} 件のシステムをインポートしました。`);
+            alert(t('editor.dialogs.csvImported', { count: res.count }, `CSVから ${res.count} 件のシステムをインポートしました。`));
           }
         } catch (err) {
           alert('CSVインポートエラー: ' + err.message);
@@ -1082,12 +1105,12 @@ const memoryEditor = (function () {
       const modal = document.getElementById('modal-backups');
       const listEl = document.getElementById('backups-list');
       if (modal) modal.classList.remove('hidden');
-      if (listEl) listEl.innerHTML = '<li class="loading">バックアップ履歴を取得中...</li>';
+      if (listEl) listEl.innerHTML = `<li class="loading">${t('editor.backupsModal.loading', {}, 'バックアップ履歴を取得中...')}</li>`;
 
       try {
         const backups = await app.fetchApi('/memory/backups');
         if (!backups || backups.length === 0) {
-          if (listEl) listEl.innerHTML = '<li class="loading">バックアップ履歴はありません</li>';
+          if (listEl) listEl.innerHTML = `<li class="loading">${t('editor.backupsModal.empty', {}, 'バックアップ履歴はありません')}</li>`;
           return;
         }
 
@@ -1095,15 +1118,18 @@ const memoryEditor = (function () {
         backups.forEach((b) => {
           const li = document.createElement('li');
           li.className = 'backup-item';
-          const dateStr = new Date(b.updatedAt).toLocaleString('ja-JP');
+          const localeCode = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'en-US' : 'ja-JP';
+          const dateStr = new Date(b.updatedAt).toLocaleString(localeCode);
           const sizeKb = (b.size / 1024).toFixed(1);
+          const metaText = t('editor.dialogs.backupMeta', { date: dateStr, size: sizeKb }, `日時: ${dateStr} | サイズ: ${sizeKb} KB`);
+          const restoreText = t('editor.backupsModal.restore', {}, '復元');
 
           li.innerHTML = `
             <div class="backup-info">
               <span class="backup-name">${escapeHtml(b.filename)}</span>
-              <span class="backup-date">日時: ${dateStr} | サイズ: ${sizeKb} KB</span>
+              <span class="backup-date">${escapeHtml(metaText)}</span>
             </div>
-            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onRestoreBackup('${b.filename}')">復元</button>
+            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onRestoreBackup('${b.filename}')">${escapeHtml(restoreText)}</button>
           `;
           listEl.appendChild(li);
         });
@@ -1118,7 +1144,8 @@ const memoryEditor = (function () {
     },
 
     async onRestoreBackup(filename) {
-      if (!confirm(`バックアップ「${filename}」をエディタに復元しますか？`)) return;
+      const confirmMsg = t('editor.dialogs.restoreBackupConfirm', { name: filename }, `バックアップ「${filename}」をエディタに復元しますか？`);
+      if (!confirm(confirmMsg)) return;
 
       try {
         const data = await app.fetchApi(`/memory/backups/${encodeURIComponent(filename)}`);
@@ -1130,7 +1157,7 @@ const memoryEditor = (function () {
             selectGroup(memorySystems[0].id, memorySystems[0].groups[0].id);
           }
           this.onCloseBackupsModal();
-          alert('バックアップを復元しました。');
+          alert(t('editor.dialogs.backupRestored', {}, 'バックアップを復元しました。'));
         }
       } catch (err) {
         alert('復元エラー: ' + err.message);

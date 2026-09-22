@@ -156,6 +156,31 @@
       "empty": "バックアップ履歴はありません",
       "restore": "復元",
       "close": "閉じる"
+    },
+    "dialogs": {
+      "noSystemData": "書き込むシステムデータがありません。",
+      "uploadWarning": "【警告】スキャナーの既存メモリを上書きします。\n※安全のため、実行前に現在の実機メモリがローカルに自動バックアップされます。\n\n書き込みを実行しますか？",
+      "selectGroupFirst": "先に左のツリーからグループを選択してください。",
+      "clearGroupConfirm": "グループ「{name}」の全 {count} チャンネルを削除しますか？",
+      "enterText": "テキストを入力してください。",
+      "channelsAdded": "{count} 件のチャンネルを追加しました。",
+      "newSystemName": "新規システム名を入力してください:",
+      "quickKeyPrompt": "クイックキー (0-99、未設定は空欄):",
+      "editSystemName": "システム名を編集:",
+      "deleteSystemConfirm": "システム「{name}」とその中の全グループ・チャンネルを削除しますか？",
+      "newGroupName": "システム「{sysName}」に追加するグループ名:",
+      "groupQuickKeyPrompt": "グループクイックキー (1-10、未設定は空欄):",
+      "editGroupName": "グループ名を編集:",
+      "deleteGroupConfirm": "グループ「{name}」とそのチャンネルを削除しますか？",
+      "noDataToSave": "保存するデータがありません。",
+      "jsonLoaded": "JSONデータを読み込みました。",
+      "invalidJson": "無効なJSON形式です。システムの配列である必要があります。",
+      "csvImported": "CSVから {count} 件のシステムをインポートしました。",
+      "restoreBackupConfirm": "バックアップ「{name}」をエディタに復元しますか？",
+      "backupRestored": "バックアップを復元しました。",
+      "backupMeta": "日時: {date} | サイズ: {size} KB",
+      "prepBackup": "事前バックアップ取得中...",
+      "connecting": "接続・初期化中..."
     }
   }
 }

@@ -150,12 +150,37 @@
       "close": "Close"
     },
     "backupsModal": {
-      "title": "🛡️ Auto Backup History",
-      "hint": "List of automatic backups created before writing to scanner. Select a backup to restore.",
-      "loading": "Loading backup history...",
+      "title": "🛡️ Automatic Backup History",
+      "hint": "List of automatic backups created before writing to the scanner. You can restore any snapshot.",
+      "loading": "Loading history...",
       "empty": "No backup history found",
       "restore": "Restore",
       "close": "Close"
+    },
+    "dialogs": {
+      "noSystemData": "No system data to write.",
+      "uploadWarning": "[WARNING] This will overwrite existing scanner memory.\n* For safety, an automatic local backup of the current memory will be taken before execution.\n\nDo you want to proceed?",
+      "selectGroupFirst": "Please select a group from the left tree first.",
+      "clearGroupConfirm": "Delete all {count} channels in group \"{name}\"?",
+      "enterText": "Please enter text.",
+      "channelsAdded": "Added {count} channels.",
+      "newSystemName": "Enter new system name:",
+      "quickKeyPrompt": "Quick Key (0-99, leave empty for none):",
+      "editSystemName": "Edit system name:",
+      "deleteSystemConfirm": "Delete system \"{name}\" and all its groups and channels?",
+      "newGroupName": "New group name for system \"{sysName}\":",
+      "groupQuickKeyPrompt": "Group Quick Key (1-10, leave empty for none):",
+      "editGroupName": "Edit group name:",
+      "deleteGroupConfirm": "Delete group \"{name}\" and its channels?",
+      "noDataToSave": "No data to save.",
+      "jsonLoaded": "JSON data loaded successfully.",
+      "invalidJson": "Invalid JSON format. Must be an array of systems.",
+      "csvImported": "Imported {count} systems from CSV.",
+      "restoreBackupConfirm": "Restore backup \"{name}\" to the editor?",
+      "backupRestored": "Backup restored successfully.",
+      "backupMeta": "Date: {date} | Size: {size} KB",
+      "prepBackup": "Creating safety backup...",
+      "connecting": "Connecting & initializing..."
     }
   }
 }
