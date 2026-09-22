@@ -1,38 +1,38 @@
 /**
- * @fileoverview 操作パネルモジュール
- * @description スキャン制御、キーシミュレーション、録音設定、コマンドコンソールのUIを管理する
+ * @fileoverview Control Panel Module
+ * @description Manages scan control, keypad simulation, recording settings, and command console UI
  */
 
 /**
- * 操作パネルUI管理
+ * Control Panel UI controller
  */
 const controlPanel = (() => {
   /**
-   * スキャンボタン押下時の処理
+   * Handle Scan button click
    */
   async function onScan() {
     try {
       await app.fetchApi('/scanner/scan', { method: 'POST' });
     } catch (err) {
-      console.error('[ControlPanel] スキャンコマンドエラー:', err);
+      console.error('[ControlPanel] Scan command error:', err);
     }
   }
 
   /**
-   * ホールドボタン押下時の処理
+   * Handle Hold button click
    */
   async function onHold() {
     try {
       await app.fetchApi('/scanner/hold', { method: 'POST' });
     } catch (err) {
-      console.error('[ControlPanel] ホールドコマンドエラー:', err);
+      console.error('[ControlPanel] Hold command error:', err);
     }
   }
 
   /**
-   * キープレスシミュレーション
-   * @param {string} key - キー名
-   * @param {string} action - アクション（P/H/R）
+   * Simulate key press action
+   * @param {string} key - Key name identifier
+   * @param {string} action - Key action ('P' for Press, 'H' for Hold, 'R' for Release)
    */
   async function onKey(key, action) {
     try {
@@ -41,13 +41,13 @@ const controlPanel = (() => {
         body: JSON.stringify({ key, action }),
       });
     } catch (err) {
-      console.error('[ControlPanel] キーコマンドエラー:', err);
+      console.error('[ControlPanel] Key command error:', err);
     }
   }
 
   /**
-   * 自動録音トグルの変更処理
-   * @param {boolean} checked - チェック状態
+   * Handle auto-record toggle switch change
+   * @param {boolean} checked - Checkbox state
    */
   async function onToggleAutoRecord(checked) {
     try {
@@ -58,12 +58,12 @@ const controlPanel = (() => {
         }),
       });
     } catch (err) {
-      console.error('[ControlPanel] 設定更新エラー:', err);
+      console.error('[ControlPanel] Config update error:', err);
     }
   }
 
   /**
-   * スキャナー音量の変更処理
+   * Handle scanner hardware volume change
    * @param {number} level - 0-15
    */
   async function onVolumeChange(level) {
@@ -74,12 +74,12 @@ const controlPanel = (() => {
       });
       document.getElementById('vol-level-display').textContent = level;
     } catch (err) {
-      console.error('[ControlPanel] 音量変更エラー:', err);
+      console.error('[ControlPanel] Volume change error:', err);
     }
   }
 
   /**
-   * スキャナースケルチの変更処理
+   * Handle scanner hardware squelch change
    * @param {number} level - 0-15
    */
   async function onSquelchChange(level) {
@@ -90,16 +90,16 @@ const controlPanel = (() => {
       });
       document.getElementById('sql-level-display').textContent = level;
     } catch (err) {
-      console.error('[ControlPanel] スケルチ変更エラー:', err);
+      console.error('[ControlPanel] Squelch change error:', err);
     }
   }
 
-  /** @type {number} プレビュー用デバウンスタイマーID */
+  /** @type {number|null} Debounce timer ID for filename template preview */
   let previewTimeoutId = null;
 
   /**
-   * ファイル名テンプレート変更処理
-   * @param {string} template - 新しいテンプレート文字列
+   * Handle filename template input change
+   * @param {string} template - New template string
    */
   async function onTemplateChange(template) {
     try {
@@ -110,13 +110,13 @@ const controlPanel = (() => {
         }),
       });
     } catch (err) {
-      console.error('[ControlPanel] テンプレート更新エラー:', err);
+      console.error('[ControlPanel] Template update error:', err);
     }
   }
 
   /**
-   * テンプレートプレビューの更新
-   * @param {string} template - テンプレート文字列
+   * Update filename template preview with debouncing
+   * @param {string} template - Template pattern string
    */
   function onTemplatePreview(template) {
     if (previewTimeoutId) {
@@ -147,7 +147,7 @@ const controlPanel = (() => {
   }
 
   /**
-   * コマンド送信処理
+   * Send custom raw serial command
    */
   async function onSendCommand() {
     const input = document.getElementById('command-input');
@@ -177,8 +177,8 @@ const controlPanel = (() => {
   }
 
   /**
-   * コマンドレスポンス受信処理
-   * @param {Object} data - レスポンスデータ
+   * Handle incoming command response from WebSocket
+   * @param {Object} data - Response payload
    */
   function onCommandResponse(data) {
     const output = document.getElementById('command-output');
@@ -189,18 +189,18 @@ const controlPanel = (() => {
   }
 
   /**
-   * ステータス更新時の処理
-   * @param {Object} status - スキャナーステータス
+   * Handle status updates from WebSocket
+   * @param {Object} status - Scanner status
    */
   function onStatusUpdate(status) {
-    // 自動録音トグルの同期
+    // Synchronize auto-record toggle switch
     const toggle = document.querySelector('#toggle-auto-record input');
     if (toggle && status.autoRecordEnabled !== undefined) {
       toggle.checked = status.autoRecordEnabled;
     }
   }
 
-  // 言語切り替え時に待機中テキスト等を同期
+  // Synchronize waiting text on language change
   window.addEventListener('languageChanged', () => {
     const output = document.getElementById('command-output');
     if (output && (output.textContent === '待機中...' || output.textContent === 'Waiting...')) {
@@ -208,7 +208,7 @@ const controlPanel = (() => {
     }
   });
 
-  // 公開API
+  // Public API
   return {
     onScan,
     onHold,

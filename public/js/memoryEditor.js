@@ -1,27 +1,27 @@
 /**
- * @fileoverview 本格スプレッドシート型メモリエディタ フロントエンドロジック (Vanilla JS)
- * @description システム・グループ階層ツリーナビゲーション、スプレッドシート型チャンネル一覧編集、
- * Excel/TSV一括貼り付け、実機DMA同期、自動バックアップ復元、JSON/CSV入出力
+ * @fileoverview Spreadsheet-style Memory Editor Frontend Logic (Vanilla JS)
+ * @description System/Group hierarchy navigation, spreadsheet grid channel editing,
+ * Excel/TSV batch paste, hardware DMA sync, automated backup/restore, JSON/CSV I/O
  */
 
 const memoryEditor = (function () {
-  /** @type {Array<Object>} メモリ構造データ (システム配列) */
+  /** @type {Array<Object>} Memory structure data (array of Systems) */
   let memorySystems = [];
 
-  /** @type {number|string|null} 現在選択中のシステムID */
+  /** @type {number|string|null} Currently selected System ID */
   let selectedSystemId = null;
 
-  /** @type {number|string|null} 現在選択中のグループID */
+  /** @type {number|string|null} Currently selected Group ID */
   let selectedGroupId = null;
 
-  /** @type {boolean} エディタモード中フラグ */
+  /** @type {boolean} Editor mode active flag */
   let isEditorMode = false;
 
-  /** @type {number|null} 進捗ポーリング用タイマー */
+  /** @type {number|null} Progress polling timer ID */
   let progressPollTimer = null;
 
   /**
-   * 多言語翻訳ヘルパー
+   * Multi-language translation helper with fallback
    * @param {string} key
    * @param {Object} [params]
    * @param {string} [fallback]
@@ -39,12 +39,12 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 主要なCTCSS/DCSトーンリスト（セレクトボックス用）
+   * Standard CTCSS/DCS tone list for dropdown options
    */
   const COMMON_TONES = [
     'None / All',
     'Search',
-    // 代表的なCTCSSトーン
+    // Standard CTCSS tones
     'CTCSS 67.0Hz',
     'CTCSS 71.9Hz',
     'CTCSS 77.0Hz',
@@ -79,7 +79,7 @@ const memoryEditor = (function () {
     'CTCSS 241.8Hz',
     'CTCSS 250.3Hz',
     'CTCSS 254.1Hz',
-    // 代表的なDCSコード
+    // Standard DCS codes
     'DCS 023',
     'DCS 025',
     'DCS 026',
@@ -145,7 +145,7 @@ const memoryEditor = (function () {
   ];
 
   /**
-   * 現在選択中のグループオブジェクトを取得
+   * Get currently selected Group object
    * @returns {Object|null}
    */
   function getCurrentGroup() {
@@ -156,7 +156,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 現在選択中のシステムオブジェクトを取得
+   * Get currently selected System object
    * @returns {Object|null}
    */
   function getCurrentSystem() {
@@ -165,7 +165,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 統計情報（システム数、グループ数、チャンネル数）を更新表示する
+   * Update header stats display (systems, groups, channels)
    */
   function updateStats() {
     let sysCount = memorySystems.length;
@@ -190,7 +190,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 左ペインの階層ツリービューを描画する
+   * Render left pane hierarchical tree view
    */
   function renderTree() {
     const root = document.getElementById('memory-tree');
@@ -243,7 +243,7 @@ const memoryEditor = (function () {
 
       sysLi.appendChild(sysRow);
 
-      // グループサブツリー
+      // Group subtree
       if (Array.isArray(sys.groups) && sys.groups.length > 0) {
         const grpUl = document.createElement('ul');
         grpUl.className = 'tree-children';
@@ -294,7 +294,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * システムを選択する
+   * Select a System in the hierarchy tree
    * @param {number|string} sysId
    */
   function selectSystem(sysId) {
@@ -322,7 +322,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * グループを選択し、そのチャンネル一覧スプレッドシートを描画する
+   * Select a Group and render its channel spreadsheet grid
    * @param {number|string} sysId
    * @param {number|string} grpId
    */
@@ -334,7 +334,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 選択中グループのチャンネル一覧スプレッドシートを描画する
+   * Render channel spreadsheet grid for currently selected group
    */
   function renderChannelTable() {
     const sys = getCurrentSystem();
@@ -383,19 +383,19 @@ const memoryEditor = (function () {
       const tr = document.createElement('tr');
       tr.dataset.index = idx;
 
-      // モジュレーション選択肢
+      // Modulation dropdown options
       const mods = ['AUTO', 'AM', 'FM', 'NFM', 'WFM', 'FMB'];
       const modOptions = mods
         .map((m) => `<option value="${m}" ${chn.modulation === m ? 'selected' : ''}>${m}</option>`)
         .join('');
 
-      // トーン選択肢
+      // Tone dropdown options
       const currentTone = chn.tone || 'None / All';
       let toneOptions = COMMON_TONES.map(
         (t) => `<option value="${t}" ${t === currentTone ? 'selected' : ''}>${t}</option>`
       ).join('');
 
-      // もしカスタムトーンがあれば追加
+      // Prepend custom tone if not in standard list
       if (!COMMON_TONES.includes(currentTone)) {
         toneOptions = `<option value="${escapeHtml(currentTone)}" selected>${escapeHtml(currentTone)}</option>` + toneOptions;
       }
@@ -443,7 +443,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * HTMLエスケープユーティリティ
+   * HTML entity escaping utility
    * @param {string} str
    * @returns {string}
    */
@@ -458,7 +458,7 @@ const memoryEditor = (function () {
   }
 
   /**
-   * 進捗ポーリングを開始する
+   * Start polling progress API during hardware sync
    */
   function startProgressPolling() {
     if (progressPollTimer) clearInterval(progressPollTimer);
@@ -483,17 +483,17 @@ const memoryEditor = (function () {
           }
         }
       } catch {
-        // 無視
+        // Ignore errors
       }
     }, 400);
   }
 
   return {
     /**
-     * 初期化処理
+     * Module initialization
      */
     async init() {
-      // 言語変更時にツリー・スプレッドシート・統計を即座に再描画
+      // Re-render tree, grid, and stats immediately on language change
       window.addEventListener('languageChanged', () => {
         if (isEditorMode) {
           renderTree();
@@ -508,7 +508,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * エディタモードのトグル（app.jsから呼ばれる）
+     * Toggle editor mode UI (called from app.js)
      */
     async toggleMode() {
       isEditorMode = !isEditorMode;
@@ -529,7 +529,7 @@ const memoryEditor = (function () {
             btn.classList.replace('btn-primary', 'btn-warning');
           }
 
-          // 初回ロード（メモリが空なら実機またはモックから読み出し）
+          // Initial load: fetch from scanner or mock if empty
           if (memorySystems.length === 0) {
             this.onDownloadFromScanner();
           } else {
@@ -558,10 +558,10 @@ const memoryEditor = (function () {
       }
     },
 
-    // --- 実機同期 (Download / Upload) ---
+    // --- Hardware Synchronization (Download / Upload) ---
 
     /**
-     * スキャナーから全メモリをダウンロードする
+     * Download all memory systems from physical scanner hardware
      */
     async onDownloadFromScanner() {
       const modal = document.getElementById('modal-progress');
@@ -587,7 +587,7 @@ const memoryEditor = (function () {
           renderTree();
           updateStats();
 
-          // 最初のグループがあれば自動選択
+          // Auto-select first group if available
           if (memorySystems.length > 0 && memorySystems[0].groups && memorySystems[0].groups.length > 0) {
             selectGroup(memorySystems[0].id, memorySystems[0].groups[0].id);
           } else if (memorySystems.length > 0) {
@@ -602,7 +602,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * 全メモリをスキャナーへ書き込む
+     * Write all memory systems to physical scanner hardware
      */
     async onUploadToScanner() {
       if (memorySystems.length === 0) {
@@ -647,17 +647,17 @@ const memoryEditor = (function () {
     },
 
     /**
-     * プログレスモーダルを閉じる
+     * Close hardware progress modal
      */
     onCloseProgressModal() {
       const modal = document.getElementById('modal-progress');
       if (modal) modal.classList.add('hidden');
     },
 
-    // --- チャンネルスプレッドシート編集 ---
+    // --- Channel Spreadsheet Grid Editing ---
 
     /**
-     * チャンネルの各フィールド値変更ハンドラ
+     * Handle inline edits in channel spreadsheet grid cell
      * @param {number} chnIdx
      * @param {string} field
      * @param {any} value
@@ -669,7 +669,7 @@ const memoryEditor = (function () {
       const chn = grp.channels[chnIdx];
       chn[field] = value;
 
-      // 周波数フォーマットの微調整
+      // Frequency formatting normalization
       if (field === 'frequency') {
         const num = parseFloat(value);
         if (!isNaN(num)) {
@@ -681,7 +681,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * チャンネル行追加
+     * Add new channel row to current group
      */
     onAddChannelRow() {
       const grp = getCurrentGroup();
@@ -713,7 +713,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * チャンネル行複製
+     * Duplicate specified channel row
      * @param {number} idx
      */
     onDuplicateChannelRow(idx) {
@@ -731,7 +731,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * チャンネル行削除
+     * Delete specified channel row
      * @param {number} idx
      */
     onDeleteChannelRow(idx) {
@@ -744,7 +744,7 @@ const memoryEditor = (function () {
     },
 
     /**
-     * 選択中グループの全チャンネルをクリア
+     * Clear all channels in current group
      */
     onClearCurrentChannels() {
       const grp = getCurrentGroup();
@@ -758,7 +758,7 @@ const memoryEditor = (function () {
       }
     },
 
-    // --- Excel / クリップボード一括貼り付け ---
+    // --- Excel / Clipboard Batch Paste ---
 
     onOpenPasteModal() {
       const grp = getCurrentGroup();
@@ -796,7 +796,7 @@ const memoryEditor = (function () {
       for (const line of lines) {
         if (!line.trim()) continue;
 
-        // タブ区切りまたはカンマ区切りで分解
+        // Split lines by tab or comma delimiter
         const delimiter = line.includes('\t') ? '\t' : ',';
         const parts = line.split(delimiter).map((p) => p.trim().replace(/^"(.*)"$/, '$1'));
 
@@ -807,7 +807,7 @@ const memoryEditor = (function () {
         let mod = 'AUTO';
         let tone = 'None / All';
 
-        // 判定: 数字や周波数パターンを探す
+        // Detect column order by scanning for frequency patterns
         for (let i = 0; i < parts.length; i++) {
           const val = parts[i];
           if (/^\d{2,4}\.\d{1,4}$/.test(val) || (/^\d{5,8}$/.test(val) && parseFloat(val) > 250000)) {
@@ -824,14 +824,14 @@ const memoryEditor = (function () {
         }
 
         if (!freq && parts[0]) {
-          // 最初の列が周波数の場合
+          // Handle case where column 0 is frequency
           freq = parts[0];
           name = parts[1] || `Ch ${grp.channels.length + 1}`;
         }
 
         if (!name) name = `Ch ${grp.channels.length + 1}`;
 
-        // 周波数のフォーマット正規化
+        // Normalize frequency format
         const freqNum = parseFloat(freq);
         if (!isNaN(freqNum)) {
           freq = freqNum.toFixed(4);
@@ -859,7 +859,7 @@ const memoryEditor = (function () {
       alert(t('editor.dialogs.channelsAdded', { count }, `${count} 件のチャンネルを追加しました。`));
     },
 
-    // --- システム / グループ 操作 ---
+    // --- System & Group Operations ---
 
     onAddNewSystem() {
       const name = prompt(t('editor.dialogs.newSystemName', {}, '新規システム名を入力してください:'), 'Airband');
@@ -1002,7 +1002,7 @@ const memoryEditor = (function () {
       }
     },
 
-    // --- ファイルインポート / エクスポート ---
+    // --- File Import & Export ---
 
     onExportJson() {
       if (memorySystems.length === 0) {
@@ -1083,7 +1083,7 @@ const memoryEditor = (function () {
       event.target.value = '';
     },
 
-    // --- バックアップ履歴モーダル ---
+    // --- Backup History Modal ---
 
     async onOpenBackupsModal() {
       const modal = document.getElementById('modal-backups');

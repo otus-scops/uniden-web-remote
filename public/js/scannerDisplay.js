@@ -1,20 +1,20 @@
 /**
- * @fileoverview スキャナーディスプレイモジュール
- * @description 周波数表示、チャンネル情報、RSSIメーター等のスキャナーUIを管理する
+ * @fileoverview Scanner Display Module
+ * @description Manages scanner LCD UI including frequency, channel tags, RSSI meter, and live audio
  */
 
 /**
- * スキャナーディスプレイUI管理
+ * Scanner Display UI controller
  */
 const scannerDisplay = (() => {
-  // DOM要素キャッシュ
+  // Cached DOM elements
   let elements = {};
 
-  /** @type {boolean} 現在受信中かどうか */
+  /** @type {boolean} Whether scanner is actively receiving signal */
   let isCurrentlyReceiving = false;
 
   /**
-   * DOM要素を取得・キャッシュする
+   * Retrieve and cache DOM elements
    */
   function getElements() {
     if (elements.frequencyDisplay) return elements;
@@ -35,7 +35,7 @@ const scannerDisplay = (() => {
       badgeScan: document.getElementById('badge-scan'),
       badgeReceiving: document.getElementById('badge-receiving'),
       badgeRecording: document.getElementById('badge-recording'),
-      // ライブ音声プレイヤー
+      // Live audio player controls
       liveAudioPlayer: document.getElementById('live-audio-player'),
       liveAudioBtn: document.getElementById('btn-live-audio'),
       liveAudioIcon: document.getElementById('live-audio-icon'),
@@ -49,21 +49,21 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * ステータス更新時の処理
-   * @param {Object} status - スキャナーステータスオブジェクト
+   * Handle scanner status updates
+   * @param {Object} status - Scanner status object
    */
   function onStatusUpdate(status) {
     const el = getElements();
 
-    // 接続状態
+    // Connection state
     updateConnectionStatus(el, status.isConnected);
 
-    // モデル情報
+    // Model and firmware version
     if (status.model) {
       el.scannerModel.textContent = `${status.model}${status.firmwareVersion ? ' - ' + status.firmwareVersion : ''}`;
     }
 
-    // 受信情報
+    // Active reception display
     if (status.currentReception && status.isReceiving) {
       updateReceptionDisplay(el, status.currentReception);
       setReceivingState(el, true);
@@ -74,20 +74,20 @@ const scannerDisplay = (() => {
       setReceivingState(el, false);
     }
 
-    // RSSI
+    // Signal strength (RSSI)
     updateRssi(el, status.rssi || 0);
 
-    // バッジ
+    // Status badges
     updateBadges(el, status);
   }
 
-  /** @type {boolean} 最新の接続状態 */
+  /** @type {boolean} Last known connection state */
   let lastConnectedState = false;
 
   /**
-   * 接続状態UIを更新する
-   * @param {Object} el - DOM要素
-   * @param {boolean} connected - 接続状態
+   * Update connection indicator UI
+   * @param {Object} el - DOM elements map
+   * @param {boolean} connected - Connection status
    */
   function updateConnectionStatus(el, connected) {
     lastConnectedState = connected;
@@ -103,9 +103,9 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * 受信情報表示を更新する
-   * @param {Object} el - DOM要素
-   * @param {Object} reception - 受信情報
+   * Update active reception data display
+   * @param {Object} el - DOM elements map
+   * @param {Object} reception - Reception metadata
    */
   function updateReceptionDisplay(el, reception) {
     el.frequencyDisplay.textContent = reception.freqTgid || '----.---- MHz';
@@ -118,8 +118,8 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * 受信情報表示をクリアする
-   * @param {Object} el - DOM要素
+   * Clear active reception data display
+   * @param {Object} el - DOM elements map
    */
   function clearReceptionDisplay(el) {
     el.frequencyDisplay.textContent = '----.---- MHz';
@@ -132,9 +132,9 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * 受信中状態のUIを切り替える
-   * @param {Object} el - DOM要素
-   * @param {boolean} receiving - 受信中かどうか
+   * Toggle visual state between receiving and scanning
+   * @param {Object} el - DOM elements map
+   * @param {boolean} receiving - Whether receiving
    */
   function setReceivingState(el, receiving) {
     isCurrentlyReceiving = receiving;
@@ -149,9 +149,9 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * RSSIメーターを更新する
-   * @param {Object} el - DOM要素
-   * @param {number} rssi - RSSI値 (0-7)
+   * Update RSSI signal strength bar
+   * @param {Object} el - DOM elements map
+   * @param {number} rssi - RSSI signal level (0-7)
    */
   function updateRssi(el, rssi) {
     const maxRssi = 7;
@@ -162,26 +162,26 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * ステータスバッジを更新する
-   * @param {Object} el - DOM要素
-   * @param {Object} status - ステータス
+   * Update status badges (Scan, Receiving, Recording)
+   * @param {Object} el - DOM elements map
+   * @param {Object} status - Status object
    */
   function updateBadges(el, status) {
-    // スキャンバッジ
+    // Scanning badge
     if (status.isConnected && !status.isReceiving) {
       el.badgeScan.classList.add('active');
     } else {
       el.badgeScan.classList.remove('active');
     }
 
-    // 受信中バッジ
+    // Receiving badge
     if (status.isReceiving) {
       el.badgeReceiving.classList.add('active');
     } else {
       el.badgeReceiving.classList.remove('active');
     }
 
-    // 録音バッジ
+    // Recording badge
     if (status.isRecording) {
       el.badgeRecording.classList.add('recording');
     } else {
@@ -190,8 +190,8 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * 受信開始イベント処理
-   * @param {Object} data - 受信開始データ
+   * Handle reception start event
+   * @param {Object} data - Reception start event data
    */
   function onReceptionStart(data) {
     const el = getElements();
@@ -202,12 +202,12 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * 受信終了イベント処理
-   * @param {Object} data - 受信終了データ
+   * Handle reception end event
+   * @param {Object} data - Reception end event data
    */
   function onReceptionEnd(data) {
     const el = getElements();
-    // すぐにはクリアせず、少し表示を残す
+    // Hold display briefly before resetting
     setTimeout(() => {
       if (!isCurrentlyReceiving) {
         clearReceptionDisplay(el);
@@ -216,22 +216,22 @@ const scannerDisplay = (() => {
     }, 500);
   }
 
-  /** @type {boolean} ライブ音声ストリーミング中かどうか */
+  /** @type {boolean} Whether live audio streaming is active */
   let isLiveAudioPlaying = false;
 
-  /** @type {number|null} 再接続タイマー */
+  /** @type {number|null} Reconnection timer ID */
   let liveAudioReconnectTimer = null;
 
-  /** @type {boolean} 停止処理中フラグ（再開ガード用） */
+  /** @type {boolean} Stopping in progress flag (guard against duplicate triggers) */
   let isStopping = false;
 
   /**
-   * ライブ音声のON/OFFを切り替える
+   * Toggle live audio playback ON/OFF
    */
   function onToggleLiveAudio() {
-    // 停止処理中は操作を無視
+    // Ignore clicks while stopping
     if (isStopping) {
-      console.log('[ScannerDisplay] 停止処理中のため操作を無視');
+      console.log('[ScannerDisplay] Ignoring toggle request: currently stopping audio');
       return;
     }
 
@@ -243,8 +243,8 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * audio要素を新しく作り直す（前回の接続状態を完全にリセット）
-   * @returns {HTMLAudioElement} 新しいaudio要素
+   * Recreate audio element to completely flush stale buffers and connections
+   * @returns {HTMLAudioElement} Fresh audio element
    * @private
    */
   function resetAudioElement() {
@@ -252,7 +252,7 @@ const scannerDisplay = (() => {
     const oldPlayer = el.liveAudioPlayer;
 
     if (oldPlayer) {
-      // 全イベントハンドラーをクリア
+      // Clear event listeners
       oldPlayer.onerror = null;
       oldPlayer.onended = null;
       oldPlayer.oncanplay = null;
@@ -261,7 +261,7 @@ const scannerDisplay = (() => {
       oldPlayer.load();
     }
 
-    // 新しいaudio要素を作成して差し替え
+    // Create and insert clean audio element
     const newPlayer = document.createElement('audio');
     newPlayer.id = 'live-audio-player';
     newPlayer.preload = 'none';
@@ -270,20 +270,20 @@ const scannerDisplay = (() => {
       oldPlayer.parentNode.replaceChild(newPlayer, oldPlayer);
     }
 
-    // キャッシュを更新
+    // Update cache
     elements.liveAudioPlayer = newPlayer;
     return newPlayer;
   }
 
   /**
-   * ライブ音声ストリーミングを開始する
+   * Start live audio streaming
    */
   function startLiveAudio() {
     const el = getElements();
 
-    // 停止処理中は開始しない
+    // Guard against re-entry while stopping
     if (isStopping) {
-      console.log('[ScannerDisplay] 停止処理中のため開始を遅延...');
+      console.log('[ScannerDisplay] Delaying start: audio is stopping...');
       setTimeout(() => {
         if (!isStopping && !isLiveAudioPlaying) {
           startLiveAudio();
@@ -292,23 +292,23 @@ const scannerDisplay = (() => {
       return;
     }
 
-    // 再接続タイマーをクリア
+    // Clear any pending reconnection timer
     if (liveAudioReconnectTimer) {
       clearTimeout(liveAudioReconnectTimer);
       liveAudioReconnectTimer = null;
     }
 
-    // audio要素を完全にリセットして新しい接続を確保
+    // Reset audio element to ensure clean connection
     const player = resetAudioElement();
 
-    // 先にUIを更新（ユーザーフィードバックを即座に返す）
+    // Immediately update UI for fast user feedback
     isLiveAudioPlaying = true;
     updateLiveAudioUI(true, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioConnecting') : '接続中...');
 
-    // イベントハンドラーをsrc設定前にセット
+    // Attach event handlers before setting src
     player.onerror = () => {
       if (isLiveAudioPlaying) {
-        console.log('[ScannerDisplay] ストリームエラー、3秒後に再接続...');
+        console.log('[ScannerDisplay] Stream error, reconnecting in 3 seconds...');
         const reconnectingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Reconnecting...' : '再接続中...';
         updateLiveAudioUI(true, reconnectingMsg);
         liveAudioReconnectTimer = setTimeout(() => {
@@ -321,7 +321,7 @@ const scannerDisplay = (() => {
 
     player.onended = () => {
       if (isLiveAudioPlaying) {
-        console.log('[ScannerDisplay] ストリーム終了、再接続...');
+        console.log('[ScannerDisplay] Stream ended, reconnecting...');
         liveAudioReconnectTimer = setTimeout(() => {
           if (isLiveAudioPlaying) {
             startLiveAudio();
@@ -330,14 +330,14 @@ const scannerDisplay = (() => {
       }
     };
 
-    // canplayイベントでストリーミング中UIに更新
+    // canplay event: update to streaming UI
     player.oncanplay = () => {
       if (isLiveAudioPlaying) {
         updateLiveAudioUI(true);
       }
     };
 
-    // タイムスタンプを付けてキャッシュを回避
+    // Append timestamp query parameter to bypass browser caching
     const streamUrl = `/api/audio/stream?t=${Date.now()}`;
     player.src = streamUrl;
     player.volume = (el.liveAudioVolume ? el.liveAudioVolume.value : 80) / 100;
@@ -346,15 +346,14 @@ const scannerDisplay = (() => {
     if (playPromise) {
       playPromise.then(() => {
         updateLiveAudioUI(true);
-        console.log('[ScannerDisplay] ライブ音声開始');
+        console.log('[ScannerDisplay] Live audio stream started');
       }).catch((err) => {
-        // 意図的にstopLiveAudioが呼ばれた場合はisLiveAudioPlayingがfalseになっている
+        // If intentionally stopped, ignore interruption
         if (!isLiveAudioPlaying) {
-          // pause()による中断 - 正常な停止操作なので無視
           return;
         }
-        console.error('[ScannerDisplay] ライブ音声再生エラー:', err.message);
-        // ブラウザのautoplayポリシーによるエラーの場合
+        console.error('[ScannerDisplay] Live audio playback error:', err.message);
+        // Handle autoplay policy restrictions
         isLiveAudioPlaying = false;
         updateLiveAudioUI(false, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioRetry') : 'クリックして再試行');
       });
@@ -362,12 +361,12 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * ライブ音声ストリーミングを停止する
+   * Stop live audio streaming
    */
   function stopLiveAudio() {
     const el = getElements();
 
-    // 先にフラグをfalseにしてcatchが「クリックして再試行」を表示しないようにする
+    // Set flags first to prevent error handlers from showing retry prompts
     isLiveAudioPlaying = false;
     isStopping = true;
 
@@ -376,21 +375,21 @@ const scannerDisplay = (() => {
       liveAudioReconnectTimer = null;
     }
 
-    // audio要素を新しく作り直し（前回の接続を確実に切断）
+    // Recreate audio element to cleanly disconnect stream
     resetAudioElement();
 
     updateLiveAudioUI(false);
-    console.log('[ScannerDisplay] ライブ音声停止');
+    console.log('[ScannerDisplay] Live audio stopped');
 
-    // サーバー側のSOXプロセス終了を待つため短い遅延を入れてから停止完了
+    // Brief delay to allow server-side streaming process to terminate
     setTimeout(() => {
       isStopping = false;
     }, 500);
   }
 
   /**
-   * 音量変更時の処理
-   * @param {number|string} value - 音量値 (0-100)
+   * Handle volume slider change
+   * @param {number|string} value - Volume level (0-100)
    */
   function onVolumeChange(value) {
     const el = getElements();
@@ -404,7 +403,7 @@ const scannerDisplay = (() => {
       el.volumeValue.textContent = `${vol}%`;
     }
 
-    // 音量アイコン更新
+    // Update volume icon
     if (el.volumeIcon) {
       if (vol === 0) {
         el.volumeIcon.textContent = '🔇';
@@ -417,9 +416,9 @@ const scannerDisplay = (() => {
   }
 
   /**
-   * ライブ音声プレイヤーUIを更新する
-   * @param {boolean} playing - 再生中かどうか
-   * @param {string} [statusText] - ステータステキスト（省略時は自動設定）
+   * Update live audio player UI
+   * @param {boolean} playing - Whether stream is playing
+   * @param {string} [statusText] - Status text label (auto-detected if omitted)
    */
   function updateLiveAudioUI(playing, statusText) {
     const el = getElements();
@@ -459,14 +458,14 @@ const scannerDisplay = (() => {
     }
   }
 
-  // 言語切り替えリスナー
+  // Language change event listener
   window.addEventListener('languageChanged', () => {
     const el = getElements();
     updateConnectionStatus(el, lastConnectedState);
     updateLiveAudioUI(isLiveAudioPlaying);
   });
 
-  // 公開API
+  // Public API
   return {
     onStatusUpdate,
     onReceptionStart,

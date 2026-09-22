@@ -1,24 +1,24 @@
 /**
- * @fileoverview WebSocket ハンドラー
- * @description WebSocket接続管理とリアルタイムステータス配信を行う
+ * @fileoverview WebSocket Handler
+ * @description Manages WebSocket connections and real-time scanner status broadcasting
  */
 
 const WebSocket = require('ws');
 
 /**
- * WebSocketハンドラークラス
- * クライアントへのリアルタイムステータス配信を管理する
+ * WebSocket Handler Class
+ * Manages real-time client subscriptions and state updates
  */
 class WsHandler {
   /**
-   * @param {Object} deps - 依存オブジェクト
-   * @param {import('http').Server} deps.server - HTTPサーバー
-   * @param {import('../scanner/scannerState')} deps.scannerState - スキャナー状態
-   * @param {import('../scanner/serialController')} deps.serialController - シリアルコントローラー
-   * @param {import('../audio/audioRecorder')} deps.audioRecorder - 録音管理
+   * @param {Object} deps - Dependencies
+   * @param {import('http').Server} deps.server - HTTP server instance
+   * @param {import('../scanner/scannerState')} deps.scannerState - Scanner state manager
+   * @param {import('../scanner/serialController')} deps.serialController - Serial controller
+   * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
    */
   constructor({ server, scannerState, serialController, audioRecorder }) {
-    /** @type {WebSocket.Server} WebSocketサーバー */
+    /** @type {WebSocket.Server} WebSocket server instance */
     this._wss = new WebSocket.Server({ server, path: '/ws' });
 
     /** @type {import('../scanner/scannerState')} */
@@ -30,7 +30,7 @@ class WsHandler {
     /** @type {import('../audio/audioRecorder')} */
     this._audioRecorder = audioRecorder;
 
-    /** @type {Set<WebSocket>} 接続中クライアント */
+    /** @type {Set<WebSocket>} Connected client sockets */
     this._clients = new Set();
 
     this._setupWebSocketServer();
@@ -38,45 +38,45 @@ class WsHandler {
   }
 
   /**
-   * WebSocketサーバーのイベントハンドラーを設定する
+   * Configure WebSocket server connection handlers
    * @private
    */
   _setupWebSocketServer() {
     this._wss.on('connection', (ws) => {
-      console.log('[WsHandler] クライアント接続');
+      console.log('[WsHandler] Client connected');
       this._clients.add(ws);
 
-      // 接続時に現在のステータスを送信
+      // Send initial status on connection
       this._sendToClient(ws, {
         type: 'status',
         data: this._scannerState.getStatus(),
       });
 
-      // クライアントからのメッセージ処理
+      // Handle client messages
       ws.on('message', (message) => {
         this._onClientMessage(ws, message);
       });
 
-      // 切断処理
+      // Handle disconnect
       ws.on('close', () => {
-        console.log('[WsHandler] クライアント切断');
+        console.log('[WsHandler] Client disconnected');
         this._clients.delete(ws);
       });
 
-      // エラー処理
+      // Handle socket errors
       ws.on('error', (err) => {
-        console.error('[WsHandler] WebSocketエラー:', err.message);
+        console.error('[WsHandler] WebSocket error:', err.message);
         this._clients.delete(ws);
       });
     });
   }
 
   /**
-   * スキャナー/録音イベントをWebSocketクライアントに転送する
+   * Forward scanner and audio recording events to WebSocket clients
    * @private
    */
   _setupEventForwarding() {
-    // ステータス更新
+    // Scanner status update
     this._scannerState.on('statusUpdate', (status) => {
       this._broadcast({
         type: 'status',
@@ -84,7 +84,7 @@ class WsHandler {
       });
     });
 
-    // 受信開始
+    // Reception start
     this._scannerState.on('receptionStart', (data) => {
       this._broadcast({
         type: 'receptionStart',
@@ -92,7 +92,7 @@ class WsHandler {
       });
     });
 
-    // 受信終了
+    // Reception end
     this._scannerState.on('receptionEnd', (data) => {
       this._broadcast({
         type: 'receptionEnd',
@@ -104,7 +104,7 @@ class WsHandler {
       });
     });
 
-    // 録音開始
+    // Recording start
     this._audioRecorder.on('recordingStart', (data) => {
       this._broadcast({
         type: 'recordingStart',
@@ -115,7 +115,7 @@ class WsHandler {
       });
     });
 
-    // 録音停止
+    // Recording stop
     this._audioRecorder.on('recordingStop', (data) => {
       this._broadcast({
         type: 'recordingStop',
@@ -126,7 +126,7 @@ class WsHandler {
       });
     });
 
-    // 録音エラー
+    // Recording error
     this._audioRecorder.on('recordingError', (data) => {
       this._broadcast({
         type: 'recordingError',
@@ -134,7 +134,7 @@ class WsHandler {
       });
     });
 
-    // シリアルデータ（デバッグ用）
+    // Raw serial debug data
     this._serialController.on('data', (rawData) => {
       this._broadcast({
         type: 'serialData',
@@ -144,9 +144,9 @@ class WsHandler {
   }
 
   /**
-   * クライアントからのメッセージを処理する
-   * @param {WebSocket} ws - 送信元WebSocket
-   * @param {string} message - メッセージ文字列
+   * Process message received from client
+   * @param {WebSocket} ws - Source WebSocket
+   * @param {string} message - Raw message payload
    * @private
    */
   async _onClientMessage(ws, message) {
@@ -155,7 +155,7 @@ class WsHandler {
 
       switch (msg.type) {
         case 'command':
-          // シリアルコマンドの送信
+          // Send raw serial command
           if (msg.command) {
             const response = await this._serialController.sendCommand(msg.command);
             this._sendToClient(ws, {
@@ -166,7 +166,7 @@ class WsHandler {
           break;
 
         case 'key':
-          // キープレス
+          // Simulate front panel keypad press
           if (msg.key) {
             const response = await this._serialController.pressKey(msg.key, msg.action || 'P');
             this._sendToClient(ws, {
@@ -177,7 +177,7 @@ class WsHandler {
           break;
 
         case 'getStatus':
-          // ステータス要求
+          // Request status snapshot
           this._sendToClient(ws, {
             type: 'status',
             data: this._scannerState.getStatus(),
@@ -185,7 +185,7 @@ class WsHandler {
           break;
 
         case 'getLog':
-          // ログ要求
+          // Request activity log history
           this._sendToClient(ws, {
             type: 'log',
             data: this._scannerState.getLog(msg.limit || 100, msg.offset || 0),
@@ -193,7 +193,7 @@ class WsHandler {
           break;
 
         case 'toggleAutoRecord':
-          // 自動録音切り替え
+          // Toggle auto-recording setting
           this._scannerState.autoRecordEnabled = !this._scannerState.autoRecordEnabled;
           this._broadcast({
             type: 'status',
@@ -202,10 +202,10 @@ class WsHandler {
           break;
 
         default:
-          console.log(`[WsHandler] 不明なメッセージタイプ: ${msg.type}`);
+          console.log(`[WsHandler] Unknown message type: ${msg.type}`);
       }
     } catch (err) {
-      console.error('[WsHandler] メッセージ処理エラー:', err.message);
+      console.error('[WsHandler] Message processing error:', err.message);
       this._sendToClient(ws, {
         type: 'error',
         data: { message: err.message },
@@ -214,8 +214,8 @@ class WsHandler {
   }
 
   /**
-   * 全クライアントにメッセージをブロードキャストする
-   * @param {Object} message - 送信するメッセージオブジェクト
+   * Broadcast message to all connected clients
+   * @param {Object} message - Message object to serialize
    * @private
    */
   _broadcast(message) {
@@ -229,9 +229,9 @@ class WsHandler {
   }
 
   /**
-   * 特定のクライアントにメッセージを送信する
-   * @param {WebSocket} ws - 送信先WebSocket
-   * @param {Object} message - メッセージオブジェクト
+   * Send message to a specific client
+   * @param {WebSocket} ws - Target WebSocket
+   * @param {Object} message - Message object
    * @private
    */
   _sendToClient(ws, message) {
@@ -241,7 +241,7 @@ class WsHandler {
   }
 
   /**
-   * 接続中のクライアント数を取得する
+   * Get count of currently connected clients
    * @returns {number}
    */
   getClientCount() {
@@ -249,7 +249,7 @@ class WsHandler {
   }
 
   /**
-   * リソースを解放する
+   * Clean up and close all client connections
    */
   destroy() {
     for (const client of this._clients) {

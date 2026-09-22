@@ -1,10 +1,10 @@
 /**
- * @fileoverview BCT15X DMA (Dynamic Memory Architecture) プロトコル定義およびパーサー
- * @description Uniden BCT15Xのプログラミングモードにおけるコマンド生成と応答解析を行う
+ * @fileoverview BCT15X DMA (Dynamic Memory Architecture) protocol definitions and parser
+ * @description Generates programming commands and parses responses for Uniden BCT15X programming mode.
  */
 
 /**
- * システムタイプ定義
+ * System type definitions
  * @enum {string}
  */
 const SystemTypes = {
@@ -16,7 +16,7 @@ const SystemTypes = {
 };
 
 /**
- * モジュレーション（変調方式）定義
+ * Modulation type definitions
  * @enum {string}
  */
 const Modulations = {
@@ -29,7 +29,7 @@ const Modulations = {
 };
 
 /**
- * CTCSS / DCS コード一覧テーブル (BCT15X仕様書準拠)
+ * CTCSS / DCS code table (conforms to BCT15X specification)
  */
 const CTCSS_DCS_TABLE = {
   0: 'None / All',
@@ -192,11 +192,11 @@ const CTCSS_DCS_TABLE = {
   231: 'DCS 754',
 };
 
-// 逆引きマップ
+// Reverse lookup map
 const REVERSE_CTCSS_DCS_TABLE = {};
 for (const [code, label] of Object.entries(CTCSS_DCS_TABLE)) {
   REVERSE_CTCSS_DCS_TABLE[label] = parseInt(code, 10);
-  // 短縮表記も対応（例: "88.5" や "D023"）
+  // Support abbreviated representations (e.g. "88.5" or "D023")
   const simpleMatch = label.match(/^(?:CTCSS\s+)?(\d+\.?\d*Hz?)|^(?:DCS\s+)?(\d+)/i);
   if (simpleMatch) {
     if (simpleMatch[1]) REVERSE_CTCSS_DCS_TABLE[simpleMatch[1].replace('Hz', '')] = parseInt(code, 10);
@@ -205,9 +205,9 @@ for (const [code, label] of Object.entries(CTCSS_DCS_TABLE)) {
 }
 
 /**
- * 周波数を8桁のBCT15X生フォーマットに変換する (MHz -> 8桁数字)
- * @param {string|number} freqMhz - 例: "155.7000" または 155.7
- * @returns {string} 8桁周波数文字列 (例: "01557000")
+ * Convert frequency in MHz to 8-digit BCT15X raw format (MHz -> 8 digits)
+ * @param {string|number} freqMhz - e.g. "155.7000" or 155.7
+ * @returns {string} 8-digit frequency string (e.g. "01557000")
  */
 function toRawFrequency(freqMhz) {
   if (!freqMhz) return '00000000';
@@ -218,9 +218,9 @@ function toRawFrequency(freqMhz) {
 }
 
 /**
- * BCT15X生周波数フォーマットをMHz文字列に変換する
- * @param {string} rawFreq - 8桁周波数文字列 (例: "01557000")
- * @returns {string} フォーマット周波数 (例: "155.7000")
+ * Convert 8-digit BCT15X raw frequency format to formatted MHz string
+ * @param {string} rawFreq - 8-digit frequency string (e.g. "01557000")
+ * @returns {string} Formatted frequency (e.g. "155.7000")
  */
 function fromRawFrequency(rawFreq) {
   if (!rawFreq) return '0.0000';
@@ -230,9 +230,9 @@ function fromRawFrequency(rawFreq) {
 }
 
 /**
- * トーンコードをラベル文字列に変換する
- * @param {number|string} code - コード番号 (0-231)
- * @returns {string} トーン名 (例: "CTCSS 88.5Hz", "None / All")
+ * Convert tone code to human-readable label
+ * @param {number|string} code - Code number (0-231)
+ * @returns {string} Tone label (e.g. "CTCSS 88.5Hz", "None / All")
  */
 function fromToneCode(code) {
   const num = parseInt(code, 10);
@@ -240,9 +240,9 @@ function fromToneCode(code) {
 }
 
 /**
- * トーンラベル文字列をコード番号に変換する
- * @param {string} label - トーン名
- * @returns {number} コード番号
+ * Convert tone label string to code number
+ * @param {string} label - Tone label
+ * @returns {number} Code number
  */
 function toToneCode(label) {
   if (!label) return 0;
@@ -257,9 +257,9 @@ function toToneCode(label) {
 }
 
 /**
- * SIH応答をパースする
- * @param {string} response - "SIH,10" または "SIH,-1"
- * @returns {number} システムヘッドインデックス (-1は空)
+ * Parse SIH (System Index Head) response
+ * @param {string} response - "SIH,10" or "SIH,-1"
+ * @returns {number} System head index (-1 indicates empty)
  */
 function parseSihResponse(response) {
   const parts = response.trim().split(',');
@@ -270,10 +270,10 @@ function parseSihResponse(response) {
 }
 
 /**
- * SIN応答をパースする
- * フォーマット: SIN,[SYS_TYPE],[NAME],[QUICK_KEY],[HLD],[LOUT],[DLY],...,[REV_INDEX],[FWD_INDEX],[CHN_GRP_HEAD],[CHN_GRP_TAIL],...
- * @param {string} response - レスポンス文字列
- * @param {number} index - 問い合わせたシステムインデックス
+ * Parse SIN (System Information) response
+ * Format: SIN,[SYS_TYPE],[NAME],[QUICK_KEY],[HLD],[LOUT],[DLY],...,[REV_INDEX],[FWD_INDEX],[CHN_GRP_HEAD],[CHN_GRP_TAIL],...
+ * @param {string} response - Response string
+ * @param {number} index - Queried system index
  * @returns {Object|null}
  */
 function parseSinResponse(response, index) {
@@ -299,10 +299,10 @@ function parseSinResponse(response, index) {
 }
 
 /**
- * GIN応答をパースする
- * フォーマット: GIN,[GRP_TYPE],[NAME],[QUICK_KEY],[LOUT],[REV_INDEX],[FWD_INDEX],[SYS_INDEX],[CHN_HEAD],[CHN_TAIL],...
- * @param {string} response - レスポンス文字列
- * @param {number} index - グループインデックス
+ * Parse GIN (Group Information) response
+ * Format: GIN,[GRP_TYPE],[NAME],[QUICK_KEY],[LOUT],[REV_INDEX],[FWD_INDEX],[SYS_INDEX],[CHN_HEAD],[CHN_TAIL],...
+ * @param {string} response - Response string
+ * @param {number} index - Group index
  * @returns {Object|null}
  */
 function parseGinResponse(response, index) {
@@ -327,10 +327,10 @@ function parseGinResponse(response, index) {
 }
 
 /**
- * CIN応答をパースする (Conventional Channel)
- * フォーマット: CIN,[NAME],[FRQ],[MOD],[CTCSS/DCS],[TLOCK],[LOUT],[PRI],[ATT],[ALT],[ALTL],[REV_INDEX],[FWD_INDEX],[SYS_INDEX],[GRP_INDEX],...
- * @param {string} response - レスポンス文字列
- * @param {number} index - チャンネルインデックス
+ * Parse CIN (Channel Information) response for Conventional Channel
+ * Format: CIN,[NAME],[FRQ],[MOD],[CTCSS/DCS],[TLOCK],[LOUT],[PRI],[ATT],[ALT],[ALTL],[REV_INDEX],[FWD_INDEX],[SYS_INDEX],[GRP_INDEX],...
+ * @param {string} response - Response string
+ * @param {number} index - Channel index
  * @returns {Object|null}
  */
 function parseCinResponse(response, index) {
@@ -364,9 +364,9 @@ function parseCinResponse(response, index) {
 }
 
 /**
- * CSY応答 (システム作成応答) をパースする
+ * Parse CSY (Create System) response
  * @param {string} response - "CSY,[SYS_INDEX]"
- * @returns {number} 作成されたシステムインデックス (-1は失敗)
+ * @returns {number} Created system index (-1 on failure)
  */
 function parseCsyResponse(response) {
   const parts = response.trim().split(',');
@@ -377,9 +377,9 @@ function parseCsyResponse(response) {
 }
 
 /**
- * AGC応答 (グループ追加応答) をパースする
+ * Parse AGC (Append Group Channel) response
  * @param {string} response - "AGC,[GRP_INDEX]"
- * @returns {number} 作成されたグループインデックス (-1は失敗)
+ * @returns {number} Created group index (-1 on failure)
  */
 function parseAgcResponse(response) {
   const parts = response.trim().split(',');
@@ -390,9 +390,9 @@ function parseAgcResponse(response) {
 }
 
 /**
- * ACC応答 (チャンネル追加応答) をパースする
+ * Parse ACC (Append Channel) response
  * @param {string} response - "ACC,[CHN_INDEX]"
- * @returns {number} 作成されたチャンネルインデックス (-1は失敗)
+ * @returns {number} Created channel index (-1 on failure)
  */
 function parseAccResponse(response) {
   const parts = response.trim().split(',');
@@ -403,9 +403,9 @@ function parseAccResponse(response) {
 }
 
 /**
- * SIN設定コマンド文字列を構築する
- * @param {Object} sys - システムデータ
- * @returns {string} コマンド文字列
+ * Build SIN configuration command string
+ * @param {Object} sys - System data object
+ * @returns {string} Command string
  */
 function buildSinCommand(sys) {
   const qk = sys.quickKey !== null && sys.quickKey !== undefined ? sys.quickKey : '.';
@@ -418,9 +418,9 @@ function buildSinCommand(sys) {
 }
 
 /**
- * GIN設定コマンド文字列を構築する
- * @param {Object} grp - グループデータ
- * @returns {string} コマンド文字列
+ * Build GIN configuration command string
+ * @param {Object} grp - Group data object
+ * @returns {string} Command string
  */
 function buildGinCommand(grp) {
   const qk = grp.quickKey !== null && grp.quickKey !== undefined ? (grp.quickKey === 10 ? '0' : grp.quickKey) : '.';
@@ -431,9 +431,9 @@ function buildGinCommand(grp) {
 }
 
 /**
- * CIN設定コマンド文字列を構築する
- * @param {Object} chn - チャンネルデータ
- * @returns {string} コマンド文字列
+ * Build CIN configuration command string
+ * @param {Object} chn - Channel data object
+ * @returns {string} Command string
  */
 function buildCinCommand(chn) {
   const name = (chn.name || '').substring(0, 16);

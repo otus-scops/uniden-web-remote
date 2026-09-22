@@ -1,69 +1,69 @@
 /**
- * @fileoverview BCT15X スキャナー状態管理
- * @description スキャナーの現在の状態と受信ログを管理する
+ * @fileoverview BCT15X scanner state management
+ * @description Manages current scanner status and reception history log.
  */
 
 const EventEmitter = require('events');
 
 /**
- * スキャナー状態を管理するクラス
+ * Scanner state management class
  * @extends EventEmitter
- * @fires ScannerState#receptionStart - 受信開始時
- * @fires ScannerState#receptionEnd - 受信終了時
- * @fires ScannerState#statusUpdate - ステータス更新時
+ * @fires ScannerState#receptionStart - On reception start
+ * @fires ScannerState#receptionEnd - On reception end
+ * @fires ScannerState#statusUpdate - On status update
  */
 class ScannerState extends EventEmitter {
   /**
-   * @param {Object} config - 設定オブジェクト
-   * @param {number} config.receptionTimeoutMs - 受信終了判定タイムアウト(ms)
-   * @param {number} config.maxLogEntries - 最大ログ件数
+   * @param {Object} config - Configuration object
+   * @param {number} config.receptionTimeoutMs - Timeout (ms) to determine end of reception
+   * @param {number} config.maxLogEntries - Maximum number of log entries to retain
    */
   constructor(config) {
     super();
 
-    /** @type {Object} スキャナー設定 */
+    /** @type {Object} Scanner configuration */
     this._config = config;
 
-    /** @type {boolean} シリアルポート接続状態 */
+    /** @type {boolean} Serial port connection status */
     this.isConnected = false;
 
-    /** @type {string} モデル名 */
+    /** @type {string} Model name */
     this.model = '';
 
-    /** @type {string} ファームウェアバージョン */
+    /** @type {string} Firmware version */
     this.firmwareVersion = '';
 
-    /** @type {boolean} 受信中フラグ */
+    /** @type {boolean} Reception in-progress flag */
     this.isReceiving = false;
 
-    /** @type {Object|null} 現在の受信情報 */
+    /** @type {Object|null} Current reception metadata */
     this.currentReception = null;
 
-    /** @type {number} 現在のRSSI値 */
+    /** @type {number} Current RSSI value */
     this.rssi = 0;
 
-    /** @type {Object|null} 最新のSTSレスポンス */
+    /** @type {Object|null} Latest STS response */
     this.latestSts = null;
 
-    /** @type {Array<Object>} 受信ログ */
+    /** @type {Array<Object>} Reception history log */
     this._receptionLog = [];
 
-    /** @type {number|null} 受信終了判定タイマー */
+    /** @type {number|null} Reception end determination timer */
     this._receptionTimeout = null;
 
-    /** @type {Date|null} 現在の受信開始時刻 */
+    /** @type {Date|null} Current reception start time */
     this._receptionStartTime = null;
 
-    /** @type {boolean} 録音中フラグ */
+    /** @type {boolean} Recording in-progress flag */
     this.isRecording = false;
 
-    /** @type {boolean} 自動録音有効フラグ */
+    /** @type {boolean} Auto-recording enabled flag */
     this.autoRecordEnabled = true;
   }
 
   /**
-   * GLGデータに基づいて状態を更新する
-   * @param {Object} glgData - parseGlgResponseの結果
+   * Update state based on GLG data
+   * @param {Object} glgData - Result from parseGlgResponse
    */
   onGlgUpdate(glgData) {
     if (!glgData) {
@@ -80,12 +80,12 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 信号検出時の処理
-   * @param {Object} glgData - GLGパース結果
+   * Handler when signal is detected
+   * @param {Object} glgData - Parsed GLG response
    * @private
    */
   _onSignalDetected(glgData) {
-    // 受信終了タイマーをリセット
+    // Reset reception end timer
     this._clearReceptionTimeout();
 
     const isNewReception = !this.isReceiving;
@@ -112,11 +112,11 @@ class ScannerState extends EventEmitter {
       this._receptionStartTime = new Date();
 
       /**
-       * 受信開始イベント
+       * Reception start event
        * @event ScannerState#receptionStart
        * @type {Object}
-       * @property {Object} reception - 受信情報
-       * @property {Date} startTime - 受信開始時刻
+       * @property {Object} reception - Reception metadata
+       * @property {Date} startTime - Reception start time
        */
       this.emit('receptionStart', {
         reception: { ...this.currentReception },
@@ -124,23 +124,23 @@ class ScannerState extends EventEmitter {
       });
     }
 
-    // 受信終了判定タイマーを設定
+    // Set reception end determination timer
     this._setReceptionTimeout();
   }
 
   /**
-   * 信号なし時の処理
+   * Handler when no signal is detected
    * @private
    */
   _onNoSignal() {
-    // タイマーが既に動いていれば何もしない（タイムアウトで受信終了を判定）
+    // If timer is already running, do nothing (timeout will handle reception termination)
     if (!this.isReceiving) {
       this.currentReception = null;
     }
   }
 
   /**
-   * 受信終了タイマーを設定する
+   * Set reception end timeout
    * @private
    */
   _setReceptionTimeout() {
@@ -151,7 +151,7 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 受信終了タイマーをクリアする
+   * Clear reception end timeout
    * @private
    */
   _clearReceptionTimeout() {
@@ -162,7 +162,7 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 受信終了時の処理
+   * Handler invoked when reception concludes
    * @private
    */
   _onReceptionEnd() {
@@ -183,22 +183,22 @@ class ScannerState extends EventEmitter {
       ...this.currentReception,
     };
 
-    // ログに追加
+    // Add to history log
     this._receptionLog.unshift(logEntry);
 
-    // 最大件数を超えたら古いものを削除
+    // Prune entries exceeding maximum log limit
     if (this._receptionLog.length > this._config.maxLogEntries) {
       this._receptionLog = this._receptionLog.slice(0, this._config.maxLogEntries);
     }
 
     /**
-     * 受信終了イベント
+     * Reception end event
      * @event ScannerState#receptionEnd
      * @type {Object}
-     * @property {Object} reception - 受信情報
-     * @property {Date} startTime - 受信開始時刻
-     * @property {Date} endTime - 受信終了時刻
-     * @property {number} durationSec - 受信時間（秒）
+     * @property {Object} reception - Reception metadata
+     * @property {Date} startTime - Reception start time
+     * @property {Date} endTime - Reception end time
+     * @property {number} durationSec - Reception duration in seconds
      */
     this.emit('receptionEnd', {
       reception: { ...this.currentReception },
@@ -216,24 +216,24 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * RSSI値を更新する
-   * @param {number} rssi - RSSI値
+   * Update RSSI value
+   * @param {number} rssi - RSSI value
    */
   onRssiUpdate(rssi) {
     this.rssi = rssi;
   }
 
   /**
-   * STSデータを更新する
-   * @param {Object} stsData - parseStsResponseの結果
+   * Update STS response data
+   * @param {Object} stsData - Result from parseStsResponse
    */
   onStsUpdate(stsData) {
     this.latestSts = stsData;
   }
 
   /**
-   * 接続状態を更新する
-   * @param {boolean} connected - 接続状態
+   * Update serial connection state
+   * @param {boolean} connected - Connection status
    */
   setConnected(connected) {
     this.isConnected = connected;
@@ -241,24 +241,24 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * モデル情報を設定する
-   * @param {string} model - モデル名
+   * Set scanner model name
+   * @param {string} model - Model name
    */
   setModel(model) {
     this.model = model;
   }
 
   /**
-   * ファームウェアバージョンを設定する
-   * @param {string} version - バージョン文字列
+   * Set firmware version string
+   * @param {string} version - Version string
    */
   setFirmwareVersion(version) {
     this.firmwareVersion = version;
   }
 
   /**
-   * 録音状態を更新する
-   * @param {boolean} isRecording - 録音中かどうか
+   * Update recording status
+   * @param {boolean} isRecording - Flag whether actively recording
    */
   setRecording(isRecording) {
     this.isRecording = isRecording;
@@ -266,8 +266,8 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 現在のスキャナーステータスを取得する
-   * @returns {Object} ステータスオブジェクト
+   * Get current scanner status snapshot
+   * @returns {Object} Status snapshot object
    */
   getStatus() {
     return {
@@ -284,31 +284,31 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 受信ログを取得する（フィルタリング対応）
-   * @param {number} [limit=100] - 取得件数
-   * @param {number} [offset=0] - オフセット
-   * @param {Object} [filters={}] - フィルタ条件
-   * @param {string} [filters.dateFrom] - 開始日時（ISO形式）
-   * @param {string} [filters.dateTo] - 終了日時（ISO形式）
-   * @param {string} [filters.freq] - 周波数/TGID（部分一致）
-   * @param {string} [filters.system] - システム名（部分一致）
-   * @param {string} [filters.channel] - チャンネル名（部分一致）
-   * @param {string} [filters.modulation] - モジュレーション（完全一致）
-   * @param {number} [filters.minDuration] - 最小受信秒数
-   * @returns {Object} ログ情報
-   * @property {Array<Object>} entries - ログエントリー配列
-   * @property {number} total - フィルタ後の総件数
-   * @property {number} totalUnfiltered - フィルタ前の総件数
+   * Get reception history log with optional filtering
+   * @param {number} [limit=100] - Limit of entries to return
+   * @param {number} [offset=0] - Offset for pagination
+   * @param {Object} [filters={}] - Filter criteria
+   * @param {string} [filters.dateFrom] - Start date/time (ISO format)
+   * @param {string} [filters.dateTo] - End date/time (ISO format)
+   * @param {string} [filters.freq] - Frequency/TGID (substring match)
+   * @param {string} [filters.system] - System name (substring match)
+   * @param {string} [filters.channel] - Channel name (substring match)
+   * @param {string} [filters.modulation] - Modulation (exact match)
+   * @param {number} [filters.minDuration] - Minimum duration in seconds
+   * @returns {Object} Log result object
+   * @property {Array<Object>} entries - Log entry array
+   * @property {number} total - Total matching entries count
+   * @property {number} totalUnfiltered - Total entries count before filtering
    */
   getLog(limit = 100, offset = 0, filters = {}) {
     let entries = this._receptionLog;
 
-    // フィルタ適用
+    // Apply filtering
     const hasFilters = Object.keys(filters).some((key) => filters[key] !== undefined && filters[key] !== '');
 
     if (hasFilters) {
       entries = entries.filter((entry) => {
-        // 日時範囲フィルタ
+        // Date range filter
         if (filters.dateFrom) {
           const from = new Date(filters.dateFrom);
           if (!isNaN(from.getTime()) && entry.startTime) {
@@ -323,35 +323,35 @@ class ScannerState extends EventEmitter {
           }
         }
 
-        // 周波数/TGID フィルタ（部分一致、大文字小文字無視）
+        // Frequency/TGID filter (case-insensitive substring)
         if (filters.freq) {
           const freqLower = filters.freq.toLowerCase();
           const entryFreq = (entry.freqTgid || entry.rawFreqTgid || '').toLowerCase();
           if (!entryFreq.includes(freqLower)) return false;
         }
 
-        // システム名フィルタ（部分一致、大文字小文字無視）
+        // System name filter (case-insensitive substring)
         if (filters.system) {
           const systemLower = filters.system.toLowerCase();
           const entrySystem = (entry.system || '').toLowerCase();
           if (!entrySystem.includes(systemLower)) return false;
         }
 
-        // チャンネル名フィルタ（部分一致、大文字小文字無視）
+        // Channel name filter (case-insensitive substring)
         if (filters.channel) {
           const channelLower = filters.channel.toLowerCase();
           const entryChannel = (entry.channel || '').toLowerCase();
           if (!entryChannel.includes(channelLower)) return false;
         }
 
-        // モジュレーション フィルタ（完全一致、大文字小文字無視）
+        // Modulation filter (case-insensitive exact match)
         if (filters.modulation) {
           const modLower = filters.modulation.toLowerCase();
           const entryMod = (entry.modulation || '').toLowerCase();
           if (entryMod !== modLower) return false;
         }
 
-        // 最小受信秒数フィルタ
+        // Minimum duration filter
         if (filters.minDuration !== undefined && filters.minDuration !== '') {
           const minDur = parseFloat(filters.minDuration);
           if (!isNaN(minDur) && (entry.durationSec || 0) < minDur) return false;
@@ -369,14 +369,14 @@ class ScannerState extends EventEmitter {
   }
 
   /**
-   * 受信ログをクリアする
+   * Clear all reception history logs
    */
   clearLog() {
     this._receptionLog = [];
   }
 
   /**
-   * リソースを解放する
+   * Release resources
    */
   destroy() {
     this._clearReceptionTimeout();

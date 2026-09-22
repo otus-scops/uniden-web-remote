@@ -1,10 +1,9 @@
 FROM node:20-slim
 
-# 必要パッケージのインストール
-# sox: 音声録音・処理
-# libsox-fmt-mp3: SOX MP3エンコードサポート
-# alsa-utils: ALSA音声デバイス操作 (arecord, aplay等)
-# rclone: Google Drive同期用（オプション）
+# Install required packages
+# sox: Audio recording and processing
+# libsox-fmt-mp3: SoX MP3 encoding support
+# alsa-utils: ALSA audio device utilities (arecord, aplay, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     sox \
@@ -14,24 +13,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 作業ディレクトリ
+# Working directory
 WORKDIR /app
 
-# アプリケーションコードのコピー
+# Copy application source code
 COPY . .
 
-# ホスト側の node_modules を除去し、クリーンインストール
+# Remove existing host node_modules and perform clean production install
 RUN rm -rf node_modules && npm install --omit=dev
 
-# 録音ディレクトリの作成
+# Create directories for recordings and config
 RUN mkdir -p /app/recordings /app/config
 
-# ポート公開
+# Expose web server port
 EXPOSE 3000
 
-# ヘルスチェック
+# Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/api/status || exit 1
 
-# エントリポイント
+# Entrypoint
 CMD ["node", "src/server.js"]

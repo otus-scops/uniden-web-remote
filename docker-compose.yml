@@ -10,50 +10,50 @@ services:
       - "3000:3000"
 
     devices:
-      # BCT15X USBシリアルポート
-      # 注意: デバイス名はホスト環境によって異なる場合があります
-      # `ls /dev/ttyUSB*` または `dmesg | grep tty` で確認してください
+      # BCT15X USB Serial Port
+      # Note: Device path may differ depending on your host environment
+      # Verify with `ls /dev/ttyUSB*` or `dmesg | grep tty`
       - "/dev/ttyUSB0:/dev/ttyUSB0"
-      # ALSAサウンドデバイス（録音用）
+      # ALSA sound device (for audio streaming & recording)
       - "/dev/snd:/dev/snd"
 
     volumes:
-      # 録音ファイル永続化
+      # Persistent storage for audio recordings
       - ./recordings:/app/recordings
-      # 設定ファイル永続化
+      # Persistent storage for config and backups
       - ./config:/app/config
 
     environment:
-      # シリアルポート設定
+      # Serial port configuration
       - SERIAL_PORT=/dev/ttyUSB0
       - SERIAL_BAUD=115200
 
-      # 音声デバイス設定
-      # `arecord -l` で確認し、適切なデバイスを指定してください
-      # 例: plughw:1,0 (USBオーディオ), plughw:0,0 (内蔵オーディオ)
+      # Audio device configuration
+      # Check available devices with `arecord -l`
+      # Example: plughw:1,0 (USB Audio Adapter), plughw:0,0 (Built-in Audio)
       - AUDIO_DEVICE=plughw:1,0
 
-      # 録音設定
+      # Audio recording settings
       - AUDIO_FORMAT=mp3
       - AUDIO_SAMPLE_RATE=22050
       - AUDIO_CHANNELS=1
       - AUDIO_BITRATE=64
       - AUTO_RECORD=true
 
-      # ファイル名テンプレート
+      # Filename template
       - FILENAME_TEMPLATE={date}_{time}_{freq}_{system}_{channel}
 
-      # スキャナー設定
+      # Scanner polling settings
       - POLL_INTERVAL=200
       - RECEPTION_TIMEOUT=1500
 
-      # タイムゾーン
+      # Timezone
       - TZ=Asia/Tokyo
 
-      # モックモード（実機なしでのテスト用: true に変更）
+      # Mock mode (set to true for UI development without physical hardware)
       - MOCK_MODE=false
 
-    # audio と dialout グループに追加
+    # Add container to audio and dialout groups for device permissions
     group_add:
       - audio
       - dialout

@@ -16,14 +16,14 @@
 <body>
   <div class="app-container" id="app">
 
-    <!-- ヘッダー -->
+    <!-- Header -->
     <header class="app-header" id="app-header">
       <div class="app-title">
         <h1>BCT15X</h1>
         <span class="subtitle" id="scanner-model" data-i18n="header.subtitle">リモートスキャナー</span>
       </div>
       <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
-        <!-- 言語セレクタ -->
+        <!-- Language Selector -->
         <div class="lang-selector">
           <select id="lang-select" class="lang-dropdown" onchange="i18n.setLanguage(this.value)" title="Language">
             <option value="ja">🇯🇵 日本語</option>
@@ -38,9 +38,9 @@
       </div>
     </header>
 
-    <!-- 通常のスキャナービュー -->
+    <!-- Standard Scanner View -->
     <div id="scanner-view" class="app-grid">
-    <!-- スキャナーディスプレイ -->
+    <!-- Scanner Display Panel -->
     <section class="panel scanner-panel" id="scanner-panel">
       <div class="panel-header">
         <h2 data-i18n="scanner.title">📡 スキャナー</h2>
@@ -51,10 +51,10 @@
         </div>
       </div>
       <div class="panel-body scanner-display" id="scanner-display">
-        <!-- 周波数表示 -->
+        <!-- Frequency Display -->
         <div class="frequency-display" id="frequency-display">----.---- MHz</div>
 
-        <!-- チャンネル情報 -->
+        <!-- Channel Information -->
         <div class="channel-info" id="channel-info">
           <div class="info-item">
             <div class="info-label" data-i18n="scanner.system">システム</div>
@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <!-- 追加情報 -->
+        <!-- Additional Information -->
         <div class="channel-info">
           <div class="info-item">
             <div class="info-label" data-i18n="scanner.modulation">モード</div>
@@ -86,7 +86,7 @@
           </div>
         </div>
 
-        <!-- RSSI メーター -->
+        <!-- RSSI Signal Meter -->
         <div class="rssi-container">
           <div class="rssi-label"><span data-i18n="scanner.signalStrength">信号強度 (RSSI)</span>: <span id="rssi-value" class="text-cyan text-mono">0</span></div>
           <div class="rssi-bar-wrapper">
@@ -94,7 +94,7 @@
           </div>
         </div>
 
-        <!-- ライブ音声プレイヤー -->
+        <!-- Live Audio Player -->
         <div class="live-audio-container" id="live-audio-container">
           <div class="live-audio-header">
             <span class="live-audio-title" data-i18n="scanner.liveAudio">🔊 ライブ音声</span>
@@ -117,13 +117,13 @@
       </div>
     </section>
 
-    <!-- 操作パネル -->
+    <!-- Control Panel -->
     <section class="panel control-panel" id="control-panel">
       <div class="panel-header">
         <h2 data-i18n="control.title">🎛️ コントロール</h2>
       </div>
       <div class="panel-body">
-        <!-- スキャン制御 -->
+        <!-- Scan Control -->
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.scanSection">スキャン制御</div>
           <div class="button-grid button-grid-2">
@@ -132,7 +132,7 @@
           </div>
         </div>
 
-        <!-- オーディオ / RF 制御 (VOL/SQ) -->
+        <!-- Audio / RF Controls (VOL/SQ) -->
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.levelSection">レベル制御</div>
           <div class="slider-group">
@@ -149,7 +149,7 @@
           </div>
         </div>
 
-        <!-- 専用サーチキー & ファンクション -->
+        <!-- Dedicated Search Keys & Function -->
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.serviceSection">サービスサーチ & 機能</div>
           <div class="button-grid button-grid-3">
@@ -162,10 +162,10 @@
           </div>
         </div>
 
-        <!-- D-Padナビゲーション & テンキー -->
+        <!-- D-Pad Navigation & Numpad -->
         <div class="control-section">
           <div class="keypad-layout">
-            <!-- 左側: D-Pad -->
+            <!-- Left: D-Pad Navigation -->
             <div class="d-pad-container">
               <button class="btn btn-dpad dpad-up" onclick="controlPanel.onKey('^','P')">▲</button>
               <button class="btn btn-dpad dpad-left" onclick="controlPanel.onKey('<','P')">◀</button>
@@ -174,7 +174,7 @@
               <button class="btn btn-dpad dpad-down" onclick="controlPanel.onKey('V','P')">▼</button>
             </div>
             
-            <!-- 右側: テンキー -->
+            <!-- Right: Numeric Keypad -->
             <div class="numpad-container">
               <button class="btn" onclick="controlPanel.onKey('1','P')">1</button>
               <button class="btn" onclick="controlPanel.onKey('2','P')">2</button>
@@ -197,7 +197,7 @@
         </div>
 
 
-        <!-- 録音設定 -->
+        <!-- Recording Settings -->
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.recordSection">録音設定</div>
           <div class="toggle-row">
@@ -223,7 +223,7 @@
           </div>
         </div>
 
-        <!-- コマンドコンソール -->
+        <!-- Command Console -->
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.consoleTitle">コマンドコンソール</div>
           <div class="command-console">
@@ -239,7 +239,7 @@
       </div>
     </section>
 
-    <!-- 受信ログ -->
+    <!-- Reception Log -->
     <section class="panel log-panel" id="log-panel">
       <div class="panel-header">
         <h2 data-i18n="log.title">📋 受信ログ</h2>
@@ -251,7 +251,7 @@
         </div>
       </div>
 
-      <!-- ログフィルタバー -->
+      <!-- Log Filter Bar -->
       <div class="filter-bar collapsed" id="log-filter-bar">
         <div class="filter-bar-content">
           <div class="filter-field">
@@ -296,14 +296,14 @@
         </div>
       </div>
 
-      <!-- フィルタ結果件数 -->
+      <!-- Filter Result Count -->
       <div class="filter-count hidden" id="log-filter-count"></div>
 
       <div class="panel-body" style="padding: 0;">
         <div class="log-table-wrapper" id="log-table-wrapper">
           <table class="log-table" id="log-table">
             <thead>
-              <!-- カラムはJS側で動的生成 -->
+              <!-- Columns dynamically generated via JS -->
             </thead>
             <tbody id="log-tbody">
             </tbody>
@@ -312,7 +312,7 @@
         </div>
       </div>
 
-      <!-- カラム設定モーダル -->
+      <!-- Column Settings Modal -->
       <div class="column-settings-modal hidden" id="column-settings-modal">
         <div class="column-settings-overlay" onclick="activityLog.onCloseColumnSettings()"></div>
         <div class="column-settings-content">
@@ -323,7 +323,7 @@
           <div class="column-settings-body">
             <p class="column-settings-hint" data-i18n="log.columnSettingsHint">表示するカラムを選択し、ドラッグで順序を変更できます。</p>
             <div class="column-settings-list" id="column-settings-list">
-              <!-- JS側で動的生成 -->
+              <!-- Dynamically generated via JS -->
             </div>
           </div>
           <div class="column-settings-footer">
@@ -334,14 +334,14 @@
       </div>
     </section>
 
-    <!-- 録音ファイル -->
+    <!-- Recording Files -->
     <section class="panel recordings-panel" id="recordings-panel">
       <div class="panel-header">
         <h2 data-i18n="recordings.title">🎙️ 録音ファイル</h2>
         <button class="btn" onclick="recordingPanel.onRefresh()" data-i18n="recordings.refresh">🔄 更新</button>
       </div>
 
-      <!-- 録音ファイル検索バー -->
+      <!-- Recording Search Bar -->
       <div class="recordings-filter">
         <div class="recordings-filter-row">
           <input type="text" id="rec-search-input" placeholder="🔍 ファイル名で検索..."
@@ -355,7 +355,7 @@
         </ul>
         <div class="log-empty" id="recordings-empty" data-i18n="recordings.empty">録音ファイルはまだありません</div>
       </div>
-      <!-- オーディオプレイヤー -->
+      <!-- Audio Player -->
       <div class="audio-player-container hidden" id="audio-player-container">
         <div class="now-playing"><span data-i18n="recordings.nowPlaying">🔊 再生中</span>: <span id="now-playing-name">---</span></div>
         <audio controls id="audio-player"></audio>
@@ -364,9 +364,9 @@
 
   </div><!-- /#scanner-view -->
 
-  <!-- エディタモードビュー -->
+  <!-- Editor Mode View -->
   <div id="editor-view" class="editor-container hidden">
-    <!-- エディタ上部ツールバー -->
+    <!-- Editor Top Toolbar -->
     <div class="editor-toolbar">
       <div class="toolbar-group">
         <button class="btn btn-primary" id="btn-editor-download" onclick="memoryEditor.onDownloadFromScanner()" data-i18n="editor.toolbar.download">
@@ -414,9 +414,9 @@
       </div>
     </div>
 
-    <!-- エディタメインレイアウト（左:ツリー、右:スプレッドシート） -->
+    <!-- Editor Main Workspace (Left: Tree, Right: Spreadsheet) -->
     <div class="editor-workspace">
-      <!-- 左ペイン: システム・グループ階層ナビゲーション -->
+      <!-- Left Pane: System / Group Hierarchy Navigation -->
       <aside class="panel editor-tree-panel">
         <div class="panel-header">
           <h2 data-i18n="editor.tree.title">📂 システム / グループ</h2>
@@ -431,7 +431,7 @@
         </div>
       </aside>
 
-      <!-- 右ペイン: チャンネルスプレッドシート（グリッド） -->
+      <!-- Right Pane: Channel Spreadsheet Grid -->
       <main class="panel editor-grid-panel">
         <div class="panel-header">
           <div class="grid-title-area">
@@ -446,7 +446,7 @@
         </div>
 
         <div class="panel-body grid-scroll-body" id="grid-body-container">
-          <!-- スプレッドシートテーブル -->
+          <!-- Spreadsheet Table -->
           <div class="spreadsheet-container" id="spreadsheet-container">
             <table class="channel-table" id="channel-table">
               <thead>
@@ -463,7 +463,7 @@
                 </tr>
               </thead>
               <tbody id="channel-tbody">
-                <!-- JSで動的にチャンネル行を生成 -->
+                <!-- Channel rows dynamically generated via JS -->
               </tbody>
             </table>
             <div class="grid-empty-message" id="grid-empty-message" data-i18n="editor.grid.empty">
@@ -472,7 +472,7 @@
           </div>
         </div>
 
-        <!-- グリッド下部アクションバー -->
+        <!-- Grid Footer Action Bar -->
         <div class="grid-footer-bar" id="grid-footer-bar" style="display: none;">
           <div class="footer-left">
             <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddChannelRow()" data-i18n="editor.grid.addRow">➕ 行追加</button>
@@ -487,7 +487,7 @@
     </div>
   </div><!-- /#editor-view -->
 
-  <!-- クリップボード貼り付け用モーダル -->
+  <!-- Clipboard Batch Paste Modal -->
   <div class="modal-overlay hidden" id="modal-paste">
     <div class="modal-card">
       <div class="modal-header">
@@ -508,7 +508,7 @@
     </div>
   </div>
 
-  <!-- 実機通信プログレスモーダル -->
+  <!-- Hardware Communication Progress Modal -->
   <div class="modal-overlay hidden" id="modal-progress">
     <div class="modal-card modal-progress-card">
       <div class="modal-header">
@@ -530,7 +530,7 @@
     </div>
   </div>
 
-  <!-- バックアップ履歴モーダル -->
+  <!-- Backup History Modal -->
   <div class="modal-overlay hidden" id="modal-backups">
     <div class="modal-card">
       <div class="modal-header">

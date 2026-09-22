@@ -1,26 +1,26 @@
 /**
- * @fileoverview 録音パネルモジュール
- * @description 録音ファイルリスト表示、再生、ダウンロード、削除のUIを管理する
+ * @fileoverview Recording Panel Module
+ * @description Manages recorded audio files list, playback, download, and deletion UI
  */
 
 /**
- * 録音パネルUI管理
+ * Recording Panel UI controller
  */
 const recordingPanel = (() => {
-  /** @type {Array<Object>} 録音ファイルリスト */
+  /** @type {Array<Object>} Recording file list */
   let recordings = [];
 
-  /** @type {string|null} 現在再生中のファイル名 */
+  /** @type {string|null} Currently playing filename */
   let currentlyPlaying = null;
 
-  /** @type {string} 検索クエリ */
+  /** @type {string} Search query */
   let searchQuery = '';
   
-  /** @type {number} デバウンス用タイマーID */
+  /** @type {number|null} Search debounce timer ID */
   let searchTimeoutId = null;
 
   /**
-   * 録音ファイルリストを更新する
+   * Refresh recording file list
    */
   async function onRefresh() {
     try {
@@ -32,12 +32,12 @@ const recordingPanel = (() => {
       recordings = data.recordings || [];
       renderList();
     } catch (err) {
-      console.error('[RecordingPanel] リスト取得エラー:', err);
+      console.error('[RecordingPanel] Failed to fetch list:', err);
     }
   }
 
   /**
-   * 録音ファイルリストを描画する
+   * Render recording file list
    */
   function renderList() {
     const list = document.getElementById('recording-list');
@@ -52,7 +52,7 @@ const recordingPanel = (() => {
     empty.classList.add('hidden');
 
     list.innerHTML = recordings.map((rec) => {
-      // ディレクトリパスとファイル名を分離
+      // Split directory path and base filename
       const parts = rec.filename.split('/');
       const basename = parts.pop();
       const dirPath = parts.length > 0 ? parts.join('/') + '/' : '';
@@ -78,8 +78,8 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 検索入力の変更イベント
-   * @param {string} val 
+   * Handle search input change event
+   * @param {string} val - Query text
    */
   function onSearchChange(val) {
     searchQuery = val.trim();
@@ -92,8 +92,8 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 録音ファイルを再生する
-   * @param {string} filename - ファイル名
+   * Play recording file
+   * @param {string} filename - Filename to play
    */
   function onPlay(filename) {
     const container = document.getElementById('audio-player-container');
@@ -108,8 +108,8 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 録音ファイルをダウンロードする
-   * @param {string} filename - ファイル名
+   * Download recording file
+   * @param {string} filename - Filename to download
    */
   function onDownload(filename) {
     const a = document.createElement('a');
@@ -121,8 +121,8 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 録音ファイルを削除する
-   * @param {string} filename - ファイル名
+   * Delete recording file
+   * @param {string} filename - Filename to delete
    */
   async function onDelete(filename) {
     const confirmMsg = typeof i18n !== 'undefined'
@@ -135,7 +135,7 @@ const recordingPanel = (() => {
         method: 'DELETE',
       });
 
-      // 再生中のファイルなら停止
+      // Stop audio player if currently playing this file
       if (currentlyPlaying === filename) {
         const player = document.getElementById('audio-player');
         player.pause();
@@ -144,11 +144,11 @@ const recordingPanel = (() => {
         currentlyPlaying = null;
       }
 
-      // リストから削除
+      // Remove from list
       recordings = recordings.filter(r => r.filename !== filename);
       renderList();
     } catch (err) {
-      console.error('[RecordingPanel] 削除エラー:', err);
+      console.error('[RecordingPanel] Delete error:', err);
       const errMsg = typeof i18n !== 'undefined'
         ? i18n.t('recordings.deleteFailed', { error: err.message })
         : `削除に失敗しました: ${err.message}`;
@@ -157,27 +157,27 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 録音開始イベント処理
-   * @param {Object} data - 録音開始データ
+   * Handle recording start event
+   * @param {Object} data - Event payload
    */
   function onRecordingStart(data) {
-    console.log('[RecordingPanel] 録音開始:', data.filename);
+    console.log('[RecordingPanel] Recording started:', data.filename);
   }
 
   /**
-   * 録音停止イベント処理
-   * @param {Object} data - 録音停止データ
+   * Handle recording stop event
+   * @param {Object} data - Event payload
    */
   function onRecordingStop(data) {
-    console.log('[RecordingPanel] 録音停止:', data.filename);
-    // リストを更新
+    console.log('[RecordingPanel] Recording stopped:', data.filename);
+    // Refresh file list
     setTimeout(() => onRefresh(), 500);
   }
 
   /**
-   * 日付文字列をフォーマットする
-   * @param {string} isoString - ISO 8601形式の日付文字列
-   * @returns {string} フォーマットされた日付文字列
+   * Format ISO date string for display
+   * @param {string} isoString - ISO 8601 date string
+   * @returns {string} Formatted date string
    */
   function formatDate(isoString) {
     const d = new Date(isoString);
@@ -189,9 +189,9 @@ const recordingPanel = (() => {
   }
 
   /**
-   * HTML特殊文字をエスケープする
-   * @param {string} str - 入力文字列
-   * @returns {string} エスケープ済み文字列
+   * Escape HTML special characters
+   * @param {string} str - Input string
+   * @returns {string} Escaped string
    */
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -200,22 +200,22 @@ const recordingPanel = (() => {
   }
 
   /**
-   * JavaScript文字列リテラル用にエスケープする
-   * @param {string} str - 入力文字列
-   * @returns {string} エスケープ済み文字列
+   * Escape string for JavaScript string literal
+   * @param {string} str - Input string
+   * @returns {string} Escaped string
    */
   function escapeJs(str) {
     return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
   }
 
-  // 言語切り替え時にツールチップ等を再描画
+  // Re-render tooltips and labels on language change
   window.addEventListener('languageChanged', () => {
     if (recordings.length > 0) {
       renderList();
     }
   });
 
-  // 公開API
+  // Public API
   return {
     onRefresh,
     onPlay,

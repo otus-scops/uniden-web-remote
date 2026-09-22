@@ -1,114 +1,114 @@
 /**
- * @fileoverview BCT15X リモートスキャナー デフォルト設定
- * @description システム全体のデフォルト設定値を定義する
+ * @fileoverview BCT15X Remote Scanner Default Configuration
+ * @description Defines system-wide default configuration parameters and environment variable fallbacks
  */
 
 const path = require('path');
 
 /**
- * デフォルト設定オブジェクト
+ * Default configuration object
  * @type {Object}
  */
 const defaultConfig = {
-  /** サーバー設定 */
+  /** Server settings */
   server: {
-    /** HTTPサーバーポート */
+    /** HTTP web server port */
     port: parseInt(process.env.PORT, 10) || 3000,
-    /** ホスト（0.0.0.0でDocker外からアクセス可能） */
+    /** Bind host (0.0.0.0 for Docker container accessibility) */
     host: process.env.HOST || '0.0.0.0',
   },
 
-  /** シリアルポート設定 */
+  /** Serial port communication settings */
   serial: {
-    /** シリアルデバイスパス */
+    /** Serial device path */
     path: process.env.SERIAL_PORT || '/dev/ttyUSB0',
-    /** ボーレート（フロントポート: 115200bps） */
+    /** Baud rate (BCT15X front port default: 115200bps) */
     baudRate: parseInt(process.env.SERIAL_BAUD, 10) || 115200,
-    /** データビット */
+    /** Data bits */
     dataBits: 8,
-    /** パリティ */
+    /** Parity */
     parity: 'none',
-    /** ストップビット */
+    /** Stop bits */
     stopBits: 1,
-    /** フロー制御 */
+    /** Hardware flow control */
     rtscts: false,
-    /** 行末文字 */
+    /** Line delimiter */
     delimiter: '\r',
   },
 
-  /** スキャナーポーリング設定 */
+  /** Scanner polling settings */
   scanner: {
-    /** GLGポーリング間隔(ms) */
+    /** GLG polling interval (ms) */
     pollIntervalMs: parseInt(process.env.POLL_INTERVAL, 10) || 200,
-    /** STS取得間隔(ms) */
+    /** STS polling interval (ms) */
     statusIntervalMs: parseInt(process.env.STATUS_INTERVAL, 10) || 1000,
-    /** 受信終了判定タイムアウト(ms) - この時間GLGが空なら受信終了とみなす */
+    /** Reception timeout threshold (ms) - mark signal end if GLG empty for this duration */
     receptionTimeoutMs: parseInt(process.env.RECEPTION_TIMEOUT, 10) || 1500,
-    /** 接続リトライ間隔(ms) */
+    /** Serial reconnection retry interval (ms) */
     reconnectIntervalMs: 5000,
-    /** 最大受信ログ件数 */
+    /** Maximum activity log entries retained in memory */
     maxLogEntries: parseInt(process.env.MAX_LOG_ENTRIES, 10) || 10000,
   },
 
-  /** 音声録音設定 */
+  /** Audio streaming and recording settings */
   audio: {
-    /** ALSAデバイス名 */
+    /** ALSA capture device name */
     device: process.env.AUDIO_DEVICE || 'hw:1,0',
-    /** 録音フォーマット（mp3） */
+    /** Audio format (mp3) */
     format: process.env.AUDIO_FORMAT || 'mp3',
-    /** サンプルレート */
+    /** Audio sample rate (Hz) */
     sampleRate: parseInt(process.env.AUDIO_SAMPLE_RATE, 10) || 22050,
-    /** チャンネル数（1=モノラル） */
+    /** Channels (1 = Mono) */
     channels: parseInt(process.env.AUDIO_CHANNELS, 10) || 1,
-    /** MP3ビットレート */
+    /** MP3 bitrate (kbps) */
     mp3Bitrate: parseInt(process.env.AUDIO_BITRATE, 10) || 64,
-    /** 録音保存ディレクトリ */
+    /** Persistent recordings directory */
     recordingsDir: process.env.RECORDINGS_DIR || path.join(__dirname, '../../recordings'),
-    /** 自動録音の有効/無効 */
+    /** Auto recording enabled flag */
     autoRecord: process.env.AUTO_RECORD !== 'false',
-    /** SOX無音検出: 無音閾値（パーセント） */
+    /** SoX silence threshold (percentage) */
     silenceThreshold: parseFloat(process.env.SILENCE_THRESHOLD) || 1.0,
-    /** SOX無音検出: 無音継続時間（秒） */
+    /** SoX silence duration (seconds) */
     silenceDuration: parseFloat(process.env.SILENCE_DURATION) || 3.0,
   },
 
-  /** ファイル命名設定 */
+  /** Filename template settings */
   fileNaming: {
-    /** ファイル名テンプレート
-     * 使用可能プレースホルダー:
-     *   {date}       - 日付 (YYYY-MM-DD)
-     *   {time}       - 時刻 (HH-mm-ss)
-     *   {datetime}   - 日時 (YYYY-MM-DD_HH-mm-ss)
-     *   {freq}       - 周波数 (例: 155.700MHz)
-     *   {tgid}       - トークグループID
-     *   {system}     - システム名 (NAME1)
-     *   {department} - デパートメント名 (NAME2)
-     *   {channel}    - チャンネル名 (NAME3)
-     *   {modulation} - モジュレーション
-     *   {seq}        - 連番
+    /** Filename template pattern
+     * Available placeholders:
+     *   {date}       - Date (YYYY-MM-DD)
+     *   {time}       - Time (HH-mm-ss)
+     *   {datetime}   - Date and time (YYYY-MM-DD_HH-mm-ss)
+     *   {freq}       - Frequency (e.g. 155.700MHz)
+     *   {tgid}       - Talkgroup ID
+     *   {system}     - System tag (NAME1)
+     *   {department} - Department tag (NAME2)
+     *   {channel}    - Channel tag (NAME3)
+     *   {modulation} - Modulation mode
+     *   {seq}        - Sequential number
      */
     template: process.env.FILENAME_TEMPLATE || '{date}_{time}_{freq}_{system}_{channel}',
-    /** 日付フォーマット */
+    /** Date format */
     dateFormat: 'YYYY-MM-DD',
-    /** 時刻フォーマット */
+    /** Time format */
     timeFormat: 'HH-mm-ss',
   },
 
-  /** Google Drive同期設定 */
+  /** Google Drive synchronization settings (Optional) */
   gdrive: {
-    /** 同期有効/無効 */
+    /** Enable / disable sync */
     enabled: process.env.GDRIVE_ENABLED === 'true',
-    /** rcloneリモート名 */
+    /** rclone remote name */
     remoteName: process.env.GDRIVE_REMOTE || 'gdrive',
-    /** リモート先ディレクトリ */
+    /** Remote target directory path */
     remotePath: process.env.GDRIVE_PATH || 'BCT15X_Recordings',
-    /** 同期間隔（秒） */
+    /** Sync interval (seconds) */
     syncIntervalSec: parseInt(process.env.GDRIVE_SYNC_INTERVAL, 10) || 300,
   },
 
-  /** モックモード（実機なしでのテスト用） */
+  /** Mock simulation mode (for UI testing without scanner hardware) */
   mock: {
-    /** モックモード有効/無効 */
+    /** Enable / disable mock mode */
     enabled: process.env.MOCK_MODE === 'true',
   },
 };

@@ -1,41 +1,41 @@
 /**
- * @fileoverview メインアプリケーション
- * @description WebSocket接続管理とグローバル状態管理を行う
+ * @fileoverview Main Application Controller
+ * @description Manages WebSocket connections and global application state
  */
 
 /**
- * アプリケーションメインクラス
- * WebSocket接続とグローバル状態を管理する
+ * Main application singleton
+ * Manages WebSocket connection and global state
  */
 const app = (() => {
-  /** @type {WebSocket|null} WebSocket接続 */
+  /** @type {WebSocket|null} WebSocket connection */
   let ws = null;
 
-  /** @type {boolean} 接続状態 */
+  /** @type {boolean} Connection status */
   let isConnected = false;
 
-  /** @type {number} 再接続間隔(ms) */
+  /** @type {number} Reconnection interval (ms) */
   const RECONNECT_INTERVAL = 3000;
 
-  /** @type {number|null} 再接続タイマー */
+  /** @type {number|null} Reconnection timer ID */
   let reconnectTimer = null;
 
-  /** @type {Object} 最新のスキャナーステータス */
+  /** @type {Object} Latest scanner status snapshot */
   let currentStatus = {};
 
   /**
-   * WebSocket接続を確立する
+   * Establish WebSocket connection
    */
   function connect() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${location.host}/ws`;
 
-    console.log(`[App] WebSocket接続: ${wsUrl}`);
+    console.log(`[App] Connecting WebSocket: ${wsUrl}`);
 
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('[App] WebSocket接続完了');
+      console.log('[App] WebSocket connected');
       isConnected = true;
 
       if (reconnectTimer) {
@@ -45,14 +45,14 @@ const app = (() => {
     };
 
     ws.onclose = () => {
-      console.log('[App] WebSocket切断');
+      console.log('[App] WebSocket disconnected');
       isConnected = false;
       onDisconnect();
       scheduleReconnect();
     };
 
     ws.onerror = (err) => {
-      console.error('[App] WebSocketエラー:', err);
+      console.error('[App] WebSocket error:', err);
     };
 
     ws.onmessage = (event) => {
@@ -60,33 +60,33 @@ const app = (() => {
         const message = JSON.parse(event.data);
         onMessage(message);
       } catch (err) {
-        console.error('[App] メッセージパースエラー:', err);
+        console.error('[App] Message parse error:', err);
       }
     };
   }
 
   /**
-   * 再接続をスケジュールする
+   * Schedule reconnection attempt
    */
   function scheduleReconnect() {
     if (reconnectTimer) return;
 
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
-      console.log('[App] 再接続中...');
+      console.log('[App] Reconnecting...');
       connect();
     }, RECONNECT_INTERVAL);
   }
 
   /**
-   * WebSocketメッセージを処理する
-   * @param {Object} message - パース済みメッセージ
+   * Handle incoming WebSocket message
+   * @param {Object} message - Parsed message object
    */
   function onMessage(message) {
     switch (message.type) {
       case 'status':
         currentStatus = message.data;
-        // 各UIモジュールに通知
+        // Notify UI modules
         if (typeof scannerDisplay !== 'undefined') {
           scannerDisplay.onStatusUpdate(message.data);
         }
@@ -126,7 +126,7 @@ const app = (() => {
         break;
 
       case 'recordingError':
-        console.error('[App] 録音エラー:', message.data);
+        console.error('[App] Recording error:', message.data);
         break;
 
       case 'commandResponse':
@@ -142,17 +142,17 @@ const app = (() => {
         break;
 
       case 'serialData':
-        // デバッグ用 -nip 応じて処理
+        // Raw serial debug data
         break;
 
       case 'error':
-        console.error('[App] サーバーエラー:', message.data);
+        console.error('[App] Server error:', message.data);
         break;
     }
   }
 
   /**
-   * WebSocket切断時の処理
+   * Handle WebSocket disconnection
    */
   function onDisconnect() {
     const statusDot = document.getElementById('status-dot');
@@ -170,23 +170,23 @@ const app = (() => {
   }
 
   /**
-   * WebSocket経由でメッセージを送信する
-   * @param {string} type - メッセージタイプ
-   * @param {Object} data - ペイロード
+   * Send message over WebSocket
+   * @param {string} type - Message type
+   * @param {Object} data - Payload
    */
   function send(type, data = {}) {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type, data }));
     } else {
-      console.warn('[App] WebSocket未接続のためメッセージを送信できません');
+      console.warn('[App] Cannot send message: WebSocket is not open');
     }
   }
 
   /**
-   * REST API呼び出しを行う
-   * @param {string} endpoint - APIエンドポイント
-   * @param {Object} [options={}] - fetchオプション
-   * @returns {Promise<Object>} レスポンスJSON
+   * Make REST API request
+   * @param {string} endpoint - API endpoint path
+   * @param {Object} [options={}] - Fetch options
+   * @returns {Promise<Object>} JSON response
    */
   async function fetchApi(endpoint, options = {}) {
     const defaultOpts = {
@@ -196,39 +196,39 @@ const app = (() => {
     const response = await fetch(`/api${endpoint}`, { ...defaultOpts, ...options });
 
     if (!response.ok) {
-      throw new Error(`API エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
   }
 
   /**
-   * 現在のステータスを取得する
+   * Get current scanner status snapshot
    * @returns {Object}
    */
   function getStatus() {
     return currentStatus;
   }
 
-  // 初期化
+  // Initialization
   document.addEventListener('DOMContentLoaded', async () => {
-    // i18n 多言語化エンジンの初期化
+    // Initialize i18n localization engine
     if (typeof i18n !== 'undefined') {
       await i18n.init();
     }
 
     connect();
 
-    // 言語切り替え時のグローバルイベント
+    // Global listener for language changes
     window.addEventListener('languageChanged', () => {
-      // 接続ステータス表記更新
+      // Update connection status label
       const statusText = document.getElementById('connection-text');
       if (statusText) {
         statusText.innerText = isConnected
           ? i18n.t('header.connected')
           : i18n.t('header.disconnected');
       }
-      // エディタボタン更新
+      // Update memory editor button label
       const btnEditor = document.getElementById('btn-toggle-editor');
       if (btnEditor) {
         const isEditorOpen = !document.getElementById('editor-view').classList.contains('hidden');
@@ -238,7 +238,7 @@ const app = (() => {
       }
     });
 
-    // 録音ファイルリストの初期読み込み
+    // Initial fetch of recording file list
     setTimeout(() => {
       if (typeof recordingPanel !== 'undefined') {
         recordingPanel.onRefresh();
@@ -246,7 +246,7 @@ const app = (() => {
     }, 1000);
   });
 
-  // 公開API
+  // Public API
   return {
     connect,
     send,

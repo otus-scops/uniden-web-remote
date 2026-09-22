@@ -1,11 +1,11 @@
 /* ======================================================================
-   BCT15X リモートスキャナー - デザインシステム
-   ダークテーマベースのスキャナーUI
+   BCT15X Remote Scanner - Design System
+   Dark theme-based scanner UI
    ====================================================================== */
 
-/* --- CSS変数（デザイントークン） --- */
+/* --- CSS Variables (Design Tokens) --- */
 :root {
-  /* プライマリカラー */
+  /* Primary Colors */
   --color-bg-primary: #0a0e17;
   --color-bg-secondary: #111827;
   --color-bg-panel: #1a2332;
@@ -13,7 +13,7 @@
   --color-bg-input: #0d1421;
   --color-bg-overlay: rgba(0, 0, 0, 0.6);
 
-  /* アクセントカラー */
+  /* Accent Colors */
   --color-accent-cyan: #00d4ff;
   --color-accent-cyan-dim: #0092b3;
   --color-accent-green: #00ff88;
@@ -24,27 +24,27 @@
   --color-accent-yellow: #ffcc00;
   --color-accent-purple: #aa66ff;
 
-  /* テキストカラー */
+  /* Text Colors */
   --color-text-primary: #e8edf5;
   --color-text-secondary: #8899aa;
   --color-text-dim: #556677;
   --color-text-bright: #ffffff;
 
-  /* ボーダー */
+  /* Borders */
   --color-border: #1e2d40;
   --color-border-active: #00d4ff33;
 
-  /* グローエフェクト */
+  /* Glow Effects */
   --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
   --glow-green: 0 0 20px rgba(0, 255, 136, 0.3);
   --glow-red: 0 0 20px rgba(255, 51, 85, 0.3);
 
-  /* フォント */
+  /* Fonts */
   --font-main: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   --font-display: 'Orbitron', 'Inter', sans-serif;
 
-  /* スペーシング */
+  /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -52,19 +52,19 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* ボーダー半径 */
+  /* Border Radii */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  /* トランジション */
+  /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 400ms ease;
 }
 
-/* --- グローバルリセット&ベーススタイル --- */
+/* --- Global Reset & Base Styles --- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -86,7 +86,7 @@ body {
   overflow-x: hidden;
 }
 
-/* 背景グリッドパターン */
+/* Background Grid Pattern */
 body::before {
   content: '';
   position: fixed;
@@ -102,7 +102,7 @@ body::before {
   z-index: 0;
 }
 
-/* --- レイアウト --- */
+/* --- Layout --- */
 .app-container {
   position: relative;
   z-index: 1;
@@ -133,7 +133,7 @@ body::before {
   }
 }
 
-/* --- ヘッダー --- */
+/* --- Header --- */
 .app-header {
   grid-area: header;
   display: flex;
@@ -186,7 +186,7 @@ body::before {
   animation: pulse-green 2s infinite;
 }
 
-/* --- パネル共通 --- */
+/* --- Common Panel Styles --- */
 .panel {
   background: var(--color-bg-panel);
   border: 1px solid var(--color-border);
@@ -219,7 +219,7 @@ body::before {
   overflow-y: auto;
 }
 
-/* --- スキャナーディスプレイ --- */
+/* --- Scanner Display --- */
 .scanner-panel {
   grid-area: scanner;
 }
@@ -279,7 +279,7 @@ body::before {
   min-height: 1.4rem;
 }
 
-/* RSSI メーター */
+/* RSSI Meter */
 .rssi-container {
   margin-top: var(--space-lg);
 }
@@ -324,7 +324,7 @@ body::before {
   border-radius: 2px;
 }
 
-/* ステータスバッジ */
+/* Status Badges */
 .status-badges {
   display: flex;
   justify-content: center;
@@ -369,7 +369,7 @@ body::before {
   background: currentColor;
 }
 
-/* --- 操作パネル --- */
+/* --- Control Panel --- */
 .control-panel {
   grid-area: controls;
 }
@@ -402,7 +402,7 @@ body::before {
   grid-template-columns: repeat(3, 1fr);
 }
 
-/* スライダー */
+/* Sliders */
 .slider-group {
   display: flex;
   flex-direction: column;
@@ -460,7 +460,7 @@ body::before {
   text-align: right;
 }
 
-/* キーパッドレイアウト */
+/* Keypad Layout */
 .keypad-layout {
   display: flex;
   gap: var(--space-md);
@@ -513,7 +513,7 @@ body::before {
 .dpad-right { grid-column: 3; grid-row: 2; }
 .dpad-down { grid-column: 2; grid-row: 3; }
 
-/* テンキーコンテナ */
+/* Numpad Container */
 .numpad-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -540,7 +540,7 @@ body::before {
 }
 
 
-/* ボタンスタイル */
+/* Button Styles */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -611,7 +611,7 @@ body::before {
   width: 100%;
 }
 
-/* トグルスイッチ */
+/* Toggle Switches */
 .toggle-row {
   display: flex;
   justify-content: space-between;
@@ -666,7 +666,7 @@ body::before {
   background: var(--color-accent-green);
 }
 
-/* 入力フィールド */
+/* Input Fields */
 .input-group {
   margin-bottom: var(--space-md);
 }
@@ -699,7 +699,7 @@ body::before {
   border-color: var(--color-accent-cyan);
 }
 
-/* コマンドコンソール */
+/* Command Console */
 .command-console {
   margin-top: var(--space-md);
 }
@@ -727,7 +727,7 @@ body::before {
   overflow-y: auto;
 }
 
-/* --- 受信ログ --- */
+/* --- Reception Log --- */
 .log-panel {
   grid-area: log;
 }
@@ -787,7 +787,7 @@ body::before {
   color: var(--color-text-dim);
 }
 
-/* --- 録音パネル --- */
+/* --- Recordings Panel --- */
 .recordings-panel {
   grid-area: recordings;
 }
@@ -855,7 +855,7 @@ body::before {
   font-size: 0.75rem;
 }
 
-/* 音声プレイヤー */
+/* Audio Player */
 .audio-player-container {
   padding: var(--space-md) var(--space-lg);
   background: rgba(0, 0, 0, 0.2);
@@ -874,7 +874,7 @@ body::before {
   margin-bottom: var(--space-sm);
 }
 
-/* --- アニメーション --- */
+/* --- Animations --- */
 @keyframes pulse-green {
   0%, 100% { box-shadow: 0 0 4px rgba(0, 255, 136, 0.4); }
   50% { box-shadow: 0 0 12px rgba(0, 255, 136, 0.8); }
@@ -905,12 +905,12 @@ body::before {
   to { opacity: 1; }
 }
 
-/* 新着ログ行のアニメーション */
+/* New Log Entry Highlight Animation */
 .log-table tr.new-entry {
   animation: slide-in-right 0.3s ease;
 }
 
-/* --- スクロールバー --- */
+/* --- Scrollbars --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -929,12 +929,12 @@ body::before {
   background: var(--color-text-dim);
 }
 
-/* --- ユーティリティ --- */
+/* --- Utilities --- */
 .hidden {
   display: none !important;
 }
 
-/* --- エディタモード --- */
+/* --- Editor Mode Layout --- */
 .editor-grid {
   grid-area: scanner;
   display: grid;
@@ -967,7 +967,7 @@ body::before {
 .text-dim { color: var(--color-text-dim); }
 .text-mono { font-family: var(--font-mono); }
 
-/* --- ライブ音声プレイヤー --- */
+/* --- Live Audio Player --- */
 .live-audio-container {
   margin-top: var(--space-lg);
   padding: var(--space-md);
@@ -1111,12 +1111,12 @@ body::before {
   flex-shrink: 0;
 }
 
-/* ライブ音声プレイヤーの<audio>要素は非表示 */
+/* Live audio <audio> element is hidden (controlled via JS) */
 #live-audio-player {
   display: none;
 }
 
-/* --- カラム設定モーダル --- */
+/* --- Column Settings Modal --- */
 .column-settings-modal {
   position: fixed;
   top: 0;
@@ -1284,7 +1284,7 @@ body::before {
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
-/* --- フィルタバー --- */
+/* --- Filter Bar --- */
 .filter-bar {
   border-bottom: 1px solid var(--color-border);
   background: rgba(0, 0, 0, 0.15);
@@ -1396,7 +1396,7 @@ body::before {
   font-family: var(--font-mono);
 }
 
-/* --- テンプレートプレビュー --- */
+/* --- Filename Template Preview --- */
 .template-preview {
   margin-top: var(--space-xs);
   padding: var(--space-xs) var(--space-sm);
@@ -1436,7 +1436,7 @@ body::before {
   border-radius: 2px;
 }
 
-/* --- 録音ファイル ディレクトリパス表示 --- */
+/* --- Recording File Directory Path Display --- */
 .rec-path {
   font-size: 0.7rem;
   color: var(--color-text-dim);
@@ -1448,7 +1448,7 @@ body::before {
   margin: 0 2px;
 }
 
-/* 録音ファイル検索バー */
+/* Recording File Search Bar */
 .recordings-filter {
   padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
@@ -1482,7 +1482,7 @@ body::before {
   color: var(--color-text-dim);
 }
 
-/* レスポンシブ対応 */
+/* Responsive Breakpoints */
 @media (max-width: 768px) {
   .filter-bar-content {
     flex-direction: column;
@@ -1497,7 +1497,7 @@ body::before {
   }
 }
 
-/* 言語セレクタ */
+/* Language Selector */
 .lang-selector {
   display: flex;
   align-items: center;
@@ -1526,7 +1526,7 @@ body::before {
 }
 
 /* ==========================================================================
-   スプレッドシート型メモリエディタ スタイル
+   Spreadsheet Memory Editor Styles
    ========================================================================== */
 
 .editor-container {
@@ -1536,7 +1536,7 @@ body::before {
   gap: var(--space-md);
 }
 
-/* --- ツールバー --- */
+/* --- Toolbar --- */
 .editor-toolbar {
   display: flex;
   align-items: center;
@@ -1580,13 +1580,13 @@ body::before {
   align-items: center;
 }
 
-/* --- ワークスペース（2カラム） --- */
+/* --- Workspace (Two-Column Layout) --- */
 .editor-workspace {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: var(--space-md);
   flex: 1;
-  min-height: 0; /* flexbox内スクロール用 */
+  min-height: 0; /* For scrolling within flex child */
 }
 
 @media (max-width: 900px) {
@@ -1607,7 +1607,7 @@ body::before {
   padding: var(--space-sm);
 }
 
-/* ツリービュー */
+/* Tree View */
 .tree-root {
   list-style: none;
   padding: 0;
@@ -1691,7 +1691,7 @@ body::before {
   border-left: 1px dashed var(--color-border);
 }
 
-/* --- スプレッドシートグリッド --- */
+/* --- Spreadsheet Grid --- */
 .editor-grid-panel {
   display: flex;
   flex-direction: column;
@@ -1749,7 +1749,7 @@ body::before {
   background: rgba(0, 212, 255, 0.04);
 }
 
-/* カラム幅調整 */
+/* Column Width Adjustments */
 .col-num { width: 45px; text-align: center; color: var(--color-text-dim); }
 .col-name { width: 180px; }
 .col-freq { width: 130px; }
@@ -1758,7 +1758,7 @@ body::before {
 .col-chk { width: 45px; text-align: center; }
 .col-actions { width: 80px; text-align: center; }
 
-/* インラインエディタセル */
+/* Inline Editor Cells */
 .grid-input,
 .grid-select {
   width: 100%;
@@ -1825,7 +1825,7 @@ body::before {
   color: var(--color-text-secondary);
 }
 
-/* --- モーダル --- */
+/* --- Modals --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1934,7 +1934,7 @@ body::before {
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* プログレスバー */
+/* Progress Bar */
 .progress-bar-container {
   width: 100%;
   height: 14px;
@@ -1976,7 +1976,7 @@ body::before {
   margin-top: var(--space-xs);
 }
 
-/* バックアップ履歴リスト */
+/* Backup History List */
 .backups-list {
   list-style: none;
   padding: 0;

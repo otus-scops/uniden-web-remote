@@ -1,24 +1,24 @@
 /**
- * @fileoverview 軽量多言語化 (i18n) 管理モジュール (Vanilla JS)
- * @description JSON辞書の動的読み込み、言語切り替え、DOM属性自動置換、パラメータ展開
+ * @fileoverview Lightweight Internationalization (i18n) Module (Vanilla JS)
+ * @description Dynamic JSON locale loader, language switcher, DOM attribute replacer, parameter interpolation
  */
 
 const i18n = (function () {
-  /** @type {string} デフォルト言語 */
+  /** @type {string} Default language */
   const DEFAULT_LANGUAGE = 'ja';
 
-  /** @type {string} サポート言語リスト */
+  /** @type {string[]} Supported languages */
   const SUPPORTED_LANGUAGES = ['ja', 'en'];
 
-  /** @type {string} 現在の言語コード */
+  /** @type {string} Current active language code */
   let currentLanguage = DEFAULT_LANGUAGE;
 
-  /** @type {Object<string, Object>} ロード済み辞書キャッシュ */
+  /** @type {Object<string, Object>} Loaded translation dictionary cache */
   const translationsCache = {};
 
   /**
-   * ブラウザ設定またはストレージから適切な言語を決定する
-   * @returns {string} 言語コード
+   * Determine preferred language from localStorage or browser settings
+   * @returns {string} Language code
    */
   function detectLanguage() {
     const saved = localStorage.getItem('bct15x_language');
@@ -33,7 +33,7 @@ const i18n = (function () {
   }
 
   /**
-   * 指定した言語の辞書JSONをロードする
+   * Load JSON dictionary for specified language
    * @param {string} lang
    * @returns {Promise<Object>}
    */
@@ -50,8 +50,8 @@ const i18n = (function () {
       translationsCache[lang] = data;
       return data;
     } catch (err) {
-      console.error(`[i18n] 言語ファイルの取得に失敗しました: ${lang}`, err);
-      // フォールバック
+      console.error(`[i18n] Failed to fetch locale dictionary: ${lang}`, err);
+      // Fallback
       if (lang !== DEFAULT_LANGUAGE && translationsCache[DEFAULT_LANGUAGE]) {
         return translationsCache[DEFAULT_LANGUAGE];
       }
@@ -60,7 +60,7 @@ const i18n = (function () {
   }
 
   /**
-   * ドット区切りのキーからネストされた辞書オブジェクトの文字列を解決する
+   * Resolve nested dictionary string from dot-separated key path
    * @param {Object} obj
    * @param {string} keyPath
    * @returns {string|null}
@@ -81,7 +81,7 @@ const i18n = (function () {
 
   return {
     /**
-     * 初期化処理
+     * Initialize i18n module
      * @returns {Promise<void>}
      */
     async init() {
@@ -89,7 +89,7 @@ const i18n = (function () {
       await loadLocale(currentLanguage);
       this.applyTranslations();
 
-      // 言語切り替えセレクタの選択値を同期
+      // Synchronize language selector dropdown
       const select = document.getElementById('lang-select');
       if (select) {
         select.value = currentLanguage;
@@ -97,7 +97,7 @@ const i18n = (function () {
     },
 
     /**
-     * 現在の言語を取得
+     * Get current active language code
      * @returns {string}
      */
     getLanguage() {
@@ -105,20 +105,20 @@ const i18n = (function () {
     },
 
     /**
-     * 言語を切り替える
+     * Switch language and update UI
      * @param {string} lang
      * @returns {Promise<void>}
      */
     async setLanguage(lang) {
       if (!SUPPORTED_LANGUAGES.includes(lang)) {
-        console.warn(`[i18n] 未サポートの言語です: ${lang}`);
+        console.warn(`[i18n] Unsupported language code: ${lang}`);
         return;
       }
       currentLanguage = lang;
       localStorage.setItem('bct15x_language', lang);
       await loadLocale(lang);
 
-      // DOM内の翻訳を自動更新
+      // Automatically update translations across DOM
       this.applyTranslations();
 
       const select = document.getElementById('lang-select');
@@ -126,7 +126,7 @@ const i18n = (function () {
         select.value = lang;
       }
 
-      // 言語変更カスタムイベントを発火
+      // Dispatch custom language changed event
       window.dispatchEvent(
         new CustomEvent('languageChanged', {
           detail: { language: lang },
@@ -135,9 +135,9 @@ const i18n = (function () {
     },
 
     /**
-     * キーから翻訳文字列を取得する
-     * @param {string} key - 例: "editor.toolbar.download"
-     * @param {Object} [params] - 置換パラメータ (例: { count: 5 })
+     * Translate key into localized string with parameter substitution
+     * @param {string} key - e.g. "editor.toolbar.download"
+     * @param {Object} [params] - Replacement parameters (e.g. { count: 5 })
      * @returns {string}
      */
     t(key, params = {}) {
@@ -149,10 +149,10 @@ const i18n = (function () {
         text = resolveKey(defaultDict, key);
       }
       if (text === null) {
-        return key; // キーをそのまま返す
+        return key; // Return raw key on missing translation
       }
 
-      // パラメータ置換 ({name} -> params.name)
+      // Parameter replacement ({name} -> params.name)
       if (params && typeof params === 'object') {
         text = text.replace(/\{(\w+)\}/g, (match, paramName) => {
           return params[paramName] !== undefined ? params[paramName] : match;
@@ -163,11 +163,11 @@ const i18n = (function () {
     },
 
     /**
-     * DOM要素内の [data-i18n] 属性を持つ全要素に翻訳を適用する
+     * Apply translations to all DOM elements with [data-i18n*] attributes
      * @param {HTMLElement} [rootElement=document]
      */
     applyTranslations(rootElement = document) {
-      // テキスト置換
+      // Text replacement
       rootElement.querySelectorAll('[data-i18n]').forEach((el) => {
         const key = el.getAttribute('data-i18n');
         if (key) {
@@ -175,7 +175,7 @@ const i18n = (function () {
         }
       });
 
-      // HTML置換 (太字やコード等のタグを含む場合)
+      // HTML replacement (for rich text formatting like bold or code tags)
       rootElement.querySelectorAll('[data-i18n-html]').forEach((el) => {
         const key = el.getAttribute('data-i18n-html');
         if (key) {
@@ -183,7 +183,7 @@ const i18n = (function () {
         }
       });
 
-      // placeholder置換
+      // Placeholder attribute replacement
       rootElement.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (key) {
@@ -191,7 +191,7 @@ const i18n = (function () {
         }
       });
 
-      // title (ツールチップ) 置換
+      // Title attribute replacement (tooltips)
       rootElement.querySelectorAll('[data-i18n-title]').forEach((el) => {
         const key = el.getAttribute('data-i18n-title');
         if (key) {

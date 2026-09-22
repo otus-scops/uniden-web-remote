@@ -1,6 +1,6 @@
 /**
- * @fileoverview BCT15X プログラミングモードコントローラー
- * @description PRGモードの排他制御と、DMAメモリ(システム・グループ・チャンネル)の読み書き・一括同期を管理する
+ * @fileoverview BCT15X programming mode controller
+ * @description Manages PRG mode locking, reading/writing, and full synchronization of DMA memory (systems, groups, channels).
  */
 
 const fs = require('fs');
@@ -25,7 +25,7 @@ const {
 } = require('./dmaProtocol');
 
 /**
- * プログラミングコントローラークラス
+ * Programming controller class
  * @extends EventEmitter
  */
 class ProgrammingController extends EventEmitter {
@@ -41,7 +41,7 @@ class ProgrammingController extends EventEmitter {
   }
 
   /**
-   * テスト/モック用の初期メモリデータを設定
+   * Initialize mock memory hierarchy for testing/offline mode
    * @private
    */
   _initMockMemory() {
@@ -180,39 +180,39 @@ class ProgrammingController extends EventEmitter {
   }
 
   /**
-   * プログラミングモードに入る
+   * Enter programming mode
    * @returns {Promise<boolean>}
    */
   async enterProgramMode() {
     if (this.isProgramming) return true;
 
-    // 通常のステータスポーリングを停止（ポート排他制御）
+    // Stop normal status polling to ensure exclusive serial port access
     this.serial.stopPolling();
 
     try {
       if (this.serial._mockMode) {
         this.isProgramming = true;
-        console.log('[ProgrammingController] [MOCK] PRGモードへ移行しました');
+        console.log('[ProgrammingController] [MOCK] Entered PRG mode');
         return true;
       }
 
-      console.log('[ProgrammingController] PRGコマンド送信中...');
+      console.log('[ProgrammingController] Sending PRG command...');
       const res = await this.serial.sendCommand('PRG');
       if (res.includes('OK') || res.includes('PRG,OK')) {
         this.isProgramming = true;
-        console.log('[ProgrammingController] PRGモードへ正常に移行しました');
+        console.log('[ProgrammingController] Successfully entered PRG mode');
         return true;
       }
-      throw new Error(`PRGモード移行失敗: ${res}`);
+      throw new Error(`Failed to enter PRG mode: ${res}`);
     } catch (err) {
-      console.error('[ProgrammingController] PRGモード失敗、ポーリングを再開します:', err.message);
+      console.error('[ProgrammingController] PRG mode failed, resuming polling:', err.message);
       this.serial.startPolling(200, 1000);
       throw err;
     }
   }
 
   /**
-   * プログラミングモードを終了する
+   * Exit programming mode
    * @returns {Promise<boolean>}
    */
   async exitProgramMode() {
@@ -220,46 +220,46 @@ class ProgrammingController extends EventEmitter {
 
     try {
       if (!this.serial._mockMode) {
-        console.log('[ProgrammingController] EPGコマンド送信中...');
+        console.log('[ProgrammingController] Sending EPG command...');
         await this.serial.sendCommand('EPG');
       }
-      console.log('[ProgrammingController] EPG完了、通常受信モードに戻ります');
+      console.log('[ProgrammingController] EPG completed, returning to normal reception mode');
     } catch (err) {
-      console.warn('[ProgrammingController] EPG失敗:', err.message);
+      console.warn('[ProgrammingController] EPG failed:', err.message);
     } finally {
       this.isProgramming = false;
-      // 通常受信ポーリングを再開
+      // Resume normal reception polling
       this.serial.startPolling(200, 1000);
     }
     return true;
   }
 
   /**
-   * BCT15Xから全メモリ（システム・グループ・チャンネル）を完全取得する (Download)
-   * @param {Function} [onProgress] - 進捗通知コールバック ({ step, current, total, percent, message })
-   * @returns {Promise<Array>} システムの配列（階層構造）
+   * Download complete memory structure (systems, groups, channels) from BCT15X
+   * @param {Function} [onProgress] - Progress callback ({ step, current, total, percent, message })
+   * @returns {Promise<Array>} Hierarchical array of systems
    */
   async getAllMemory(onProgress = () => {}) {
     await this.enterProgramMode();
 
     if (this.serial._mockMode) {
-      onProgress({ step: 'systems', percent: 100, message: 'モックメモリを返します' });
+      onProgress({ step: 'systems', percent: 100, message: 'Returning mock memory' });
       return JSON.parse(JSON.stringify(this._mockMemory));
     }
 
     try {
-      onProgress({ step: 'init', percent: 5, message: 'スキャナー初期化・システム先頭検索中...' });
+      onProgress({ step: 'init', percent: 5, message: 'Initializing scanner, searching for system head...' });
 
-      // 1. システムヘッド取得 (SIH)
+      // 1. Get system head index (SIH)
       const sihRes = await this.serial.sendCommand('SIH');
       const firstSysIndex = parseSihResponse(sihRes);
       if (firstSysIndex === -1) {
-        console.log('[ProgrammingController] システムが存在しません (SIH=-1)');
-        onProgress({ step: 'done', percent: 100, message: 'システムは空です' });
+        console.log('[ProgrammingController] No systems found (SIH=-1)');
+        onProgress({ step: 'done', percent: 100, message: 'System memory is empty' });
         return [];
       }
 
-      // システムインデックスのチェーンを走査
+      // Traverse system index chain
       const systemIndices = [];
       let curSysIdx = firstSysIndex;
       while (curSysIdx !== -1 && curSysIdx !== undefined && !systemIndices.includes(curSysIdx)) {
@@ -270,7 +270,7 @@ class ProgrammingController extends EventEmitter {
         curSysIdx = parsedSin.fwdIndex;
       }
 
-      console.log(`[ProgrammingController] システム検出数: ${systemIndices.length}`);
+      console.log(`[ProgrammingController] Detected systems count: ${systemIndices.length}`);
       const systemsData = [];
       const totalSystems = systemIndices.length;
 
@@ -278,7 +278,7 @@ class ProgrammingController extends EventEmitter {
         const sysId = systemIndices[sIdx];
         const percent = Math.round(10 + (sIdx / totalSystems) * 80);
 
-        // システム情報取得
+        // Fetch system details
         const sinRes = await this.serial.sendCommand(`SIN,${sysId}`);
         const sysInfo = parseSinResponse(sinRes, sysId);
         if (!sysInfo) continue;
@@ -288,7 +288,7 @@ class ProgrammingController extends EventEmitter {
           current: sIdx + 1,
           total: totalSystems,
           percent,
-          message: `システム読み出し中 [${sIdx + 1}/${totalSystems}]: ${sysInfo.name}`,
+          message: `Reading system [${sIdx + 1}/${totalSystems}]: ${sysInfo.name}`,
         });
 
         const sysNode = {
@@ -302,7 +302,7 @@ class ProgrammingController extends EventEmitter {
           groups: [],
         };
 
-        // 2. グループチェーンの走査
+        // 2. Traverse group chain
         if (sysInfo.groupHead !== -1 && sysInfo.groupHead !== undefined) {
           const groupIndices = [];
           let curGrpIdx = sysInfo.groupHead;
@@ -330,7 +330,7 @@ class ProgrammingController extends EventEmitter {
               channels: [],
             };
 
-            // 3. チャンネルチェーンの走査
+            // 3. Traverse channel chain
             if (grpInfo.channelHead !== -1 && grpInfo.channelHead !== undefined) {
               const channelIndices = [];
               let curChnIdx = grpInfo.channelHead;
@@ -373,7 +373,7 @@ class ProgrammingController extends EventEmitter {
         systemsData.push(sysNode);
       }
 
-      onProgress({ step: 'done', percent: 100, message: '全メモリデータの読み出しが完了しました' });
+      onProgress({ step: 'done', percent: 100, message: 'Completed reading all memory data' });
       return systemsData;
     } finally {
       await this.exitProgramMode();
@@ -381,9 +381,9 @@ class ProgrammingController extends EventEmitter {
   }
 
   /**
-   * 現在のメモリデータをローカルJSONバックアップファイルとして自動保存する
-   * @param {Array} data - メモリ構造
-   * @returns {string} 保存されたバックアップファイルパス
+   * Save current memory data as a local JSON backup file
+   * @param {Array} data - Memory structure
+   * @returns {string} Saved backup file path
    */
   saveLocalBackup(data) {
     const backupDir = path.join(process.cwd(), 'config', 'backups');
@@ -398,52 +398,52 @@ class ProgrammingController extends EventEmitter {
     const fullPath = path.join(backupDir, filename);
 
     fs.writeFileSync(fullPath, JSON.stringify(data, null, 2), 'utf-8');
-    console.log(`[ProgrammingController] 🛡️ 自動バックアップを保存しました: ${fullPath}`);
+    console.log(`[ProgrammingController] Automatic backup saved: ${fullPath}`);
     return fullPath;
   }
 
   /**
-   * 全メモリデータをBCT15X実機に書き込む (Upload)
-   * 実行前に必ず自動バックアップを取得します。
-   * @param {Array} memoryData - システム・グループ・チャンネル階層データ
-   * @param {Function} [onProgress] - 進捗通知コールバック
+   * Upload and write complete memory data to physical BCT15X scanner
+   * Creates an automatic backup prior to writing.
+   * @param {Array} memoryData - Hierarchical system, group, and channel data
+   * @param {Function} [onProgress] - Progress callback
    * @returns {Promise<Object>}
    */
   async uploadAllMemory(memoryData, onProgress = () => {}) {
     if (!Array.isArray(memoryData)) {
-      throw new Error('無効なメモリデータ形式です。システムの配列を指定してください。');
+      throw new Error('Invalid memory data format. Expected an array of systems.');
     }
 
-    // 1. 安全対策: 書き込み前に実機から現在のデータをバックアップ
+    // 1. Safety measure: backup current scanner data before writing
     try {
-      onProgress({ step: 'backup', percent: 5, message: '書き込み前の安全バックアップを取得中...' });
+      onProgress({ step: 'backup', percent: 5, message: 'Creating pre-write safety backup...' });
       const currentMemory = await this.getAllMemory();
       const backupPath = this.saveLocalBackup(currentMemory);
-      console.log(`[ProgrammingController] 書き込み前バックアップ完了: ${backupPath}`);
+      console.log(`[ProgrammingController] Pre-write backup completed: ${backupPath}`);
     } catch (err) {
-      console.warn('[ProgrammingController] 書き込み前バックアップの取得に失敗しましたが続行します:', err.message);
+      console.warn('[ProgrammingController] Failed to create pre-write backup, continuing anyway:', err.message);
     }
 
     await this.enterProgramMode();
 
     if (this.serial._mockMode) {
       this._mockMemory = JSON.parse(JSON.stringify(memoryData));
-      onProgress({ step: 'done', percent: 100, message: '[MOCK] アップロード完了' });
+      onProgress({ step: 'done', percent: 100, message: '[MOCK] Upload completed' });
       await this.exitProgramMode();
       return { success: true, count: memoryData.length };
     }
 
     try {
-      // 2. 既存の全システムを削除 (CLRコマンド、または全DSY)
-      onProgress({ step: 'clear', percent: 15, message: 'スキャナーの既存メモリをクリア中...' });
-      console.log('[ProgrammingController] CLRコマンド送信...');
+      // 2. Clear all existing systems on scanner (CLR command)
+      onProgress({ step: 'clear', percent: 15, message: 'Clearing scanner memory...' });
+      console.log('[ProgrammingController] Sending CLR command...');
       const clrRes = await this.serial.sendCommand('CLR');
-      console.log('[ProgrammingController] CLR応答:', clrRes);
+      console.log('[ProgrammingController] CLR response:', clrRes);
 
-      // CLR後はスキャナーが初期化処理を行うため数秒待機
+      // Wait a few seconds for scanner to complete internal memory initialization
       await new Promise((r) => setTimeout(r, 2000));
 
-      // 3. 各システム、グループ、チャンネルを順次作成
+      // 3. Sequentially create systems, groups, and channels
       const totalSystems = memoryData.length;
       for (let sIdx = 0; sIdx < totalSystems; sIdx++) {
         const sys = memoryData[sIdx];
@@ -454,49 +454,49 @@ class ProgrammingController extends EventEmitter {
           current: sIdx + 1,
           total: totalSystems,
           percent,
-          message: `システム作成中 [${sIdx + 1}/${totalSystems}]: ${sys.name}`,
+          message: `Creating system [${sIdx + 1}/${totalSystems}]: ${sys.name}`,
         });
 
-        // CSY: システム作成
+        // CSY: Create system
         const csyRes = await this.serial.sendCommand(`CSY,${sys.type || 'CNV'},0`);
         const newSysId = parseCsyResponse(csyRes);
         if (newSysId === -1) {
-          throw new Error(`システム作成失敗: ${sys.name}`);
+          throw new Error(`Failed to create system: ${sys.name}`);
         }
         sys.id = newSysId;
 
-        // SIN: システム情報設定
+        // SIN: Set system details
         await this.serial.sendCommand(buildSinCommand(sys));
 
-        // グループ作成
+        // Create groups
         if (Array.isArray(sys.groups)) {
           for (const grp of sys.groups) {
             const agcRes = await this.serial.sendCommand(`AGC,${newSysId}`);
             const newGrpId = parseAgcResponse(agcRes);
             if (newGrpId === -1) {
-              console.warn(`[ProgrammingController] グループ作成失敗: ${grp.name}`);
+              console.warn(`[ProgrammingController] Failed to create group: ${grp.name}`);
               continue;
             }
             grp.id = newGrpId;
             grp.systemId = newSysId;
 
-            // GIN: グループ設定
+            // GIN: Set group details
             await this.serial.sendCommand(buildGinCommand(grp));
 
-            // チャンネル作成
+            // Create channels
             if (Array.isArray(grp.channels)) {
               for (const chn of grp.channels) {
                 const accRes = await this.serial.sendCommand(`ACC,${newGrpId}`);
                 const newChnId = parseAccResponse(accRes);
                 if (newChnId === -1) {
-                  console.warn(`[ProgrammingController] チャンネル作成失敗: ${chn.name}`);
+                  console.warn(`[ProgrammingController] Failed to create channel: ${chn.name}`);
                   continue;
                 }
                 chn.id = newChnId;
                 chn.groupId = newGrpId;
                 chn.systemId = newSysId;
 
-                // CIN: チャンネル設定
+                // CIN: Set channel details
                 await this.serial.sendCommand(buildCinCommand(chn));
               }
             }
@@ -504,14 +504,14 @@ class ProgrammingController extends EventEmitter {
         }
       }
 
-      onProgress({ step: 'done', percent: 100, message: '実機へのメモリ書き込みが完了しました！' });
+      onProgress({ step: 'done', percent: 100, message: 'Memory upload to scanner completed successfully!' });
       return { success: true, systemsCreated: totalSystems };
     } finally {
       await this.exitProgramMode();
     }
   }
 
-  // --- 後方互換性および個別CRUDメソッド ---
+  // --- Backward compatibility and individual CRUD methods ---
 
   async getSystems() {
     const all = await this.getAllMemory();

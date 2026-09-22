@@ -1,10 +1,10 @@
 /**
- * @fileoverview BCT15X プロトコルパーサー
- * @description BCT15Xのシリアル通信プロトコルの応答を解析する
+ * @fileoverview BCT15X protocol parser
+ * @description Parses serial communication protocol responses from the Uniden BCT15X scanner.
  */
 
 /**
- * BCT15Xプロトコルのエラーレスポンスコード
+ * BCT15X protocol error response codes
  * @enum {string}
  */
 const ErrorCodes = {
@@ -15,7 +15,7 @@ const ErrorCodes = {
 };
 
 /**
- * GLGレスポンスのフィールドインデックス
+ * Field indices in GLG response
  * @enum {number}
  */
 const GlgFields = {
@@ -35,7 +35,7 @@ const GlgFields = {
 };
 
 /**
- * モジュレーションタイプの表示名マッピング
+ * Modulation types mapping
  * @type {Object<string, string>}
  */
 const ModulationNames = {
@@ -49,9 +49,9 @@ const ModulationNames = {
 };
 
 /**
- * 生の周波数値を読みやすいフォーマットに変換する
- * @param {string} rawFreq - BCT15Xから返された8桁の周波数文字列（例: "08510125"）
- * @returns {string} フォーマットされた周波数文字列（例: "851.0125 MHz"）
+ * Convert raw frequency value into human-readable format
+ * @param {string} rawFreq - 8-digit frequency string returned from BCT15X (e.g. "08510125")
+ * @returns {string} Formatted frequency string (e.g. "851.0125 MHz")
  */
 function formatFrequency(rawFreq) {
   if (!rawFreq || rawFreq.trim() === '') {
@@ -60,27 +60,27 @@ function formatFrequency(rawFreq) {
 
   const numStr = rawFreq.trim();
 
-  // 数値でない場合はTGIDの可能性があるのでそのまま返す
+  // If non-numeric, return as-is since it might be a TGID
   if (!/^\d+$/.test(numStr)) {
     return numStr;
   }
 
   const num = parseInt(numStr, 10);
 
-  // 8桁の周波数表現：下4桁が小数部
+  // 8-digit frequency representation: last 4 digits are fractional part
   if (numStr.length >= 7) {
     const mhz = num / 10000;
     return `${mhz.toFixed(4)} MHz`;
   }
 
-  // TGIDとして扱う
+  // Treat as TGID
   return numStr;
 }
 
 /**
- * 周波数値をファイル名に適した文字列に変換する
- * @param {string} rawFreq - BCT15Xから返された周波数文字列
- * @returns {string} ファイル名用の周波数文字列（例: "851.0125MHz"）
+ * Convert frequency value to safe filename format
+ * @param {string} rawFreq - Frequency string returned from BCT15X
+ * @returns {string} Frequency string suitable for filenames (e.g. "851.0125MHz")
  */
 function formatFrequencyForFilename(rawFreq) {
   if (!rawFreq || rawFreq.trim() === '') {
@@ -104,25 +104,25 @@ function formatFrequencyForFilename(rawFreq) {
 }
 
 /**
- * GLGレスポンスをパースする
- * @param {string} rawResponse - BCT15Xからの生のGLGレスポンス文字列
- * @returns {Object|null} パース結果オブジェクト。パース不可の場合はnull
- * @property {string} command - コマンド名（"GLG"）
- * @property {string} rawFreqTgid - 生の周波数/TGID値
- * @property {string} freqTgid - フォーマットされた周波数/TGID
- * @property {string} freqForFilename - ファイル名用周波数
- * @property {string} modulation - モジュレーション
- * @property {string} attenuator - アッテネータ状態
- * @property {string} ctcssDcs - CTCSS/DCS設定
- * @property {string} name1 - システム名
- * @property {string} name2 - デパートメント名
- * @property {string} name3 - チャンネル名
- * @property {string} squelch - スケルチ状態
- * @property {string} mute - ミュート状態
- * @property {string} sysTag - システムタグ
- * @property {string} chanTag - チャンネルタグ
+ * Parse GLG (Get LCD / Reception State) response
+ * @param {string} rawResponse - Raw GLG response string from BCT15X
+ * @returns {Object|null} Parsed object, or null if unparseable
+ * @property {string} command - Command name ("GLG")
+ * @property {string} rawFreqTgid - Raw frequency/TGID value
+ * @property {string} freqTgid - Formatted frequency/TGID
+ * @property {string} freqForFilename - Frequency formatted for filename
+ * @property {string} modulation - Modulation
+ * @property {string} attenuator - Attenuator state
+ * @property {string} ctcssDcs - CTCSS/DCS settings
+ * @property {string} name1 - System name
+ * @property {string} name2 - Department name
+ * @property {string} name3 - Channel name
+ * @property {string} squelch - Squelch state
+ * @property {string} mute - Mute state
+ * @property {string} sysTag - System tag
+ * @property {string} chanTag - Channel tag
  * @property {string} p25nac - P25 NAC
- * @property {boolean} isReceiving - 受信中フラグ
+ * @property {boolean} isReceiving - Flag indicating active reception
  */
 function parseGlgResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -131,26 +131,26 @@ function parseGlgResponse(rawResponse) {
 
   const trimmed = rawResponse.trim();
 
-  // エラーチェック
+  // Error check
   if (isErrorResponse(trimmed)) {
     return null;
   }
 
-  // GLGプレフィックス確認
+  // Verify GLG prefix
   if (!trimmed.startsWith('GLG,')) {
     return null;
   }
 
   const fields = trimmed.split(',');
 
-  // 最低限のフィールド数チェック
+  // Check minimum field count
   if (fields.length < 2) {
     return null;
   }
 
   const rawFreqTgid = getField(fields, GlgFields.FRQ_TGID);
 
-  // 周波数/TGIDが空の場合は受信していない
+  // Scanner is not actively receiving when frequency/TGID is blank or all zeroes
   const isReceiving = rawFreqTgid !== '' && rawFreqTgid !== '00000000';
 
   return {
@@ -174,12 +174,12 @@ function parseGlgResponse(rawResponse) {
 }
 
 /**
- * STSレスポンスをパースする
- * @param {string} rawResponse - BCT15Xからの生のSTSレスポンス文字列
- * @returns {Object|null} パース結果オブジェクト
- * @property {string} command - コマンド名（"STS"）
- * @property {string} raw - 生のレスポンス文字列
- * @property {string[]} fields - カンマ区切りのフィールド配列
+ * Parse STS (Status) response
+ * @param {string} rawResponse - Raw STS response string from BCT15X
+ * @returns {Object|null} Parsed object
+ * @property {string} command - Command name ("STS")
+ * @property {string} raw - Raw response string
+ * @property {string[]} fields - Array of comma-separated fields
  */
 function parseStsResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -206,11 +206,11 @@ function parseStsResponse(rawResponse) {
 }
 
 /**
- * MDLレスポンスをパースする
- * @param {string} rawResponse - BCT15Xからの生のMDLレスポンス文字列
- * @returns {Object|null} パース結果
+ * Parse MDL (Model) response
+ * @param {string} rawResponse - Raw MDL response string from BCT15X
+ * @returns {Object|null} Parsed result
  * @property {string} command - "MDL"
- * @property {string} model - モデル名
+ * @property {string} model - Model identifier
  */
 function parseMdlResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -236,11 +236,11 @@ function parseMdlResponse(rawResponse) {
 }
 
 /**
- * VERレスポンスをパースする
- * @param {string} rawResponse - BCT15Xからの生のVERレスポンス文字列
- * @returns {Object|null} パース結果
+ * Parse VER (Firmware Version) response
+ * @param {string} rawResponse - Raw VER response string from BCT15X
+ * @returns {Object|null} Parsed result
  * @property {string} command - "VER"
- * @property {string} version - ファームウェアバージョン
+ * @property {string} version - Firmware version string
  */
 function parseVerResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -266,11 +266,11 @@ function parseVerResponse(rawResponse) {
 }
 
 /**
- * PWRレスポンスをパースする（信号強度/RSSI）
- * @param {string} rawResponse - BCT15Xからの生のPWRレスポンス文字列
- * @returns {Object|null} パース結果
+ * Parse PWR (Signal Strength / RSSI) response
+ * @param {string} rawResponse - Raw PWR response string from BCT15X
+ * @returns {Object|null} Parsed result
  * @property {string} command - "PWR"
- * @property {number} rssi - 信号強度値
+ * @property {number} rssi - Signal strength / RSSI value
  */
 function parsePwrResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -297,9 +297,9 @@ function parsePwrResponse(rawResponse) {
 }
 
 /**
- * 汎用レスポンスパーサー。コマンドプレフィックスに基づいて適切なパーサーを選択する
- * @param {string} rawResponse - BCT15Xからの生のレスポンス文字列
- * @returns {Object|null} パース結果
+ * General response parser dispatching to appropriate parser based on command prefix
+ * @param {string} rawResponse - Raw response string from BCT15X
+ * @returns {Object|null} Parsed result
  */
 function parseResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -332,29 +332,29 @@ function parseResponse(rawResponse) {
     return parsePwrResponse(trimmed);
   }
 
-  // OK応答
+  // OK response
   if (trimmed === 'OK') {
     return { command: 'OK', raw: trimmed };
   }
 
-  // 未知のレスポンス
+  // Unknown response
   return { command: 'UNKNOWN', raw: trimmed };
 }
 
 /**
- * レスポンスがエラーかどうかを判定する
- * @param {string} response - レスポンス文字列
- * @returns {boolean} エラーの場合true
+ * Check if response indicates an error
+ * @param {string} response - Response string
+ * @returns {boolean} True if error response
  */
 function isErrorResponse(response) {
   return Object.values(ErrorCodes).includes(response.trim());
 }
 
 /**
- * フィールド配列から安全にフィールド値を取得する
- * @param {string[]} fields - フィールド配列
- * @param {number} index - フィールドインデックス
- * @returns {string} フィールド値（存在しない場合は空文字列）
+ * Safely retrieve field value from field array
+ * @param {string[]} fields - Field array
+ * @param {number} index - Field index
+ * @returns {string} Field value (empty string if out of range)
  */
 function getField(fields, index) {
   if (index >= 0 && index < fields.length) {

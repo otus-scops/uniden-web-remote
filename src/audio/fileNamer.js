@@ -1,43 +1,43 @@
 /**
- * @fileoverview ファイル命名ユーティリティ
- * @description 録音ファイルのテンプレートベース命名とサニタイズを行う。
- * テンプレートに `/` を含めることでディレクトリ階層を自動生成できる。
+ * @fileoverview File naming utility
+ * @description Provides template-based naming and path sanitization for recordings.
+ * Including `/` in templates automatically generates directory hierarchies.
  */
 
 const path = require('path');
 
 /**
- * テンプレート文字列のプレースホルダーを実際の値で置換してファイル名（パス含む）を生成する。
- * テンプレートに `/` を含めると、ディレクトリ階層として処理される。
+ * Generate a filename (including directory paths) by replacing template placeholders with actual values.
+ * If the template contains `/`, it is processed as directory path segments.
  *
- * @param {string} template - ファイル名テンプレート
- *   使用可能プレースホルダー:
- *   - {date} : 日付(YYYY-MM-DD)
- *   - {time} : 時刻(HH-mm-ss)
- *   - {datetime} : 日時(YYYY-MM-DD_HH-mm-ss)
- *   - {freq} : 周波数
- *   - {tgid} : トークグループID
- *   - {system} : システム名
- *   - {department} : デパートメント名
- *   - {channel} : チャンネル名
- *   - {modulation} : モジュレーション
- *   - {seq} : 連番
+ * @param {string} template - Filename template
+ *   Available placeholders:
+ *   - {date} : Date (YYYY-MM-DD)
+ *   - {time} : Time (HH-mm-ss)
+ *   - {datetime} : Date & Time (YYYY-MM-DD_HH-mm-ss)
+ *   - {freq} : Frequency
+ *   - {tgid} : Talkgroup ID
+ *   - {system} : System name
+ *   - {department} : Department name
+ *   - {channel} : Channel name
+ *   - {modulation} : Modulation
+ *   - {seq} : Sequential number
  *
- *   テンプレート例:
+ *   Template examples:
  *   - "{date}/{channel}/{time}_{freq}" → "2026-08-08/Dispatch/14-30-25_155.7000MHz.mp3"
- *   - "{date}_{time}_{freq}_{system}_{channel}" → "2026-08-08_14-30-25_155.7000MHz_Auto_Police_Dispatch.mp3"（従来互換）
+ *   - "{date}_{time}_{freq}_{system}_{channel}" → "2026-08-08_14-30-25_155.7000MHz_Auto_Police_Dispatch.mp3" (backward compatible)
  *
- * @param {Object} params - パラメータオブジェクト
- * @param {Date} [params.date] - 日時（デフォルトは現在時刻）
- * @param {string} [params.freq] - 周波数文字列
- * @param {string} [params.tgid] - トークグループID
- * @param {string} [params.system] - システム名
- * @param {string} [params.department] - デパートメント名
- * @param {string} [params.channel] - チャンネル名
- * @param {string} [params.modulation] - モジュレーション
- * @param {number} [params.seq] - 連番
- * @param {string} [params.ext] - ファイル拡張子（ドットなし）
- * @returns {string} 生成されたファイルパス（ディレクトリ区切りを含む場合あり）
+ * @param {Object} params - Parameter values object
+ * @param {Date} [params.date] - Date/time (defaults to current time)
+ * @param {string} [params.freq] - Frequency string
+ * @param {string} [params.tgid] - Talkgroup ID
+ * @param {string} [params.system] - System name
+ * @param {string} [params.department] - Department name
+ * @param {string} [params.channel] - Channel name
+ * @param {string} [params.modulation] - Modulation
+ * @param {number} [params.seq] - Sequential index
+ * @param {string} [params.ext] - File extension without leading dot
+ * @returns {string} Generated file path (may contain directory separators)
  */
 function generateFilename(template, params = {}) {
   const now = params.date || new Date();
@@ -68,40 +68,40 @@ function generateFilename(template, params = {}) {
 
   let result = template;
 
-  // プレースホルダーを置換（まだサニタイズしない）
+  // Replace placeholders (without sanitizing full string yet)
   for (const [placeholder, value] of Object.entries(replacements)) {
     result = result.replace(new RegExp(escapeRegex(placeholder), 'g'), value);
   }
 
-  // `/` でセグメントに分割し、各セグメントを個別にサニタイズ
+  // Split into segments by `/` and sanitize each segment individually
   const segments = result.split('/');
   const sanitizedSegments = segments
     .map((segment) => {
-      // 各セグメント内の連続するアンダースコアや先頭/末尾のアンダースコアを除去
+      // Remove consecutive underscores and leading/trailing underscores within segment
       let cleaned = sanitize(segment);
       cleaned = cleaned.replace(/_+/g, '_').replace(/^_|_$/g, '');
       return cleaned;
     })
-    .filter((segment) => segment.length > 0); // 空セグメントを除去
+    .filter((segment) => segment.length > 0); // Remove empty segments
 
-  // セグメントが全て空の場合のフォールバック
+  // Fallback if all segments are empty
   if (sanitizedSegments.length === 0) {
     sanitizedSegments.push(`recording_${datetimeStr}`);
   }
 
-  // パスを再構築（OSに依存せず `/` で結合し、後でpath.joinで正規化）
+  // Reconstruct path with `/` delimiter (normalized later with path functions)
   const relativePath = sanitizedSegments.join('/');
 
-  // 拡張子を付加
+  // Append file extension
   const ext = params.ext || 'mp3';
   return `${relativePath}.${ext}`;
 }
 
 /**
- * ファイルシステム上の不正文字をサニタイズする。
- * ディレクトリ区切り文字 `/` は事前に分割済みのため、ここでは除去対象。
- * @param {string} str - 入力文字列
- * @returns {string} サニタイズ済み文字列
+ * Sanitize illegal filesystem characters.
+ * Directory delimiter `/` is stripped here as path segments are pre-split.
+ * @param {string} str - Input string
+ * @returns {string} Sanitized string
  */
 function sanitize(str) {
   if (!str || typeof str !== 'string') {
@@ -109,32 +109,32 @@ function sanitize(str) {
   }
 
   return str
-    .replace(/[<>:"/\\|?*]/g, '') // ファイルシステム不正文字
-    .replace(/\s+/g, '_')          // 空白をアンダースコアに
-    .replace(/[^\w\-.]/g, '')      // 英数字・ハイフン・ドット・アンダースコア以外を除去
+    .replace(/[<>:"/\\|?*]/g, '') // Remove filesystem invalid characters
+    .replace(/\s+/g, '_')          // Convert whitespace to underscore
+    .replace(/[^\w\-.]/g, '')      // Remove everything except alphanumeric, hyphen, dot, underscore
     .trim();
 }
 
 /**
- * 正規表現の特殊文字をエスケープする
- * @param {string} str - 入力文字列
- * @returns {string} エスケープ済み文字列
+ * Escape special characters for regular expressions
+ * @param {string} str - Input string
+ * @returns {string} Escaped string
  */
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
- * 指定ディレクトリ配下に同名ファイルが存在する場合、連番サフィックスを付与してユニークな名前を返す。
- * ディレクトリ階層を含むパス（例: "2026-08-08/Dispatch/14-30-25.mp3"）にも対応する。
- * @param {string} baseDir - 録音ベースディレクトリパス
- * @param {string} relativePath - 相対ファイルパス（ディレクトリ区切りを含む場合あり）
- * @returns {string} ユニークな相対ファイルパス
+ * Check if target file exists in base directory; if so, append sequential numeric suffix to ensure uniqueness.
+ * Supports paths containing directory hierarchies (e.g. "2026-08-08/Dispatch/14-30-25.mp3").
+ * @param {string} baseDir - Base recordings directory path
+ * @param {string} relativePath - Relative file path (may contain directory delimiters)
+ * @returns {string} Unique relative file path
  */
 function getUniqueFilename(baseDir, relativePath) {
   const fs = require('fs');
 
-  // パスをディレクトリ部分とファイル名に分離
+  // Separate directory portion and file basename
   const dirPart = path.dirname(relativePath);
   const ext = path.extname(relativePath);
   const base = path.basename(relativePath, ext);
@@ -143,10 +143,10 @@ function getUniqueFilename(baseDir, relativePath) {
   let counter = 1;
 
   while (fs.existsSync(path.join(baseDir, candidate))) {
-    // ディレクトリ部分を維持しつつファイル名に連番を付与
+    // Retain directory portion while appending counter to file basename
     const newFilename = `${base}_${String(counter).padStart(3, '0')}${ext}`;
     candidate = dirPart !== '.' ? path.join(dirPart, newFilename) : newFilename;
-    // Windows対応: パス区切りを `/` に統一
+    // Cross-platform normalization: unify delimiters to `/`
     candidate = candidate.replace(/\\/g, '/');
     counter++;
   }
@@ -155,10 +155,10 @@ function getUniqueFilename(baseDir, relativePath) {
 }
 
 /**
- * 受信情報からファイル名パラメータを生成する
- * @param {Object} reception - 受信情報オブジェクト
- * @param {Date} startTime - 受信開始時刻
- * @returns {Object} generateFilename用パラメータ
+ * Generate filename parameters from reception metadata
+ * @param {Object} reception - Reception metadata object
+ * @param {Date} startTime - Reception start time
+ * @returns {Object} Parameters object for generateFilename
  */
 function fromReceptionData(reception, startTime) {
   return {
@@ -173,9 +173,9 @@ function fromReceptionData(reception, startTime) {
 }
 
 /**
- * テンプレート文字列からプレビュー用のサンプルパスを生成する
- * @param {string} template - ファイル名テンプレート
- * @returns {string} サンプルパス文字列
+ * Generate preview sample path from template string
+ * @param {string} template - Filename template
+ * @returns {string} Sample path string
  */
 function generatePreview(template) {
   const sampleParams = {

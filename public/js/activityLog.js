@@ -1,29 +1,29 @@
 /**
- * @fileoverview 受信ログモジュール
- * @description 受信履歴の表示、カラムカスタマイズ、CSVエクスポート、ログクリア機能を管理する
+ * @fileoverview Activity Log Module
+ * @description Manages reception history display, column customization, CSV export, and log clearing
  */
 
 /**
- * 受信ログUI管理
+ * Activity Log UI Controller
  */
 const activityLog = (() => {
-  /** @type {Array<Object>} ログエントリー配列 */
+  /** @type {Array<Object>} Log entry records */
   let logEntries = [];
   
-  /** @type {number} フィルタ前の総件数 */
+  /** @type {number} Total count before filtering */
   let totalUnfiltered = 0;
 
-  /** @type {Object} 現在のフィルタ条件 */
+  /** @type {Object} Current active filter conditions */
   let currentFilters = {};
 
-  /** @type {number} 最大表示件数 */
+  /** @type {number} Maximum entries to display in DOM */
   const MAX_DISPLAY = 200;
 
-  /** @type {string} localStorage用キー */
+  /** @type {string} localStorage cache key for column settings */
   const STORAGE_KEY = 'bct15x_log_columns';
 
   /**
-   * 利用可能な全カラム定義
+   * Complete list of available column definitions
    * @type {Array<Object>}
    */
   const AVAILABLE_COLUMNS = [
@@ -39,9 +39,9 @@ const activityLog = (() => {
   ];
 
   /**
-   * カラムの表示名を取得（多言語対応）
-   * @param {Object} col - カラム定義
-   * @returns {string} 表示ラベル
+   * Get localized column display label
+   * @param {Object} col - Column definition
+   * @returns {string} Localized label
    */
   function getColumnLabel(col) {
     if (typeof i18n !== 'undefined' && col.i18nKey) {
@@ -51,26 +51,26 @@ const activityLog = (() => {
   }
 
   /**
-   * デフォルトの表示カラムID一覧（順序を含む）
+   * Default active column IDs with order
    * @type {Array<string>}
    */
   const DEFAULT_COLUMN_IDS = ['time', 'freqTgid', 'system', 'channel', 'modulation', 'duration'];
 
   /**
-   * 現在の表示カラム設定（カラムIDの配列、順序あり）
+   * Current active column IDs with ordering
    * @type {Array<string>}
    */
   let activeColumnIds = [];
 
   /**
-   * カラム設定をlocalStorageから読み込む
+   * Load column preferences from localStorage
    */
   function loadColumnSettings() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // 保存された設定の中で、まだ有効なカラムIDのみをフィルタ
+        // Keep only column IDs that still exist in AVAILABLE_COLUMNS
         const validIds = AVAILABLE_COLUMNS.map(c => c.id);
         activeColumnIds = parsed.filter(id => validIds.includes(id));
         if (activeColumnIds.length === 0) {
@@ -85,54 +85,54 @@ const activityLog = (() => {
   }
 
   /**
-   * カラム設定をlocalStorageに保存する
+   * Save column preferences to localStorage
    */
   function saveColumnSettings() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(activeColumnIds));
     } catch {
-      // localStorage書き込み失敗は無視
+      // Ignore localStorage write failures
     }
   }
 
   /**
-   * カラムIDからカラム定義を取得する
-   * @param {string} columnId - カラムID
-   * @returns {Object|undefined} カラム定義
+   * Find column definition by ID
+   * @param {string} columnId - Column ID
+   * @returns {Object|undefined} Column definition
    */
   function getColumnDef(columnId) {
     return AVAILABLE_COLUMNS.find(c => c.id === columnId);
   }
 
   /**
-   * 現在のアクティブカラム定義配列を取得する
+   * Get array of currently active column definitions
    * @returns {Array<Object>}
    */
   function getActiveColumns() {
     return activeColumnIds.map(id => getColumnDef(id)).filter(Boolean);
   }
 
-  // 初期化時にカラム設定を読み込む
+  // Load column preferences on script execution
   loadColumnSettings();
 
   /**
-   * 受信開始イベント処理
-   * @param {Object} data - 受信開始データ
+   * Handle reception start event
+   * @param {Object} data - Event payload
    */
   function onReceptionStart(data) {
-    // 受信開始時は仮エントリーを追加（終了時に更新される）
+    // Optional placeholder on reception start (updated on end)
   }
 
   /**
-   * 受信終了イベント処理（ログエントリー追加）
-   * @param {Object} data - 受信終了データ
+   * Handle reception end event (appends new log entry)
+   * @param {Object} data - Event payload
    */
   function onReceptionEnd(data) {
     if (!data || !data.logEntry) return;
 
     const entry = data.logEntry;
     
-    // クライアント側でフィルタ適用
+    // Apply filters client-side
     if (!applyFiltersToEntry(entry, currentFilters)) {
       totalUnfiltered++;
       updateFilterCount();
@@ -142,7 +142,7 @@ const activityLog = (() => {
     logEntries.unshift(entry);
     totalUnfiltered++;
 
-    // 最大件数を超えたら古いものを削除
+    // Evict oldest entries exceeding MAX_DISPLAY limit
     if (logEntries.length > MAX_DISPLAY) {
       logEntries = logEntries.slice(0, MAX_DISPLAY);
     }
@@ -153,7 +153,7 @@ const activityLog = (() => {
   }
 
   /**
-   * 単一のエントリーにフィルタを適用する（クライアント側用）
+   * Test whether a log entry matches current filter criteria
    * @param {Object} entry 
    * @param {Object} filters 
    * @returns {boolean}
@@ -191,11 +191,11 @@ const activityLog = (() => {
   }
 
   /**
-   * サーバーからのログデータ受信処理
-   * @param {Object} data - ログデータ
-   * @param {Array<Object>} data.entries - ログエントリー配列
-   * @param {number} data.total - 総件数
-   * @param {number} data.totalUnfiltered - フィルタ前の総件数
+   * Process log history batch received from server
+   * @param {Object} data - Log payload
+   * @param {Array<Object>} data.entries - Log entries
+   * @param {number} data.total - Total filtered count
+   * @param {number} data.totalUnfiltered - Total unfiltered count
    */
   function onLogData(data) {
     logEntries = data.entries || [];
@@ -204,10 +204,10 @@ const activityLog = (() => {
     updateFilterCount();
   }
   
-  // ---------- フィルタ機能 ----------
+  // ---------- Filter Controls ----------
 
   /**
-   * フィルタバーの表示/非表示を切り替える
+   * Toggle filter bar visibility
    */
   function onToggleFilter() {
     const bar = document.getElementById('log-filter-bar');
@@ -225,7 +225,7 @@ const activityLog = (() => {
   }
 
   /**
-   * フィルタを適用してサーバーから再取得
+   * Apply filters and re-fetch from server
    */
   async function onApplyFilter() {
     const filters = {};
@@ -252,7 +252,7 @@ const activityLog = (() => {
   }
 
   /**
-   * フィルタをリセットする
+   * Reset all filter inputs and reload log history
    */
   async function onResetFilter() {
     document.getElementById('log-filter-date-from').value = '';
@@ -274,7 +274,7 @@ const activityLog = (() => {
   }
 
   /**
-   * フィルタ結果件数表示を更新
+   * Update filter count badge label
    */
   function updateFilterCount() {
     const countEl = document.getElementById('log-filter-count');
@@ -291,7 +291,7 @@ const activityLog = (() => {
   }
 
   /**
-   * テーブルのヘッダーを描画する
+   * Render table headers based on active columns
    */
   function renderHeader() {
     const thead = document.querySelector('#log-table thead');
@@ -311,7 +311,7 @@ const activityLog = (() => {
   }
 
   /**
-   * ログテーブル全体を再描画する
+   * Re-render entire log table body
    */
   function renderTable() {
     renderHeader();
@@ -327,9 +327,9 @@ const activityLog = (() => {
   }
 
   /**
-   * ログテーブルに行を追加する（アクティブカラム設定に基づく）
-   * @param {Object} entry - ログエントリー
-   * @param {boolean} isNew - 新着エントリーかどうか（アニメーション用）
+   * Add row to log table according to active column settings
+   * @param {Object} entry - Log entry object
+   * @param {boolean} isNew - Whether this is a newly arrived entry (triggers highlight animation)
    */
   function addLogRow(entry, isNew) {
     const tbody = document.getElementById('log-tbody');
@@ -344,20 +344,20 @@ const activityLog = (() => {
     for (const col of columns) {
       const td = document.createElement('td');
 
-      // 値を取得
+      // Retrieve cell value
       let value = entry[col.field];
       if ((value === undefined || value === null || value === '') && col.fallbackField) {
         value = entry[col.fallbackField];
       }
 
-      // フォーマット関数がある場合は適用
+      // Apply formatter function if defined
       if (col.format) {
         td.textContent = col.format(value);
       } else {
         td.textContent = value || '---';
       }
 
-      // CSSクラスを追加
+      // Add custom CSS class if defined
       if (col.cssClass) {
         td.className = col.cssClass;
       }
@@ -365,21 +365,21 @@ const activityLog = (() => {
       tr.appendChild(td);
     }
 
-    // 先頭に追加（新しいものが上）
+    // Prepend new row to top of table
     if (isNew && tbody.firstChild) {
       tbody.insertBefore(tr, tbody.firstChild);
     } else {
       tbody.appendChild(tr);
     }
 
-    // 表示件数制限
+    // Enforce DOM row count limit
     while (tbody.children.length > MAX_DISPLAY) {
       tbody.removeChild(tbody.lastChild);
     }
   }
 
   /**
-   * 空状態の表示を更新する
+   * Update empty log placeholder visibility
    */
   function updateEmptyState() {
     const empty = document.getElementById('log-empty');
@@ -393,7 +393,7 @@ const activityLog = (() => {
   }
 
   /**
-   * CSV形式でログをエクスポートする（アクティブカラム設定に基づく）
+   * Export log entries as CSV file based on active column preferences
    */
   function onExportCsv() {
     if (logEntries.length === 0) {
@@ -417,7 +417,7 @@ const activityLog = (() => {
       });
     });
 
-    // BOM付きUTF-8 CSV
+    // UTF-8 with BOM for proper Excel compatibility
     const bom = '\uFEFF';
     const csvContent = bom + [headers, ...rows]
       .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
@@ -440,7 +440,7 @@ const activityLog = (() => {
   }
 
   /**
-   * ログをクリアする
+   * Clear all log entries on server and in UI
    */
   async function onClearLog() {
     const confirmMsg = typeof i18n !== 'undefined' ? i18n.t('log.clearConfirm') : '受信ログをすべてクリアしますか？';
@@ -455,10 +455,10 @@ const activityLog = (() => {
     }
   }
 
-  // ---------- カラム設定モーダル ----------
+  // ---------- Column Settings Modal ----------
 
   /**
-   * カラム設定モーダルを開く
+   * Open column configuration modal
    */
   function onOpenColumnSettings() {
     const modal = document.getElementById('column-settings-modal');
@@ -469,7 +469,7 @@ const activityLog = (() => {
   }
 
   /**
-   * カラム設定モーダルを閉じる
+   * Close column configuration modal
    */
   function onCloseColumnSettings() {
     const modal = document.getElementById('column-settings-modal');
@@ -479,7 +479,7 @@ const activityLog = (() => {
   }
 
   /**
-   * カラム設定モーダルの内容を描画する
+   * Render column configuration modal items with drag handles
    */
   function renderColumnSettingsContent() {
     const listEl = document.getElementById('column-settings-list');
@@ -505,7 +505,7 @@ const activityLog = (() => {
         </label>
       `;
 
-      // ドラッグ＆ドロップイベント
+      // Attach drag-and-drop events for reordering
       item.addEventListener('dragstart', onDragStart);
       item.addEventListener('dragover', onDragOver);
       item.addEventListener('drop', onDrop);
@@ -515,11 +515,11 @@ const activityLog = (() => {
     }
   }
 
-  /** @type {HTMLElement|null} 現在ドラッグ中の要素 */
+  /** @type {HTMLElement|null} Currently dragged item element */
   let draggedItem = null;
 
   /**
-   * ドラッグ開始
+   * Handle drag start
    * @param {DragEvent} e
    */
   function onDragStart(e) {
@@ -530,7 +530,7 @@ const activityLog = (() => {
   }
 
   /**
-   * ドラッグオーバー
+   * Handle drag over
    * @param {DragEvent} e
    */
   function onDragOver(e) {
@@ -553,7 +553,7 @@ const activityLog = (() => {
   }
 
   /**
-   * ドロップ
+   * Handle drag drop
    * @param {DragEvent} e
    */
   function onDrop(e) {
@@ -562,7 +562,7 @@ const activityLog = (() => {
   }
 
   /**
-   * ドラッグ終了
+   * Handle drag end
    * @param {DragEvent} e
    */
   function onDragEnd(e) {
@@ -574,7 +574,7 @@ const activityLog = (() => {
   }
 
   /**
-   * DOM上のカラム順序からactiveColumnIdsを再構築する
+   * Reconstruct activeColumnIds order from current DOM order
    */
   function applyColumnOrderFromDom() {
     const listEl = document.getElementById('column-settings-list');
@@ -598,23 +598,23 @@ const activityLog = (() => {
   }
 
   /**
-   * カラムの表示/非表示を切り替える
-   * @param {string} columnId - カラムID
-   * @param {boolean} checked - チェック状態
+   * Toggle column visibility checkbox
+   * @param {string} columnId - Column ID
+   * @param {boolean} checked - Checked state
    */
   function onColumnToggle(columnId, checked) {
     if (checked) {
-      // アクティブリストに追加（DOM順序に基づく位置に挿入）
+      // Add to active list in proper DOM order position
       if (!activeColumnIds.includes(columnId)) {
-        // DOM上の順序で適切な位置に挿入
+        // Insert in accordance with DOM order
         applyColumnOrderFromDom();
         return;
       }
     } else {
-      // アクティブリストから除去（最低1カラムは残す）
+      // Remove from active list (enforce at least one column remains)
       const newIds = activeColumnIds.filter(id => id !== columnId);
       if (newIds.length === 0) {
-        // チェックを戻す
+        // Revert checkbox state
         const listEl = document.getElementById('column-settings-list');
         const item = listEl.querySelector(`[data-column-id="${columnId}"] input`);
         if (item) item.checked = true;
@@ -623,7 +623,7 @@ const activityLog = (() => {
       activeColumnIds = newIds;
     }
 
-    // item要素のactiveクラスを更新
+    // Update active class on list item element
     const listEl = document.getElementById('column-settings-list');
     const item = listEl.querySelector(`[data-column-id="${columnId}"]`);
     if (item) {
@@ -635,7 +635,7 @@ const activityLog = (() => {
   }
 
   /**
-   * カラム設定をデフォルトに戻す
+   * Reset column settings to defaults
    */
   function onResetColumns() {
     activeColumnIds = [...DEFAULT_COLUMN_IDS];
@@ -644,12 +644,12 @@ const activityLog = (() => {
     renderTable();
   }
 
-  // ---------- ユーティリティ ----------
+  // ---------- Utilities ----------
 
   /**
-   * ISO日時文字列を表示用にフォーマットする
-   * @param {string} isoString - ISO 8601形式の日付文字列
-   * @returns {string} フォーマットされた時刻文字列
+   * Format ISO date string for log table display
+   * @param {string} isoString - ISO 8601 date string
+   * @returns {string} Formatted time string
    */
   function formatTime(isoString) {
     if (!isoString) return '---';
@@ -663,9 +663,9 @@ const activityLog = (() => {
   }
 
   /**
-   * 秒数をフォーマットする
-   * @param {number|undefined} sec - 秒数
-   * @returns {string} フォーマットされた秒数文字列
+   * Format duration in seconds
+   * @param {number|undefined} sec - Duration in seconds
+   * @returns {string} Formatted duration string
    */
   function formatDuration(sec) {
     if (sec === undefined || sec === null) return '---';
@@ -673,9 +673,9 @@ const activityLog = (() => {
   }
 
   /**
-   * HTML特殊文字をエスケープする
-   * @param {string} str - 入力文字列
-   * @returns {string} エスケープ済み文字列
+   * Escape HTML special characters
+   * @param {string} str - Input string
+   * @returns {string} Escaped string
    */
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -683,12 +683,12 @@ const activityLog = (() => {
     return div.innerHTML;
   }
 
-  // DOMContentLoaded後にテーブルヘッダーを初期描画
+  // Render table headers on DOMContentLoaded
   document.addEventListener('DOMContentLoaded', () => {
     renderHeader();
   });
 
-  // 言語切り替え時にテーブルとカラム設定を再描画
+  // Re-render table and column settings on languageChanged
   window.addEventListener('languageChanged', () => {
     renderTable();
     updateFilterCount();
@@ -698,7 +698,7 @@ const activityLog = (() => {
     }
   });
 
-  // 公開API
+  // Public API
   return {
     onReceptionStart,
     onReceptionEnd,

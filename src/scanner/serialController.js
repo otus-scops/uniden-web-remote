@@ -1,62 +1,62 @@
 /**
- * @fileoverview BCT15X シリアル通信コントローラー
- * @description BCT15Xとのシリアルポート通信を管理し、コマンド送受信を行う
+ * @fileoverview BCT15X serial communication controller
+ * @description Manages serial port communications with the BCT15X scanner, handling command transmission and responses.
  */
 
 const EventEmitter = require('events');
 const { parseResponse, parseGlgResponse, parsePwrResponse } = require('./protocolParser');
 
 /**
- * BCT15Xシリアル通信コントローラー
+ * BCT15X serial communication controller class
  * @extends EventEmitter
- * @fires SerialController#data - データ受信時
- * @fires SerialController#connected - 接続時
- * @fires SerialController#disconnected - 切断時
- * @fires SerialController#error - エラー時
+ * @fires SerialController#data - On data received
+ * @fires SerialController#connected - On connected
+ * @fires SerialController#disconnected - On disconnected
+ * @fires SerialController#error - On error
  */
 class SerialController extends EventEmitter {
   /**
-   * @param {Object} config - シリアルポート設定
-   * @param {string} config.path - デバイスパス
-   * @param {number} config.baudRate - ボーレート
-   * @param {boolean} [mockMode=false] - モックモード
+   * @param {Object} config - Serial port configuration
+   * @param {string} config.path - Device path
+   * @param {number} config.baudRate - Baud rate
+   * @param {boolean} [mockMode=false] - Mock mode flag
    */
   constructor(config, mockMode = false) {
     super();
 
-    /** @type {Object} 設定 */
+    /** @type {Object} Configuration */
     this._config = config;
 
-    /** @type {boolean} モックモード */
+    /** @type {boolean} Mock mode flag */
     this._mockMode = mockMode;
 
-    /** @type {Object|null} SerialPortインスタンス */
+    /** @type {Object|null} SerialPort instance */
     this._port = null;
 
-    /** @type {Object|null} パーサー */
+    /** @type {Object|null} Parser instance */
     this._parser = null;
 
-    /** @type {boolean} 接続状態 */
+    /** @type {boolean} Connection status */
     this._isConnected = false;
 
-    /** @type {number|null} GLGポーリングタイマー */
+    /** @type {number|null} GLG polling timer */
     this._pollTimer = null;
 
-    /** @type {number|null} PWRポーリングタイマー */
+    /** @type {number|null} PWR polling timer */
     this._pwrTimer = null;
 
-    /** @type {Array<Function>} コマンド応答待ちキュー */
+    /** @type {Array<Function>} Command response awaiting queue */
     this._responseQueue = [];
 
-    /** @type {number} モック用受信カウンター */
+    /** @type {number} Mock reception counter */
     this._mockCounter = 0;
 
-    /** @type {boolean} モック用受信中フラグ */
+    /** @type {boolean} Mock reception in-progress flag */
     this._mockReceiving = false;
   }
 
   /**
-   * シリアルポートに接続する
+   * Connect to serial port
    * @returns {Promise<void>}
    */
   async connect() {
@@ -65,7 +65,7 @@ class SerialController extends EventEmitter {
     }
 
     try {
-      // serialportモジュールを動的にロード（Dockerの場合のみインストール済み）
+      // Dynamically load serialport module (installed in Docker environment)
       const { SerialPort } = require('serialport');
       const { ReadlineParser } = require('@serialport/parser-readline');
 
@@ -82,54 +82,54 @@ class SerialController extends EventEmitter {
         new ReadlineParser({ delimiter: this._config.delimiter || '\r' })
       );
 
-      // データ受信ハンドラー
+      // Data reception handler
       this._parser.on('data', (data) => {
         this._onData(data);
       });
 
-      // 接続イベント
+      // Open event
       this._port.on('open', () => {
         this._isConnected = true;
-        console.log(`[SerialController] ポートに接続しました: ${this._config.path}`);
+        console.log(`[SerialController] Connected to port: ${this._config.path}`);
         this.emit('connected');
       });
 
-      // エラーハンドラー
+      // Error handler
       this._port.on('error', (err) => {
-        console.error(`[SerialController] シリアルエラー:`, err.message);
+        console.error(`[SerialController] Serial error:`, err.message);
         this.emit('error', err);
       });
 
-      // クローズハンドラー
+      // Close handler
       this._port.on('close', () => {
         this._isConnected = false;
-        console.log('[SerialController] ポートが切断されました');
+        console.log('[SerialController] Port disconnected');
         this.emit('disconnected');
       });
 
-      // 接続完了を待つ
+      // Await open completion
       await new Promise((resolve, reject) => {
         this._port.on('open', resolve);
         this._port.on('error', reject);
       });
     } catch (err) {
-      console.error('[SerialController] 接続に失敗しました:', err.message);
+      console.error('[SerialController] Connection failed:', err.message);
       throw err;
     }
   }
 
   /**
-   * モックモードで接続する
+   * Connect in mock mode
    * @private
    */
   _connectMock() {
-    console.log('[SerialController] モックモードで接続しました');
+    console.log('[SerialController] Connected in mock mode');
     this._isConnected = true;
     this.emit('connected');
   }
 
   /**
-   * シリアルポートを切断する
+   * Disconnect serial port
    * @returns {Promise<void>}
    */
   async disconnect() {
@@ -153,7 +153,7 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * 接続状態を取得する
+   * Get connection state
    * @returns {boolean}
    */
   isConnected() {
@@ -161,9 +161,9 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * コマンドを送信する
-   * @param {string} command - 送信コマンド（\rは自動付加）
-   * @returns {Promise<string>} レスポンス文字列
+   * Send a command to scanner
+   * @param {string} command - Command string (\r will be appended automatically if omitted)
+   * @returns {Promise<string>} Response string
    */
   async sendCommand(command) {
     if (this._mockMode) {
@@ -171,17 +171,17 @@ class SerialController extends EventEmitter {
     }
 
     if (!this._isConnected || !this._port) {
-      throw new Error('シリアルポートに接続されていません');
+      throw new Error('Serial port not connected');
     }
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        // キューから削除
+        // Remove from response queue on timeout
         const idx = this._responseQueue.indexOf(resolver);
         if (idx >= 0) {
           this._responseQueue.splice(idx, 1);
         }
-        reject(new Error(`コマンドタイムアウト: ${command}`));
+        reject(new Error(`Command timeout: ${command}`));
       }, 3000);
 
       const resolver = (data) => {
@@ -206,8 +206,8 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * データ受信ハンドラー
-   * @param {string} data - 受信データ
+   * Data reception handler
+   * @param {string} data - Received raw data
    * @private
    */
   _onData(data) {
@@ -216,36 +216,36 @@ class SerialController extends EventEmitter {
       return;
     }
 
-    // 応答待ちキューにリゾルバーがあればそちらに渡す
+    // Resolve next pending command if waiting in queue
     if (this._responseQueue.length > 0) {
       const resolver = this._responseQueue.shift();
       resolver(trimmed);
     }
 
-    // 全データをイベントとして配信
+    // Emit data event for all incoming records
     this.emit('data', trimmed);
   }
 
   /**
-   * GLG/PWRの定期ポーリングを開始する
-   * @param {number} glgIntervalMs - GLGポーリング間隔(ms)
-   * @param {number} [pwrIntervalMs=500] - PWRポーリング間隔(ms)
+   * Start periodic polling for GLG and PWR
+   * @param {number} glgIntervalMs - GLG polling interval (ms)
+   * @param {number} [pwrIntervalMs=500] - PWR polling interval (ms)
    */
   startPolling(glgIntervalMs, pwrIntervalMs = 500) {
     this.stopPolling();
 
-    // GLGポーリング
+    // GLG polling
     this._pollTimer = setInterval(async () => {
       try {
         const response = await this.sendCommand('GLG');
         const parsed = parseGlgResponse(response);
         this.emit('glgUpdate', parsed);
       } catch {
-        // タイムアウトは無視
+        // Ignore timeouts
       }
     }, glgIntervalMs);
 
-    // PWRポーリング（RSSI）
+    // PWR polling (RSSI)
     this._pwrTimer = setInterval(async () => {
       try {
         const response = await this.sendCommand('PWR');
@@ -254,15 +254,15 @@ class SerialController extends EventEmitter {
           this.emit('pwrUpdate', parsed);
         }
       } catch {
-        // タイムアウトは無視
+        // Ignore timeouts
       }
     }, pwrIntervalMs);
 
-    console.log(`[SerialController] ポーリング開始: GLG=${glgIntervalMs}ms, PWR=${pwrIntervalMs}ms`);
+    console.log(`[SerialController] Started polling: GLG=${glgIntervalMs}ms, PWR=${pwrIntervalMs}ms`);
   }
 
   /**
-   * ポーリングを停止する
+   * Stop polling
    */
   stopPolling() {
     if (this._pollTimer) {
@@ -276,9 +276,9 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * キープレスをシミュレートする
-   * @param {string} key - キー名（例: "S", "H", "L", "1"-"9"）
-   * @param {string} [action="P"] - アクション（P=Press, H=Hold, R=Release）
+   * Simulate a keypress
+   * @param {string} key - Key identifier (e.g. "S", "H", "L", "1"-"9")
+   * @param {string} [action="P"] - Key action (P=Press, H=Hold, R=Release)
    * @returns {Promise<string>}
    */
   async pressKey(key, action = 'P') {
@@ -286,7 +286,7 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * スキャンを開始する（Scanキーを押す）
+   * Start scanning (simulates Scan key press)
    * @returns {Promise<string>}
    */
   async startScan() {
@@ -294,7 +294,7 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * ホールドする（Holdキーを押す）
+   * Hold channel (simulates Hold key press)
    * @returns {Promise<string>}
    */
   async hold() {
@@ -302,19 +302,19 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * 音量を設定する
-   * @param {number} level - 音量レベル (0-15)
+   * Set volume level
+   * @param {number} level - Volume level (0-15)
    * @returns {Promise<string>}
    */
   async setVolume(level) {
-    // 0埋めの2桁にする (例: 5 -> 05, 12 -> 12)
+    // Format as 2 zero-padded digits (e.g. 5 -> 05, 12 -> 12)
     const formatted = String(level).padStart(2, '0');
     return this.sendCommand(`VOL,${formatted}`);
   }
 
   /**
-   * スケルチを設定する
-   * @param {number} level - スケルチレベル (0-15)
+   * Set squelch level
+   * @param {number} level - Squelch level (0-15)
    * @returns {Promise<string>}
    */
   async setSquelch(level) {
@@ -323,7 +323,7 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * モデル情報を取得する
+   * Retrieve scanner model name
    * @returns {Promise<string>}
    */
   async getModel() {
@@ -331,7 +331,7 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * ファームウェアバージョンを取得する
+   * Retrieve firmware version
    * @returns {Promise<string>}
    */
   async getVersion() {
@@ -339,9 +339,9 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * モックコマンド応答を生成する
-   * @param {string} command - コマンド名
-   * @returns {string} モック応答
+   * Generate mock responses for commands
+   * @param {string} command - Command name
+   * @returns {string} Mock response string
    * @private
    */
   _mockCommand(command) {
@@ -372,18 +372,18 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * モックGLGレスポンスを生成する（受信と非受信を周期的に繰り返す）
+   * Generate mock GLG response cycling between active receiving and idle
    * @returns {string}
    * @private
    */
   _mockGlgResponse() {
     this._mockCounter++;
 
-    // 約5秒ごとに受信状態を切り替える（200msポーリングで25回）
+    // Toggle reception status roughly every 5 seconds (25 ticks @200ms)
     const cycle = this._mockCounter % 50;
 
     if (cycle < 25) {
-      // 受信中
+      // Actively receiving
       this._mockReceiving = true;
       const freqs = ['01557000', '04620000', '15180000', '08510125'];
       const systems = ['Auto Police', 'Fire Dept', 'EMS', 'Highway Patrol'];
@@ -394,14 +394,14 @@ class SerialController extends EventEmitter {
 
       return `GLG,${freqs[idx]},${mods[idx]},OFF,none,${systems[idx]},${depts[idx]},${channels[idx]},0,0,1,1,`;
     } else {
-      // 非受信
+      // Idle / scanning
       this._mockReceiving = false;
       return 'GLG,,,,,,,,,,,,';
     }
   }
 
   /**
-   * リソースを解放する
+   * Release resources
    */
   destroy() {
     this.stopPolling();

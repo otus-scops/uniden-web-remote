@@ -1,7 +1,7 @@
 /**
- * @fileoverview ライブ音声ストリーミング＆録音統合モジュール
- * @description SOXを用いた音声キャプチャを行い、HTTPストリーミング配信と
- * ファイル録音の両方に対応する。1つのSOXプロセスの出力を複数系統に分岐配信する。
+ * @fileoverview Live audio streaming & recording integration module
+ * @description Captures audio using SOX, supporting both HTTP streaming distribution
+ * and recording to disk. Splits single SOX process output into multiple streams.
  */
 
 const EventEmitter = require('events');
@@ -10,69 +10,69 @@ const { PassThrough } = require('stream');
 const fs = require('fs');
 
 /**
- * ライブ音声ストリーミング＆録音統合管理クラス
- * SOXで音声をキャプチャし、MP3ストリームとして複数クライアントに配信しつつ、
- * 同時にファイル録音を行う。
+ * Live audio streaming & recording integrated controller class
+ * Captures audio via SOX, distributes MP3 stream to multiple connected clients,
+ * and simultaneously records to files.
  * @extends EventEmitter
- * @fires AudioStreamer#clientConnected - クライアント接続時
- * @fires AudioStreamer#clientDisconnected - クライアント切断時
- * @fires AudioStreamer#streamStart - ストリーミング開始時
- * @fires AudioStreamer#streamStop - ストリーミング停止時
- * @fires AudioStreamer#streamError - ストリーミングエラー時
- * @fires AudioStreamer#recordingPipeStart - 録音パイプ開始時
- * @fires AudioStreamer#recordingPipeStop - 録音パイプ停止時
+ * @fires AudioStreamer#clientConnected - On client connection
+ * @fires AudioStreamer#clientDisconnected - On client disconnection
+ * @fires AudioStreamer#streamStart - On stream start
+ * @fires AudioStreamer#streamStop - On stream stop
+ * @fires AudioStreamer#streamError - On stream error
+ * @fires AudioStreamer#recordingPipeStart - On recording pipe start
+ * @fires AudioStreamer#recordingPipeStop - On recording pipe stop
  */
 class AudioStreamer extends EventEmitter {
   /**
-   * @param {Object} audioConfig - 音声設定
-   * @param {string} audioConfig.device - ALSAデバイス名（例: "hw:1,0"）
-   * @param {number} audioConfig.sampleRate - サンプルレート
-   * @param {number} audioConfig.channels - チャンネル数
-   * @param {number} audioConfig.mp3Bitrate - MP3ビットレート(kbps)
-   * @param {boolean} [mockMode=false] - モックモード
+   * @param {Object} audioConfig - Audio configuration
+   * @param {string} audioConfig.device - ALSA device name (e.g. "hw:1,0")
+   * @param {number} audioConfig.sampleRate - Sample rate
+   * @param {number} audioConfig.channels - Channel count
+   * @param {number} audioConfig.mp3Bitrate - MP3 bitrate in kbps
+   * @param {boolean} [mockMode=false] - Mock mode flag
    */
   constructor(audioConfig, mockMode = false) {
     super();
 
-    /** @type {Object} 音声設定 */
+    /** @type {Object} Audio configuration */
     this._audioConfig = audioConfig;
 
-    /** @type {boolean} モックモード */
+    /** @type {boolean} Mock mode flag */
     this._mockMode = mockMode;
 
-    /** @type {import('child_process').ChildProcess|null} SOXプロセス */
+    /** @type {import('child_process').ChildProcess|null} SOX process */
     this._soxProcess = null;
 
-    /** @type {boolean} ストリーミング中フラグ */
+    /** @type {boolean} Streaming in-progress flag */
     this._isStreaming = false;
 
-    /** @type {Set<PassThrough>} 接続中クライアントのストリーム */
+    /** @type {Set<PassThrough>} Connected client streams */
     this._clients = new Set();
 
-    /** @type {number|null} モック用タイマー */
+    /** @type {number|null} Mock streaming interval timer */
     this._mockTimer = null;
 
-    /** @type {Buffer|null} モック用MP3無音フレーム */
+    /** @type {Buffer|null} Mock MP3 silence frame */
     this._mockSilenceFrame = null;
 
-    /** @type {boolean} 意図的な停止かどうか（closeイベント競合防止用） */
+    /** @type {boolean} Flag indicating intentional stop to prevent close event race conditions */
     this._intentionalStop = false;
 
-    /** @type {Promise<void>|null} SOXプロセス終了待ちPromise */
+    /** @type {Promise<void>|null} Promise tracking SOX process exit */
     this._stopPromise = null;
 
-    /** @type {fs.WriteStream|null} 録音用ファイルストリーム */
+    /** @type {fs.WriteStream|null} Recording file write stream */
     this._recordingStream = null;
 
-    /** @type {string|null} 現在の録音ファイルパス */
+    /** @type {string|null} Current recording file path */
     this._recordingFilePath = null;
 
-    /** @type {boolean} 録音中フラグ */
+    /** @type {boolean} Recording in-progress flag */
     this._isRecording = false;
   }
 
   /**
-   * ストリーミング中かどうかを取得する
+   * Check whether streaming is active
    * @returns {boolean}
    */
   isStreaming() {
@@ -80,7 +80,7 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * 録音中かどうかを取得する
+   * Check whether recording is active
    * @returns {boolean}
    */
   isRecording() {
@@ -88,7 +88,7 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * 接続中クライアント数を取得する
+   * Get connected client count
    * @returns {number}
    */
   getClientCount() {
@@ -96,16 +96,16 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * 新しいクライアントストリームを作成し、音声データの配信を開始する。
-   * クライアントが接続されたらSOXプロセスを起動する（まだ起動していなければ）。
-   * @returns {PassThrough} クライアント用のReadableストリーム
+   * Create a new client stream and begin audio distribution.
+   * Spawns SOX process if not already running.
+   * @returns {PassThrough} Readable stream for the client
    */
   addClient() {
     const clientStream = new PassThrough();
 
     this._clients.add(clientStream);
 
-    // クライアントストリームが閉じられたらセットから除去
+    // Remove from set when client stream closes
     clientStream.on('close', () => {
       this._removeClient(clientStream);
     });
@@ -114,10 +114,10 @@ class AudioStreamer extends EventEmitter {
       this._removeClient(clientStream);
     });
 
-    console.log(`[AudioStreamer] クライアント接続 (現在: ${this._clients.size})`);
+    console.log(`[AudioStreamer] Client connected (current: ${this._clients.size})`);
     this.emit('clientConnected', { clientCount: this._clients.size });
 
-    // ストリーミングがまだ開始されていなければ開始する
+    // Start streaming if not already running
     if (!this._isStreaming) {
       this._startStreaming();
     }
@@ -126,8 +126,8 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * クライアントストリームを除去する
-   * @param {PassThrough} clientStream - 除去するストリーム
+   * Remove a client stream
+   * @param {PassThrough} clientStream - Stream to remove
    * @private
    */
   _removeClient(clientStream) {
@@ -136,23 +136,23 @@ class AudioStreamer extends EventEmitter {
     }
 
     this._clients.delete(clientStream);
-    console.log(`[AudioStreamer] クライアント切断 (残り: ${this._clients.size})`);
+    console.log(`[AudioStreamer] Client disconnected (remaining: ${this._clients.size})`);
     this.emit('clientDisconnected', { clientCount: this._clients.size });
 
-    // 全クライアントが切断され、かつ録音中でなければストリーミングを停止する
+    // Stop streaming if all clients disconnected and not currently recording
     if (this._clients.size === 0 && !this._isRecording) {
       this._stopStreaming();
     }
   }
 
   /**
-   * 録音パイプを開始する（SOXの出力をファイルにも書き込む）
-   * SOXプロセスが未起動なら起動する。
-   * @param {string} filePath - 録音ファイルパス
+   * Start recording pipe (write SOX output to file)
+   * Spawns SOX process if not already running.
+   * @param {string} filePath - Recording file path
    */
   startRecordingPipe(filePath) {
     if (this._isRecording) {
-      console.log('[AudioStreamer] 既に録音パイプ中です。先に停止します。');
+      console.log('[AudioStreamer] Recording pipe already active. Stopping previous pipe first.');
       this.stopRecordingPipe();
     }
 
@@ -163,19 +163,19 @@ class AudioStreamer extends EventEmitter {
       this._isRecording = true;
 
       this._recordingStream.on('error', (err) => {
-        console.error(`[AudioStreamer] 録音ファイル書き込みエラー:`, err.message);
+        console.error(`[AudioStreamer] Recording file write error:`, err.message);
         this.stopRecordingPipe();
       });
 
-      console.log(`[AudioStreamer] 録音パイプ開始: ${filePath}`);
+      console.log(`[AudioStreamer] Recording pipe started: ${filePath}`);
       this.emit('recordingPipeStart', { filePath });
 
-      // SOXプロセスが未起動なら起動する
+      // Start SOX process if not already running
       if (!this._isStreaming) {
         this._startStreaming();
       }
     } catch (err) {
-      console.error(`[AudioStreamer] 録音パイプ開始失敗:`, err.message);
+      console.error(`[AudioStreamer] Recording pipe start failed:`, err.message);
       this._isRecording = false;
       this._recordingStream = null;
       this._recordingFilePath = null;
@@ -183,8 +183,8 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * 録音パイプを停止する（ファイル書き込みを終了）
-   * @returns {Object|null} 録音結果情報
+   * Stop recording pipe (terminate file writing)
+   * @returns {Object|null} Recording outcome metadata
    */
   stopRecordingPipe() {
     if (!this._isRecording) {
@@ -193,12 +193,12 @@ class AudioStreamer extends EventEmitter {
 
     const filePath = this._recordingFilePath;
 
-    // ファイルストリームを閉じる
+    // Close file stream
     if (this._recordingStream) {
       try {
         this._recordingStream.end();
       } catch (err) {
-        console.error(`[AudioStreamer] 録音ストリーム終了エラー:`, err.message);
+        console.error(`[AudioStreamer] Recording stream close error:`, err.message);
       }
       this._recordingStream = null;
     }
@@ -206,10 +206,10 @@ class AudioStreamer extends EventEmitter {
     this._isRecording = false;
     this._recordingFilePath = null;
 
-    console.log(`[AudioStreamer] 録音パイプ停止: ${filePath}`);
+    console.log(`[AudioStreamer] Recording pipe stopped: ${filePath}`);
     this.emit('recordingPipeStop', { filePath });
 
-    // 全クライアントも切断されていればSOXも停止
+    // Stop SOX process if all clients are also disconnected
     if (this._clients.size === 0) {
       this._stopStreaming();
     }
@@ -218,8 +218,8 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * ストリーミングを開始する（SOXプロセスを起動）
-   * 前回のSOXプロセスが終了中の場合は完了を待ってから起動する。
+   * Start streaming (spawns SOX process)
+   * If previous SOX process is shutting down, awaits completion before spawning.
    * @private
    */
   async _startStreaming() {
@@ -227,13 +227,13 @@ class AudioStreamer extends EventEmitter {
       return;
     }
 
-    // 前回のSOX終了を待つ
+    // Wait for previous SOX process to terminate
     if (this._stopPromise) {
-      console.log('[AudioStreamer] 前回のSOXプロセス終了を待機中...');
+      console.log('[AudioStreamer] Awaiting previous SOX process termination...');
       try {
         await this._stopPromise;
       } catch {
-        // 無視して続行
+        // Ignore and proceed
       }
       this._stopPromise = null;
     }
@@ -247,13 +247,13 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * SOXによるリアル音声ストリーミングを開始する
+   * Start real audio streaming via SOX
    * @private
    */
   _startSoxStreaming() {
     const args = this._buildSoxStreamArgs();
 
-    console.log(`[AudioStreamer] SOXストリーミング開始: sox ${args.join(' ')}`);
+    console.log(`[AudioStreamer] Starting SOX streaming: sox ${args.join(' ')}`);
 
     try {
       this._intentionalStop = false;
@@ -264,39 +264,39 @@ class AudioStreamer extends EventEmitter {
 
       this._isStreaming = true;
 
-      // SOXのstdoutからMP3データを読み取り、全クライアントと録音に配信
+      // Read MP3 data from SOX stdout and broadcast to all clients and recording stream
       this._soxProcess.stdout.on('data', (chunk) => {
         this._broadcastChunk(chunk);
       });
 
       this._soxProcess.stderr.on('data', (data) => {
         const msg = data.toString().trim();
-        // SOXの通常の進捗メッセージはフィルタリング
+        // Filter out normal SOX progress indicators
         if (msg && !msg.includes('In:') && !msg.includes('Input File')) {
           console.log(`[AudioStreamer] SOX: ${msg}`);
         }
       });
 
       this._soxProcess.on('error', (err) => {
-        console.error(`[AudioStreamer] SOXプロセスエラー:`, err.message);
+        console.error(`[AudioStreamer] SOX process error:`, err.message);
         this._isStreaming = false;
         this.emit('streamError', { error: err.message });
         this._closeAllClients();
       });
 
       this._soxProcess.on('close', (code) => {
-        console.log(`[AudioStreamer] SOXプロセス終了: code=${code}`);
+        console.log(`[AudioStreamer] SOX process exited: code=${code}`);
         this._isStreaming = false;
         this._soxProcess = null;
 
-        // 意図的な停止の場合は再起動しない
+        // Do not restart on intentional stop
         if (this._intentionalStop) {
           return;
         }
 
-        // 異常終了の場合、クライアントか録音がまだあれば再起動を試みる
+        // On abnormal termination, attempt restart if clients or recordings still active
         if (code !== 0 && (this._clients.size > 0 || this._isRecording)) {
-          console.log('[AudioStreamer] SOXプロセスが異常終了。3秒後に再起動します...');
+          console.log('[AudioStreamer] SOX process exited unexpectedly. Restarting in 3 seconds...');
           setTimeout(() => {
             if (this._clients.size > 0 || this._isRecording) {
               this._startStreaming();
@@ -307,60 +307,59 @@ class AudioStreamer extends EventEmitter {
 
       this.emit('streamStart');
     } catch (err) {
-      console.error(`[AudioStreamer] SOXストリーミング開始失敗:`, err.message);
+      console.error(`[AudioStreamer] SOX streaming start failed:`, err.message);
       this._isStreaming = false;
       this.emit('streamError', { error: err.message });
     }
   }
 
   /**
-   * SOXストリーミング引数を構築する
-   * @returns {string[]} SOXコマンド引数
+   * Build SOX command arguments
+   * @returns {string[]} SOX command line arguments
    * @private
    */
   _buildSoxStreamArgs() {
     const config = this._audioConfig;
     const args = [];
 
-    // 入力デバイス
+    // Input audio device
     if (config.device && config.device !== 'default') {
       args.push('-t', 'alsa', config.device);
     } else {
       args.push('-t', 'alsa', 'default');
     }
 
-    // 出力フォーマット: MP3をstdoutに出力
+    // Output format: MP3 to stdout
     args.push('-t', 'mp3');
 
-    // チャンネル数
+    // Channel count
     args.push('-c', String(config.channels || 1));
 
-    // サンプルレート
+    // Sample rate
     args.push('-r', String(config.sampleRate || 22050));
 
-    // ビットレート（MP3圧縮品質）
-    // SOX MP3出力: -C はビットレート設定
+    // Compression quality / bitrate for SOX MP3 output (-C setting)
     args.push('-C', String(config.mp3Bitrate || 64));
 
-    // 出力先: stdout ( - )
+    // Output destination: stdout ( - )
     args.push('-');
 
     return args;
   }
 
   /**
-   * モック用ストリーミングを開始する（有効なMP3無音フレームを定期送信）
+   * Start mock streaming (periodically transmits valid MP3 silence frames)
    * @private
    */
   _startMockStreaming() {
-    console.log('[AudioStreamer] モックストリーミング開始');
+    console.log('[AudioStreamer] Starting mock streaming');
     this._isStreaming = true;
     this._intentionalStop = false;
 
-    // 有効なMP3無音フレームを生成
+    // Generate valid MP3 silence frame
     this._mockSilenceFrame = this._generateValidMp3SilenceFrame();
 
-    // 約26ms間隔でフレームを送信（MP3 1フレームあたり約26ms @22050Hz）
+    // Transmit frames at ~26ms intervals (~26ms per MP3 frame @22050Hz)
     const frameIntervalMs = 26;
     this._mockTimer = setInterval(() => {
       if ((this._clients.size > 0 || this._isRecording) && this._mockSilenceFrame) {
@@ -372,14 +371,14 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * ブラウザが再生可能な有効なMP3無音フレームを生成する。
-   * MPEG2 Layer3 64kbps 22050Hz Mono のフレーム。
-   * フレームサイズ = 72 * 64000 / 22050 = 208.98... ≒ 209バイト
-   * @returns {Buffer} 有効なMP3フレームバッファ
+   * Generate a valid MP3 silence frame that browsers can decode and play.
+   * MPEG2 Layer3 64kbps 22050Hz Mono frame.
+   * Frame size = 72 * 64000 / 22050 = 208.98... approx 209 bytes
+   * @returns {Buffer} Valid MP3 frame buffer
    * @private
    */
   _generateValidMp3SilenceFrame() {
-    // MPEG2 Layer3 ヘッダー（4バイト）:
+    // MPEG2 Layer3 header (4 bytes):
     // Byte 0: 0xFF (sync)
     // Byte 1: 0xF3 (sync + MPEG2, Layer3, no CRC protection)
     // Byte 2: 0x68 (64kbps for MPEG2 Layer3, 22050Hz, padding=0)
@@ -387,49 +386,49 @@ class AudioStreamer extends EventEmitter {
     const frameSize = 209;
     const frame = Buffer.alloc(frameSize, 0);
 
-    // ヘッダー書き込み
+    // Write header
     frame[0] = 0xFF;
     frame[1] = 0xF3;
     frame[2] = 0x68;
     frame[3] = 0xC0;
 
-    // Side information (MPEG2 Layer3 mono = 9バイト)
-    // main_data_begin = 0 (最初の2ビット)、残りはゼロで無音を表現
-    // バイト4-12はすべて0x00のまま（無音のサイドインフォ）
+    // Side information (MPEG2 Layer3 mono = 9 bytes)
+    // main_data_begin = 0 (first 2 bits), remaining bits zero for silence
+    // Bytes 4-12 remain all 0x00 (silent side information)
 
     return frame;
   }
 
   /**
-   * MP3データチャンクを全クライアントと録音パイプにブロードキャストする
-   * @param {Buffer} chunk - MP3データチャンク
+   * Broadcast MP3 data chunk to all connected clients and recording pipe
+   * @param {Buffer} chunk - MP3 data chunk
    * @private
    */
   _broadcastChunk(chunk) {
-    // ストリーミングクライアントへの配信
+    // Distribute to streaming clients
     for (const client of this._clients) {
       try {
         if (!client.destroyed) {
           client.write(chunk);
         }
       } catch {
-        // 書き込みエラーのクライアントは除去される（errorイベントで処理済み）
+        // Erroneous clients are cleaned up in error event handler
       }
     }
 
-    // 録音パイプへの書き込み
+    // Write to recording pipe
     if (this._isRecording && this._recordingStream && !this._recordingStream.destroyed) {
       try {
         this._recordingStream.write(chunk);
       } catch {
-        // 書き込みエラーは recordingStream の error イベントで処理
+        // Write error handled in recordingStream error event listener
       }
     }
   }
 
   /**
-   * ストリーミングを停止する（SOXプロセスの終了をPromiseで待つ）
-   * @returns {Promise<void>} SOXプロセス終了のPromise
+   * Stop streaming (awaits SOX process shutdown via Promise)
+   * @returns {Promise<void>} Promise resolving upon SOX exit
    * @private
    */
   _stopStreaming() {
@@ -437,10 +436,10 @@ class AudioStreamer extends EventEmitter {
       return Promise.resolve();
     }
 
-    console.log('[AudioStreamer] ストリーミング停止');
+    console.log('[AudioStreamer] Stopping streaming');
     this._intentionalStop = true;
 
-    // モックタイマー停止
+    // Stop mock timer
     if (this._mockTimer) {
       clearInterval(this._mockTimer);
       this._mockTimer = null;
@@ -449,18 +448,18 @@ class AudioStreamer extends EventEmitter {
       return Promise.resolve();
     }
 
-    // SOXプロセス停止（Promiseで終了を待つ）
+    // Stop SOX process (await completion via Promise)
     if (this._soxProcess) {
       this._stopPromise = new Promise((resolve) => {
         const proc = this._soxProcess;
 
-        // タイムアウト: 5秒でプロセスが終了しなければ強制終了
+        // Timeout: forcibly kill if process does not exit within 5 seconds
         const timeout = setTimeout(() => {
-          console.warn('[AudioStreamer] SOXプロセスがタイムアウト。SIGKILLで強制終了します。');
+          console.warn('[AudioStreamer] SOX process shutdown timed out. Forcing SIGKILL.');
           try {
             proc.kill('SIGKILL');
           } catch {
-            // 無視
+            // Ignore error
           }
           this._isStreaming = false;
           this._soxProcess = null;
@@ -468,7 +467,7 @@ class AudioStreamer extends EventEmitter {
           resolve();
         }, 5000);
 
-        // closeイベントで正常終了を検知
+        // Detect clean exit via close event
         proc.once('close', () => {
           clearTimeout(timeout);
           this._isStreaming = false;
@@ -480,7 +479,7 @@ class AudioStreamer extends EventEmitter {
         try {
           proc.kill('SIGINT');
         } catch (err) {
-          console.error(`[AudioStreamer] SOX停止エラー:`, err.message);
+          console.error(`[AudioStreamer] SOX termination error:`, err.message);
           clearTimeout(timeout);
           this._isStreaming = false;
           this._soxProcess = null;
@@ -498,7 +497,7 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * 全クライアントの接続を閉じる
+   * Close all client connections
    * @private
    */
   _closeAllClients() {
@@ -506,14 +505,14 @@ class AudioStreamer extends EventEmitter {
       try {
         client.end();
       } catch {
-        // 無視
+        // Ignore error
       }
     }
     this._clients.clear();
   }
 
   /**
-   * リソースを解放する
+   * Release resources
    */
   async destroy() {
     this.stopRecordingPipe();

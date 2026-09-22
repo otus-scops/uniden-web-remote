@@ -1,7 +1,7 @@
 /**
- * @fileoverview メインサーバー
- * @description Express HTTPサーバー + WebSocketサーバーを起動し、
- * スキャナー制御・録音・APIの各モジュールを統合する
+ * @fileoverview Main Application Server
+ * @description Boots Express HTTP server + WebSocket server,
+ * integrating scanner serial control, recording, and REST API modules
  */
 
 const http = require('http');
@@ -18,12 +18,12 @@ const WsHandler = require('./api/wsHandler');
 const { parseMdlResponse, parseVerResponse } = require('./scanner/protocolParser');
 
 /**
- * メインサーバークラス
- * アプリケーション全体のライフサイクルを管理する
+ * Main application server class
+ * Manages full lifecycle of scanner connection, audio recording, and web services
  */
 class AppServer {
   constructor() {
-    /** @type {boolean} モックモード */
+    /** @type {boolean} Mock mode flag */
     this._mockMode = config.mock.enabled;
 
     /** @type {express.Application} */
@@ -53,23 +53,23 @@ class AppServer {
   }
 
   /**
-   * サーバーを起動する
+   * Start the server and scanner connection
    */
   async start() {
     console.log('='.repeat(60));
-    console.log('  BCT15X リモートスキャナー＆自動録音システム');
+    console.log('  BCT15X Remote Scanner & Automated Recording System');
     console.log('='.repeat(60));
-    console.log(`  モード: ${this._mockMode ? 'モック（テスト）' : '実機接続'}`);
-    console.log(`  シリアルポート: ${config.serial.path} @ ${config.serial.baudRate}bps`);
-    console.log(`  録音フォーマット: ${config.audio.format}`);
-    console.log(`  録音デバイス: ${config.audio.device}`);
-    console.log(`  ファイル名テンプレート: ${config.fileNaming.template}`);
+    console.log(`  Mode: ${this._mockMode ? 'Mock (Simulation)' : 'Physical Hardware'}`);
+    console.log(`  Serial Port: ${config.serial.path} @ ${config.serial.baudRate}bps`);
+    console.log(`  Audio Format: ${config.audio.format}`);
+    console.log(`  Audio Device: ${config.audio.device}`);
+    console.log(`  Filename Template: ${config.fileNaming.template}`);
     console.log('='.repeat(60));
 
-    // Express設定
+    // Configure Express middleware and routes
     this._setupExpress();
 
-    // WebSocket設定
+    // Setup WebSocket handler
     this._wsHandler = new WsHandler({
       server: this._server,
       scannerState: this._scannerState,
@@ -77,20 +77,20 @@ class AppServer {
       audioRecorder: this._audioRecorder,
     });
 
-    // イベントバインディング
+    // Wire internal events between subsystems
     this._setupEventBindings();
 
-    // シリアル接続
+    // Connect to scanner hardware
     await this._connectScanner();
 
-    // HTTPサーバー起動
+    // Start HTTP server
     return new Promise((resolve) => {
       this._server.listen(config.server.port, config.server.host, () => {
         console.log(`\n  🌐 Web UI: http://localhost:${config.server.port}`);
         console.log(`  📡 WebSocket: ws://localhost:${config.server.port}/ws`);
-        console.log(`  📂 録音保存先: ${config.audio.recordingsDir}`);
+        console.log(`  📂 Recordings Directory: ${config.audio.recordingsDir}`);
         if (config.gdrive.enabled) {
-          console.log(`  ☁️  Google Drive同期: 有効 (${config.gdrive.remotePath})`);
+          console.log(`  ☁️  Google Drive Sync: Enabled (${config.gdrive.remotePath})`);
         }
         console.log('');
         resolve();
@@ -99,17 +99,17 @@ class AppServer {
   }
 
   /**
-   * Expressミドルウェアとルートを設定する
+   * Configure Express middleware and API routes
    * @private
    */
   _setupExpress() {
-    // JSONパーサー
+    // Body parsers
     this._app.use(express.json());
 
-    // 静的ファイル配信
+    // Serve static client assets
     this._app.use(express.static(path.join(__dirname, '../public')));
 
-    // APIルート
+    // REST API routes
     const apiRoutes = createRoutes({
       serialController: this._serialController,
       scannerState: this._scannerState,
@@ -125,18 +125,18 @@ class AppServer {
     });
     this._app.use('/api/memory', memoryRoutes);
 
-    // SPA フォールバック
+    // SPA fallback
     this._app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
   }
 
   /**
-   * モジュール間のイベントバインディングを設定する
+   * Bind event listeners across subsystems
    * @private
    */
   _setupEventBindings() {
-    // シリアルコントローラー → スキャナー状態
+    // Serial Controller -> Scanner State
     this._serialController.on('glgUpdate', (glgData) => {
       this._scannerState.onGlgUpdate(glgData);
     });
@@ -153,12 +153,12 @@ class AppServer {
 
     this._serialController.on('disconnected', () => {
       this._scannerState.setConnected(false);
-      // 自動再接続
-      console.log(`[Server] ${config.scanner.reconnectIntervalMs}ms後に再接続を試行します...`);
+      // Auto reconnect
+      console.log(`[Server] Attempting reconnect in ${config.scanner.reconnectIntervalMs}ms...`);
       setTimeout(() => this._connectScanner(), config.scanner.reconnectIntervalMs);
     });
 
-    // スキャナー状態 → 録音管理
+    // Scanner State -> Audio Recording
     this._scannerState.on('receptionStart', (data) => {
       if (this._scannerState.autoRecordEnabled && config.audio.autoRecord) {
         this._audioRecorder.startRecording(data.reception, data.startTime);
@@ -173,73 +173,73 @@ class AppServer {
       }
     });
 
-    // 録音イベントログ
+    // Audio recording event logs
     this._audioRecorder.on('recordingStart', (data) => {
-      console.log(`[Server] 🔴 録音開始: ${data.filename}`);
+      console.log(`[Server] 🔴 Recording started: ${data.filename}`);
     });
 
     this._audioRecorder.on('recordingStop', (data) => {
-      console.log(`[Server] ⏹️  録音停止: ${data.filename} (${data.durationSec}秒)`);
+      console.log(`[Server] ⏹️  Recording stopped: ${data.filename} (${data.durationSec}s)`);
     });
 
     this._audioRecorder.on('recordingError', (data) => {
-      console.error(`[Server] ❌ 録音エラー: ${data.error}`);
+      console.error(`[Server] ❌ Recording error: ${data.error}`);
     });
   }
 
   /**
-   * スキャナーに接続する
+   * Connect to scanner hardware via serial
    * @private
    */
   async _connectScanner() {
     try {
       await this._serialController.connect();
 
-      // モデル情報取得
+      // Query model identifier
       try {
         const mdlResponse = await this._serialController.getModel();
         const mdl = parseMdlResponse(mdlResponse);
         if (mdl) {
           this._scannerState.setModel(mdl.model);
-          console.log(`[Server] モデル: ${mdl.model}`);
+          console.log(`[Server] Model: ${mdl.model}`);
         }
       } catch {
-        console.warn('[Server] モデル情報の取得に失敗しました');
+        console.warn('[Server] Failed to query scanner model');
       }
 
-      // バージョン情報取得
+      // Query firmware version
       try {
         const verResponse = await this._serialController.getVersion();
         const ver = parseVerResponse(verResponse);
         if (ver) {
           this._scannerState.setFirmwareVersion(ver.version);
-          console.log(`[Server] ファームウェア: ${ver.version}`);
+          console.log(`[Server] Firmware: ${ver.version}`);
         }
       } catch {
-        console.warn('[Server] バージョン情報の取得に失敗しました');
+        console.warn('[Server] Failed to query firmware version');
       }
 
-      // ポーリング開始
+      // Start periodic status polling
       this._serialController.startPolling(
         config.scanner.pollIntervalMs,
         config.scanner.statusIntervalMs
       );
 
-      console.log('[Server] ✅ スキャナー接続完了、ポーリング開始');
+      console.log('[Server] ✅ Scanner connected, polling started');
     } catch (err) {
-      console.error(`[Server] スキャナー接続失敗: ${err.message}`);
+      console.error(`[Server] Scanner connection error: ${err.message}`);
       if (!this._mockMode) {
-        console.log(`[Server] ${config.scanner.reconnectIntervalMs}ms後に再接続を試行します...`);
+        console.log(`[Server] Attempting reconnect in ${config.scanner.reconnectIntervalMs}ms...`);
         setTimeout(() => this._connectScanner(), config.scanner.reconnectIntervalMs);
       }
     }
   }
 
   /**
-   * サーバーを停止する
+   * Stop server and clean up resources
    */
   async stop() {
-    console.log('[Server] シャットダウン中...');
+    console.log('[Server] Shutting down...');
 
     this._serialController.stopPolling();
 
@@ -264,15 +264,15 @@ class AppServer {
   }
 }
 
-// メイン実行
+// Main entrypoint execution
 const server = new AppServer();
 
 server.start().catch((err) => {
-  console.error('起動エラー:', err);
+  console.error('Startup error:', err);
   process.exit(1);
 });
 
-// グレースフルシャットダウン
+// Graceful shutdown handlers
 process.on('SIGINT', async () => {
   await server.stop();
   process.exit(0);

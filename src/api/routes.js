@@ -1,6 +1,6 @@
 /**
- * @fileoverview REST API ルート定義
- * @description スキャナー制御、録音管理、設定変更用のREST APIエンドポイント
+ * @fileoverview REST API Route Definitions
+ * @description Endpoints for scanner control, recording management, streaming, and settings
  */
 
 const express = require('express');
@@ -8,28 +8,28 @@ const path = require('path');
 const { generatePreview } = require('../audio/fileNamer');
 
 /**
- * APIルートを生成する
- * @param {Object} deps - 依存オブジェクト
- * @param {import('../scanner/serialController')} deps.serialController - シリアルコントローラー
- * @param {import('../scanner/scannerState')} deps.scannerState - スキャナー状態
- * @param {import('../audio/audioRecorder')} deps.audioRecorder - 録音管理
- * @param {Object} deps.config - 設定
- * @returns {express.Router} Expressルーター
+ * Create Express router for API routes
+ * @param {Object} deps - Dependencies
+ * @param {import('../scanner/serialController')} deps.serialController - Serial controller
+ * @param {import('../scanner/scannerState')} deps.scannerState - Scanner state
+ * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
+ * @param {Object} deps.config - System config
+ * @returns {express.Router} Express router
  */
 function createRoutes({ serialController, scannerState, audioRecorder, audioStreamer, config }) {
   const router = express.Router();
 
-  // ------ スキャナーステータス ------
+  // ------ Scanner Status ------
 
   /**
-   * GET /api/status - 現在のスキャナーステータスを取得
+   * GET /api/status - Get current scanner status snapshot
    */
   router.get('/status', (req, res) => {
     res.json(scannerState.getStatus());
   });
 
   /**
-   * GET /api/info - スキャナー情報（モデル、バージョン）を取得
+   * GET /api/info - Get scanner hardware information (model, firmware)
    */
   router.get('/info', async (req, res) => {
     try {
@@ -43,17 +43,17 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     }
   });
 
-  // ------ スキャナーコマンド ------
+  // ------ Scanner Commands ------
 
   /**
-   * POST /api/scanner/command - 任意のコマンドを送信
-   * @body {string} command - コマンド文字列
+   * POST /api/scanner/command - Send raw serial command
+   * @body {string} command - Command string
    */
   router.post('/scanner/command', async (req, res) => {
     try {
       const { command } = req.body;
       if (!command) {
-        return res.status(400).json({ error: 'commandパラメータが必要です' });
+        return res.status(400).json({ error: 'Command parameter is required' });
       }
 
       const response = await serialController.sendCommand(command);
@@ -64,15 +64,15 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/scanner/key - キープレスをシミュレート
-   * @body {string} key - キー名
-   * @body {string} [action='P'] - アクション（P/H/R）
+   * POST /api/scanner/key - Simulate front panel keypad press
+   * @body {string} key - Key name identifier
+   * @body {string} [action='P'] - Key action ('P'ress, 'H'old, 'R'elease)
    */
   router.post('/scanner/key', async (req, res) => {
     try {
       const { key, action = 'P' } = req.body;
       if (!key) {
-        return res.status(400).json({ error: 'keyパラメータが必要です' });
+        return res.status(400).json({ error: 'Key parameter is required' });
       }
 
       const response = await serialController.pressKey(key, action);
@@ -83,7 +83,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/scanner/scan - スキャン開始
+   * POST /api/scanner/scan - Start scanning
    */
   router.post('/scanner/scan', async (req, res) => {
     try {
@@ -95,7 +95,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/scanner/hold - ホールド
+   * POST /api/scanner/hold - Hold current frequency/channel
    */
   router.post('/scanner/hold', async (req, res) => {
     try {
@@ -107,14 +107,14 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/scanner/vol - 音量設定
-   * @body {number} level - 音量レベル (0-15)
+   * POST /api/scanner/vol - Set scanner volume
+   * @body {number} level - Volume level (0-15)
    */
   router.post('/scanner/vol', async (req, res) => {
     try {
       const { level } = req.body;
       if (level === undefined || level < 0 || level > 15) {
-        return res.status(400).json({ error: '有効なlevelパラメータ(0-15)が必要です' });
+        return res.status(400).json({ error: 'Valid level parameter (0-15) is required' });
       }
       const response = await serialController.setVolume(level);
       res.json({ action: 'vol', level, response });
@@ -124,14 +124,14 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/scanner/sql - スケルチ設定
-   * @body {number} level - スケルチレベル (0-15)
+   * POST /api/scanner/sql - Set scanner squelch
+   * @body {number} level - Squelch level (0-15)
    */
   router.post('/scanner/sql', async (req, res) => {
     try {
       const { level } = req.body;
       if (level === undefined || level < 0 || level > 15) {
-        return res.status(400).json({ error: '有効なlevelパラメータ(0-15)が必要です' });
+        return res.status(400).json({ error: 'Valid level parameter (0-15) is required' });
       }
       const response = await serialController.setSquelch(level);
       res.json({ action: 'sql', level, response });
@@ -140,31 +140,31 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     }
   });
 
-  // ------ ライブ音声ストリーミング ------
+  // ------ Live Audio Streaming ------
 
   /**
-   * GET /api/audio/stream - ライブ音声MP3ストリーム
-   * 連続的なMP3データをchunked transferで配信する。
-   * クライアント切断時にリソースをクリーンアップする。
+   * GET /api/audio/stream - Live MP3 audio stream
+   * Delivers continuous MP3 audio chunk stream.
+   * Cleans up client resources on disconnect.
    */
   router.get('/audio/stream', (req, res) => {
-    // レスポンスヘッダー設定
+    // Set streaming HTTP response headers
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Connection', 'keep-alive');
-    // CORS対応（別オリジンからのストリーミング再生を許可）
+    // Enable CORS for cross-origin streaming
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    // クライアントストリームを取得
+    // Register client listener stream
     const clientStream = audioStreamer.addClient();
 
-    // クライアントストリームからHTTPレスポンスにパイプ
+    // Pipe live audio stream directly into HTTP response
     clientStream.pipe(res);
 
-    // クライアント切断時のクリーンアップ
+    // Clean up resources when client disconnects
     req.on('close', () => {
       clientStream.unpipe(res);
       clientStream.destroy();
@@ -177,7 +177,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * GET /api/audio/status - ストリーミング状態を取得
+   * GET /api/audio/status - Get streaming subsystem status
    */
   router.get('/audio/status', (req, res) => {
     res.json({
@@ -186,13 +186,13 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     });
   });
 
-  // ------ 録音管理 ------
+  // ------ Recording Management ------
 
   /**
-   * GET /api/recordings - 録音ファイルリストを取得（フィルタリング対応）
-   * @query {string} [dateFrom] - 開始日時（ISO形式）
-   * @query {string} [dateTo] - 終了日時（ISO形式）
-   * @query {string} [search] - ファイル名検索（部分一致）
+   * GET /api/recordings - Get recording file list with filtering
+   * @query {string} [dateFrom] - Start date (ISO)
+   * @query {string} [dateTo] - End date (ISO)
+   * @query {string} [search] - Substring search on filename
    */
   router.get('/recordings', (req, res) => {
     const filters = {};
@@ -210,11 +210,11 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * GET /api/recordings/* - 録音ファイルをダウンロード/ストリーミング
-   * サブディレクトリを含むパスに対応（例: /api/recordings/2026-08-08/Dispatch/file.mp3）
+   * GET /api/recordings/* - Download or stream recording file
+   * Supports subdirectory paths (e.g. /api/recordings/2026-08-08/Dispatch/file.mp3)
    */
   router.get('/recordings/*', (req, res) => {
-    // ワイルドカード部分からファイルパスを取得
+    // Extract relative file path from wildcard capture
     const relativePath = req.params[0];
     if (!relativePath) {
       return res.status(400).json({ error: 'ファイルパスが必要です' });
@@ -225,7 +225,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
       return res.status(404).json({ error: 'ファイルが見つかりません' });
     }
 
-    // Content-Typeを設定
+    // Set Content-Type header based on file extension
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes = {
       '.mp3': 'audio/mpeg',
@@ -239,8 +239,8 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * DELETE /api/recordings/* - 録音ファイルを削除
-   * サブディレクトリを含むパスに対応
+   * DELETE /api/recordings/* - Delete recording file
+   * Supports subdirectory paths
    */
   router.delete('/recordings/*', (req, res) => {
     const relativePath = req.params[0];
@@ -257,32 +257,32 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/recordings/toggle - 自動録音のON/OFF切り替え
+   * POST /api/recordings/toggle - Toggle auto-recording mode
    */
   router.post('/recordings/toggle', (req, res) => {
     scannerState.autoRecordEnabled = !scannerState.autoRecordEnabled;
     res.json({ autoRecordEnabled: scannerState.autoRecordEnabled });
   });
 
-  // ------ 受信ログ ------
+  // ------ Reception Log ------
 
   /**
-   * GET /api/log - 受信ログを取得（フィルタリング対応）
-   * @query {number} [limit=100] - 取得件数
-   * @query {number} [offset=0] - オフセット
-   * @query {string} [dateFrom] - 開始日時（ISO形式）
-   * @query {string} [dateTo] - 終了日時（ISO形式）
-   * @query {string} [freq] - 周波数/TGID（部分一致）
-   * @query {string} [system] - システム名（部分一致）
-   * @query {string} [channel] - チャンネル名（部分一致）
-   * @query {string} [modulation] - モジュレーション（完全一致）
-   * @query {number} [minDuration] - 最小受信秒数
+   * GET /api/log - Get reception history log with filter options
+   * @query {number} [limit=100] - Entry limit
+   * @query {number} [offset=0] - Offset index
+   * @query {string} [dateFrom] - Start date (ISO)
+   * @query {string} [dateTo] - End date (ISO)
+   * @query {string} [freq] - Frequency/TGID filter
+   * @query {string} [system] - System name filter
+   * @query {string} [channel] - Channel name filter
+   * @query {string} [modulation] - Modulation mode filter
+   * @query {number} [minDuration] - Minimum duration in seconds
    */
   router.get('/log', (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 100;
     const offset = parseInt(req.query.offset, 10) || 0;
 
-    // フィルタパラメータを収集
+    // Assemble filter query criteria
     const filters = {};
     if (req.query.dateFrom) filters.dateFrom = req.query.dateFrom;
     if (req.query.dateTo) filters.dateTo = req.query.dateTo;
@@ -296,20 +296,20 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * DELETE /api/log - 受信ログをクリア
+   * DELETE /api/log - Clear reception history log
    */
   router.delete('/log', (req, res) => {
     scannerState.clearLog();
     res.json({ cleared: true });
   });
 
-  // ------ 設定 ------
+  // ------ Settings ------
 
   /**
-   * GET /api/config - 現在の設定を取得
+   * GET /api/config - Get current system configuration
    */
   router.get('/config', (req, res) => {
-    // 安全な設定のみ返す
+    // Return safe configuration subset
     res.json({
       serial: {
         path: config.serial.path,
@@ -338,23 +338,23 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * PUT /api/config - 設定を更新
+   * PUT /api/config - Update configuration
    */
   router.put('/config', (req, res) => {
     const updates = req.body;
 
-    // ファイル名テンプレートの更新
+    // Update filename template pattern
     if (updates.fileNaming && updates.fileNaming.template) {
       config.fileNaming.template = updates.fileNaming.template;
     }
 
-    // 自動録音設定の更新
+    // Update auto-recording setting
     if (updates.audio && updates.audio.autoRecord !== undefined) {
       config.audio.autoRecord = updates.audio.autoRecord;
       scannerState.autoRecordEnabled = updates.audio.autoRecord;
     }
 
-    // 受信タイムアウトの更新
+    // Update reception timeout threshold
     if (updates.scanner && updates.scanner.receptionTimeoutMs) {
       config.scanner.receptionTimeoutMs = updates.scanner.receptionTimeoutMs;
     }
@@ -363,8 +363,8 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   });
 
   /**
-   * POST /api/config/template-preview - テンプレートのプレビューを生成
-   * @body {string} template - プレビュー対象のテンプレート文字列
+   * POST /api/config/template-preview - Generate filename template preview
+   * @body {string} template - Template pattern string to evaluate
    */
   router.post('/config/template-preview', (req, res) => {
     const { template } = req.body;

@@ -1,6 +1,6 @@
 /**
- * @fileoverview メモリエディタ API ルート定義
- * @description プログラミングモードの制御、全メモリの一括ダウンロード/アップロード、CSV/JSON入出力
+ * @fileoverview Memory Editor API Route Definitions
+ * @description Programming mode control, full memory bulk download/upload, CSV/JSON I/O
  */
 
 const express = require('express');
@@ -8,17 +8,17 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * メモリ管理ルーター生成
+ * Create memory manager router
  * @param {Object} deps
  * @param {import('../scanner/programmingController')} deps.programmingController
  */
 function createMemoryRoutes({ programmingController }) {
   const router = express.Router();
 
-  // 現在の同期進捗状態キャッシュ
+  // Cached sync progress state
   let currentProgress = { active: false, step: 'idle', percent: 0, message: '' };
 
-  // --- プログラミングモード制御 ---
+  // --- Programming Mode Control ---
 
   router.post('/mode', async (req, res) => {
     try {
@@ -37,15 +37,15 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  // --- 全件メモリのダウンロード（スキャナーから読み出し） ---
+  // --- Download all memory systems from scanner ---
 
   router.get('/all', async (req, res) => {
     try {
-      currentProgress = { active: true, step: 'reading', percent: 0, message: 'スキャナーからメモリ読込開始...' };
+      currentProgress = { active: true, step: 'reading', percent: 0, message: 'Reading memory from scanner...' };
       const memoryTree = await programmingController.getAllMemory((prog) => {
         currentProgress = { active: true, ...prog };
       });
-      currentProgress = { active: false, step: 'done', percent: 100, message: '読込完了' };
+      currentProgress = { active: false, step: 'done', percent: 100, message: 'Read complete' };
       res.json({
         success: true,
         count: memoryTree.length,
@@ -57,20 +57,20 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  // --- 全件メモリのアップロード（スキャナーへ書き込み） ---
+  // --- Upload all memory systems to scanner ---
 
   router.post('/all', async (req, res) => {
     try {
       const { systems } = req.body;
       if (!systems || !Array.isArray(systems)) {
-        return res.status(400).json({ error: 'systems (配列) パラメータが必要です' });
+        return res.status(400).json({ error: 'systems (array) parameter is required' });
       }
 
-      currentProgress = { active: true, step: 'writing', percent: 0, message: 'スキャナーへ書き込み開始...' };
+      currentProgress = { active: true, step: 'writing', percent: 0, message: 'Writing memory to scanner...' };
       const result = await programmingController.uploadAllMemory(systems, (prog) => {
         currentProgress = { active: true, ...prog };
       });
-      currentProgress = { active: false, step: 'done', percent: 100, message: '書き込み完了' };
+      currentProgress = { active: false, step: 'done', percent: 100, message: 'Write complete' };
       res.json(result);
     } catch (err) {
       currentProgress = { active: false, step: 'error', percent: 0, message: err.message };
@@ -78,13 +78,13 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  // --- 進捗確認 (ポーリング用) ---
+  // --- Check progress (polling) ---
 
   router.get('/progress', (req, res) => {
     res.json(currentProgress);
   });
 
-  // --- バックアップファイル一覧と取得 ---
+  // --- Backup file list and restore ---
 
   router.get('/backups', (req, res) => {
     try {
@@ -116,7 +116,7 @@ function createMemoryRoutes({ programmingController }) {
       const safeFilename = path.basename(req.params.filename);
       const filePath = path.join(backupDir, safeFilename);
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'バックアップファイルが見つかりません' });
+        return res.status(404).json({ error: 'Backup file not found' });
       }
       const content = fs.readFileSync(filePath, 'utf-8');
       res.json(JSON.parse(content));
@@ -125,7 +125,7 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  // --- CSVエクスポート ---
+  // --- CSV Export ---
 
   router.get('/export/csv', async (req, res) => {
     try {
@@ -164,21 +164,21 @@ function createMemoryRoutes({ programmingController }) {
     }
   });
 
-  // --- CSVインポート ---
+  // --- CSV Import ---
 
   router.post('/import/csv', express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }), (req, res) => {
     try {
       const csvText = req.body;
       if (!csvText || typeof csvText !== 'string') {
-        return res.status(400).json({ error: 'CSVテキストが必要です' });
+        return res.status(400).json({ error: 'CSV text body is required' });
       }
 
       const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
       if (lines.length < 2) {
-        return res.status(400).json({ error: 'CSVヘッダーとデータが必要です' });
+        return res.status(400).json({ error: 'CSV header and data lines are required' });
       }
 
-      // 簡易CSVパーサー
+      // Simple CSV parser
       const parseCsvLine = (line) => {
         const result = [];
         let cur = '';
@@ -212,7 +212,7 @@ function createMemoryRoutes({ programmingController }) {
       const toneCol = header.findIndex((h) => h.includes('tone'));
 
       if (freqCol === -1) {
-        return res.status(400).json({ error: 'Frequency (周波数) カラムが見つかりません' });
+        return res.status(400).json({ error: 'Frequency column not found in CSV header' });
       }
 
       const systemsMap = new Map();
@@ -262,7 +262,7 @@ function createMemoryRoutes({ programmingController }) {
         });
       }
 
-      // MapからJSON配列に変換
+      // Convert map to JSON array
       const systems = Array.from(systemsMap.values()).map((s) => ({
         ...s,
         groups: Array.from(s.groups.values()),
