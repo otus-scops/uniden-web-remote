@@ -65,7 +65,7 @@
             <div class="info-value" id="info-department">---</div>
           </div>
           <div class="info-item">
-            <div class="info-label">チャンネル</div>
+            <div class="info-label" data-i18n="scanner.channel">チャンネル</div>
             <div class="info-value" id="info-channel">---</div>
           </div>
         </div>
@@ -73,22 +73,22 @@
         <!-- 追加情報 -->
         <div class="channel-info">
           <div class="info-item">
-            <div class="info-label">モード</div>
+            <div class="info-label" data-i18n="scanner.modulation">モード</div>
             <div class="info-value" id="info-modulation">---</div>
           </div>
           <div class="info-item">
-            <div class="info-label">CTCSS/DCS</div>
+            <div class="info-label" data-i18n="scanner.ctcssDcs">CTCSS/DCS</div>
             <div class="info-value" id="info-ctcss">---</div>
           </div>
           <div class="info-item">
-            <div class="info-label">P25 NAC</div>
+            <div class="info-label" data-i18n="scanner.p25nac">P25 NAC</div>
             <div class="info-value" id="info-nac">---</div>
           </div>
         </div>
 
         <!-- RSSI メーター -->
         <div class="rssi-container">
-          <div class="rssi-label">信号強度 (RSSI): <span id="rssi-value" class="text-cyan text-mono">0</span></div>
+          <div class="rssi-label"><span data-i18n="scanner.signalStrength">信号強度 (RSSI)</span>: <span id="rssi-value" class="text-cyan text-mono">0</span></div>
           <div class="rssi-bar-wrapper">
             <div class="rssi-bar" id="rssi-bar"></div>
           </div>
@@ -97,12 +97,12 @@
         <!-- ライブ音声プレイヤー -->
         <div class="live-audio-container" id="live-audio-container">
           <div class="live-audio-header">
-            <span class="live-audio-title">🔊 ライブ音声</span>
-            <span class="live-audio-status" id="live-audio-status">停止中</span>
+            <span class="live-audio-title" data-i18n="scanner.liveAudio">🔊 ライブ音声</span>
+            <span class="live-audio-status" id="live-audio-status" data-i18n="scanner.liveAudioStatusStopped">停止中</span>
           </div>
           <div class="live-audio-controls">
             <button class="btn live-audio-btn" id="btn-live-audio" onclick="scannerDisplay.onToggleLiveAudio()">
-              <span id="live-audio-icon">▶</span> 受信音声を聞く
+              <span id="live-audio-icon">▶</span> <span id="live-audio-btn-text" data-i18n="scanner.liveAudioListen">受信音声を聞く</span>
             </button>
             <div class="volume-control">
               <span class="volume-icon" id="volume-icon">🔊</span>
@@ -120,21 +120,21 @@
     <!-- 操作パネル -->
     <section class="panel control-panel" id="control-panel">
       <div class="panel-header">
-        <h2>🎛️ コントロール</h2>
+        <h2 data-i18n="control.title">🎛️ コントロール</h2>
       </div>
       <div class="panel-body">
         <!-- スキャン制御 -->
         <div class="control-section">
-          <div class="control-section-title">スキャン制御</div>
+          <div class="control-section-title" data-i18n="control.scanSection">スキャン制御</div>
           <div class="button-grid button-grid-2">
-            <button class="btn btn-primary" id="btn-scan" onclick="controlPanel.onScan()">▶ スキャン</button>
-            <button class="btn btn-danger" id="btn-hold" onclick="controlPanel.onHold()">⏸ ホールド</button>
+            <button class="btn btn-primary" id="btn-scan" onclick="controlPanel.onScan()" data-i18n="control.scanBtn">▶ スキャン</button>
+            <button class="btn btn-danger" id="btn-hold" onclick="controlPanel.onHold()" data-i18n="control.holdBtn">⏸ ホールド</button>
           </div>
         </div>
 
         <!-- オーディオ / RF 制御 (VOL/SQ) -->
         <div class="control-section">
-          <div class="control-section-title">レベル制御</div>
+          <div class="control-section-title" data-i18n="control.levelSection">レベル制御</div>
           <div class="slider-group">
             <div class="slider-row">
               <span class="slider-label">VOL</span>
@@ -151,7 +151,7 @@
 
         <!-- 専用サーチキー & ファンクション -->
         <div class="control-section">
-          <div class="control-section-title">サービスサーチ & 機能</div>
+          <div class="control-section-title" data-i18n="control.serviceSection">サービスサーチ & 機能</div>
           <div class="button-grid button-grid-3">
             <button class="btn" onclick="controlPanel.onKey('P','P')">POL</button>
             <button class="btn" onclick="controlPanel.onKey('H','P')">HP</button>
@@ -199,25 +199,25 @@
 
         <!-- 録音設定 -->
         <div class="control-section">
-          <div class="control-section-title">録音設定</div>
+          <div class="control-section-title" data-i18n="control.recordSection">録音設定</div>
           <div class="toggle-row">
-            <span class="toggle-label">自動録音</span>
+            <span class="toggle-label" data-i18n="control.autoRecord">自動録音</span>
             <label class="toggle" id="toggle-auto-record">
               <input type="checkbox" checked onchange="controlPanel.onToggleAutoRecord(this.checked)">
               <span class="toggle-slider"></span>
             </label>
           </div>
           <div class="input-group">
-            <label for="filename-template">ファイル名テンプレート</label>
+            <label for="filename-template" data-i18n="control.filenameTemplate">ファイル名テンプレート</label>
             <input type="text" id="filename-template"
                    value="{date}_{time}_{freq}_{system}_{channel}"
                    onchange="controlPanel.onTemplateChange(this.value)"
                    oninput="controlPanel.onTemplatePreview(this.value)">
-            <div class="template-help">
+            <div class="template-help" data-i18n="control.templateHelp">
               <code>/</code> でディレクトリ分割可能（例: <code>{date}/{channel}/{time}_{freq}</code>）
             </div>
             <div class="template-preview" id="template-preview">
-              <span class="preview-label">プレビュー</span>
+              <span class="preview-label" data-i18n="control.preview">プレビュー</span>
               <span id="template-preview-text">---</span>
             </div>
           </div>
@@ -225,12 +225,13 @@
 
         <!-- コマンドコンソール -->
         <div class="control-section">
-          <div class="control-section-title">コマンドコンソール</div>
+          <div class="control-section-title" data-i18n="control.consoleTitle">コマンドコンソール</div>
           <div class="command-console">
             <div class="command-input-row">
               <input type="text" id="command-input" placeholder="コマンドを入力 (例: GLG, STS)"
+                     data-i18n-placeholder="control.consolePlaceholder"
                      onkeydown="if(event.key==='Enter') controlPanel.onSendCommand()">
-              <button class="btn btn-primary" onclick="controlPanel.onSendCommand()">送信</button>
+              <button class="btn btn-primary" onclick="controlPanel.onSendCommand()" data-i18n="control.send">送信</button>
             </div>
             <div class="command-output" id="command-output">待機中...</div>
           </div>
@@ -241,12 +242,12 @@
     <!-- 受信ログ -->
     <section class="panel log-panel" id="log-panel">
       <div class="panel-header">
-        <h2>📋 受信ログ</h2>
+        <h2 data-i18n="log.title">📋 受信ログ</h2>
         <div>
-          <button class="btn btn-filter-toggle" id="btn-log-filter" onclick="activityLog.onToggleFilter()" title="フィルタ">🔍</button>
-          <button class="btn" id="btn-column-settings" onclick="activityLog.onOpenColumnSettings()" title="カラム設定">⚙️</button>
-          <button class="btn" id="btn-export-log" onclick="activityLog.onExportCsv()" style="margin-left: 4px;">📥 CSV</button>
-          <button class="btn btn-danger" onclick="activityLog.onClearLog()" style="margin-left: 4px;">🗑</button>
+          <button class="btn btn-filter-toggle" id="btn-log-filter" onclick="activityLog.onToggleFilter()" data-i18n-title="log.filter" title="フィルタ">🔍</button>
+          <button class="btn" id="btn-column-settings" onclick="activityLog.onOpenColumnSettings()" data-i18n-title="log.columnSettings" title="カラム設定">⚙️</button>
+          <button class="btn" id="btn-export-log" onclick="activityLog.onExportCsv()" data-i18n="log.csv" style="margin-left: 4px;">📥 CSV</button>
+          <button class="btn btn-danger" onclick="activityLog.onClearLog()" data-i18n-title="log.clear" style="margin-left: 4px;">🗑</button>
         </div>
       </div>
 
@@ -254,29 +255,29 @@
       <div class="filter-bar collapsed" id="log-filter-bar">
         <div class="filter-bar-content">
           <div class="filter-field">
-            <label for="log-filter-date-from">開始日時</label>
+            <label for="log-filter-date-from" data-i18n="log.dateFrom">開始日時</label>
             <input type="datetime-local" id="log-filter-date-from">
           </div>
           <div class="filter-field">
-            <label for="log-filter-date-to">終了日時</label>
+            <label for="log-filter-date-to" data-i18n="log.dateTo">終了日時</label>
             <input type="datetime-local" id="log-filter-date-to">
           </div>
           <div class="filter-field">
-            <label for="log-filter-freq">周波数/TGID</label>
+            <label for="log-filter-freq" data-i18n="log.freqTgid">周波数/TGID</label>
             <input type="text" id="log-filter-freq" placeholder="155.7">
           </div>
           <div class="filter-field">
-            <label for="log-filter-system">システム</label>
+            <label for="log-filter-system" data-i18n="log.colSystem">システム</label>
             <input type="text" id="log-filter-system" placeholder="Police">
           </div>
           <div class="filter-field">
-            <label for="log-filter-channel">チャンネル</label>
+            <label for="log-filter-channel" data-i18n="log.colChannel">チャンネル</label>
             <input type="text" id="log-filter-channel" placeholder="Dispatch">
           </div>
           <div class="filter-field">
-            <label for="log-filter-modulation">モード</label>
+            <label for="log-filter-modulation" data-i18n="log.colMod">モード</label>
             <select id="log-filter-modulation">
-              <option value="">全て</option>
+              <option value="" data-i18n="log.all">全て</option>
               <option value="FM">FM</option>
               <option value="NFM">NFM</option>
               <option value="AM">AM</option>
@@ -285,12 +286,12 @@
             </select>
           </div>
           <div class="filter-field">
-            <label for="log-filter-min-duration">最小秒数</label>
+            <label for="log-filter-min-duration" data-i18n="log.minDuration">最小秒数</label>
             <input type="number" id="log-filter-min-duration" min="0" step="0.5" placeholder="0">
           </div>
           <div class="filter-actions">
-            <button class="btn btn-primary" onclick="activityLog.onApplyFilter()">適用</button>
-            <button class="btn" onclick="activityLog.onResetFilter()">リセット</button>
+            <button class="btn btn-primary" onclick="activityLog.onApplyFilter()" data-i18n="log.applyFilter">適用</button>
+            <button class="btn" onclick="activityLog.onResetFilter()" data-i18n="log.resetFilter">リセット</button>
           </div>
         </div>
       </div>
@@ -307,7 +308,7 @@
             <tbody id="log-tbody">
             </tbody>
           </table>
-          <div class="log-empty" id="log-empty">受信ログはまだありません</div>
+          <div class="log-empty" id="log-empty" data-i18n="log.empty">受信ログはまだありません</div>
         </div>
       </div>
 
@@ -316,18 +317,18 @@
         <div class="column-settings-overlay" onclick="activityLog.onCloseColumnSettings()"></div>
         <div class="column-settings-content">
           <div class="column-settings-header">
-            <h3>📋 表示カラム設定</h3>
+            <h3 data-i18n="log.columnSettingsTitle">📋 表示カラム設定</h3>
             <button class="btn" onclick="activityLog.onCloseColumnSettings()">✕</button>
           </div>
           <div class="column-settings-body">
-            <p class="column-settings-hint">表示するカラムを選択し、ドラッグで順序を変更できます。</p>
+            <p class="column-settings-hint" data-i18n="log.columnSettingsHint">表示するカラムを選択し、ドラッグで順序を変更できます。</p>
             <div class="column-settings-list" id="column-settings-list">
               <!-- JS側で動的生成 -->
             </div>
           </div>
           <div class="column-settings-footer">
-            <button class="btn" onclick="activityLog.onResetColumns()">🔄 デフォルトに戻す</button>
-            <button class="btn btn-primary" onclick="activityLog.onCloseColumnSettings()">完了</button>
+            <button class="btn" onclick="activityLog.onResetColumns()" data-i18n="log.resetColumns">🔄 デフォルトに戻す</button>
+            <button class="btn btn-primary" onclick="activityLog.onCloseColumnSettings()" data-i18n="log.done">完了</button>
           </div>
         </div>
       </div>
@@ -336,14 +337,15 @@
     <!-- 録音ファイル -->
     <section class="panel recordings-panel" id="recordings-panel">
       <div class="panel-header">
-        <h2>🎙️ 録音ファイル</h2>
-        <button class="btn" onclick="recordingPanel.onRefresh()">🔄 更新</button>
+        <h2 data-i18n="recordings.title">🎙️ 録音ファイル</h2>
+        <button class="btn" onclick="recordingPanel.onRefresh()" data-i18n="recordings.refresh">🔄 更新</button>
       </div>
 
       <!-- 録音ファイル検索バー -->
       <div class="recordings-filter">
         <div class="recordings-filter-row">
           <input type="text" id="rec-search-input" placeholder="🔍 ファイル名で検索..."
+                 data-i18n-placeholder="recordings.searchPlaceholder"
                  oninput="recordingPanel.onSearchChange(this.value)">
         </div>
       </div>
@@ -351,11 +353,11 @@
       <div class="panel-body" style="padding: 0;">
         <ul class="recording-list" id="recording-list">
         </ul>
-        <div class="log-empty" id="recordings-empty">録音ファイルはまだありません</div>
+        <div class="log-empty" id="recordings-empty" data-i18n="recordings.empty">録音ファイルはまだありません</div>
       </div>
       <!-- オーディオプレイヤー -->
       <div class="audio-player-container hidden" id="audio-player-container">
-        <div class="now-playing">🔊 再生中: <span id="now-playing-name">---</span></div>
+        <div class="now-playing"><span data-i18n="recordings.nowPlaying">🔊 再生中</span>: <span id="now-playing-name">---</span></div>
         <audio controls id="audio-player"></audio>
       </div>
     </section>

@@ -431,6 +431,13 @@ const scannerDisplay = (() => {
       el.liveAudioIcon.textContent = playing ? '⏹' : '▶';
     }
 
+    const btnText = document.getElementById('live-audio-btn-text');
+    if (btnText && typeof i18n !== 'undefined') {
+      btnText.textContent = playing
+        ? (i18n.getLanguage() === 'en' ? 'Stop Live Audio' : '受信音声を停止')
+        : (i18n.getLanguage() === 'en' ? 'Listen to Live Audio' : '受信音声を聞く');
+    }
+
     if (el.liveAudioStatus) {
       if (statusText) {
         el.liveAudioStatus.textContent = statusText;

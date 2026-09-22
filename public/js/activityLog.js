@@ -27,16 +27,28 @@ const activityLog = (() => {
    * @type {Array<Object>}
    */
   const AVAILABLE_COLUMNS = [
-    { id: 'time',       label: '時刻',         field: 'startTime',    cssClass: 'time-cell',  format: formatTime },
-    { id: 'freqTgid',   label: '周波数/TGID',  field: 'freqTgid',     cssClass: 'freq-cell',  fallbackField: 'rawFreqTgid' },
-    { id: 'system',     label: 'システム',     field: 'system',       cssClass: '' },
-    { id: 'department', label: 'デパートメント', field: 'department',  cssClass: '' },
-    { id: 'channel',    label: 'チャンネル',    field: 'channel',     cssClass: '' },
-    { id: 'modulation', label: 'モード',        field: 'modulation',  cssClass: '' },
-    { id: 'ctcssDcs',   label: 'CTCSS/DCS',    field: 'ctcssDcs',     cssClass: '' },
-    { id: 'p25nac',     label: 'P25 NAC',      field: 'p25nac',       cssClass: '' },
-    { id: 'duration',   label: '秒数',          field: 'durationSec', cssClass: '',           format: formatDuration },
+    { id: 'time',       label: '時刻',         i18nKey: 'log.colTime',       field: 'startTime',    cssClass: 'time-cell',  format: formatTime },
+    { id: 'freqTgid',   label: '周波数/TGID',  i18nKey: 'log.colFreq',       field: 'freqTgid',     cssClass: 'freq-cell',  fallbackField: 'rawFreqTgid' },
+    { id: 'system',     label: 'システム',     i18nKey: 'log.colSystem',     field: 'system',       cssClass: '' },
+    { id: 'department', label: 'デパートメント', i18nKey: 'log.colDepartment', field: 'department',  cssClass: '' },
+    { id: 'channel',    label: 'チャンネル',    i18nKey: 'log.colChannel',    field: 'channel',     cssClass: '' },
+    { id: 'modulation', label: 'モード',        i18nKey: 'log.colMod',        field: 'modulation',  cssClass: '' },
+    { id: 'ctcssDcs',   label: 'CTCSS/DCS',    i18nKey: 'log.colTone',       field: 'ctcssDcs',     cssClass: '' },
+    { id: 'p25nac',     label: 'P25 NAC',      i18nKey: 'log.colNac',        field: 'p25nac',       cssClass: '' },
+    { id: 'duration',   label: '秒数',          i18nKey: 'log.colDuration',   field: 'durationSec', cssClass: '',           format: formatDuration },
   ];
+
+  /**
+   * カラムの表示名を取得（多言語対応）
+   * @param {Object} col - カラム定義
+   * @returns {string} 表示ラベル
+   */
+  function getColumnLabel(col) {
+    if (typeof i18n !== 'undefined' && col.i18nKey) {
+      return i18n.t(col.i18nKey);
+    }
+    return col.label;
+  }
 
   /**
    * デフォルトの表示カラムID一覧（順序を含む）
@@ -267,7 +279,11 @@ const activityLog = (() => {
   function updateFilterCount() {
     const countEl = document.getElementById('log-filter-count');
     if (Object.keys(currentFilters).length > 0) {
-      countEl.innerHTML = `フィルタ適用中: <span>${logEntries.length}</span> / ${totalUnfiltered} 件`;
+      if (typeof i18n !== 'undefined') {
+        countEl.innerHTML = i18n.t('log.filterActive', { count: `<span>${logEntries.length}</span>`, total: totalUnfiltered });
+      } else {
+        countEl.innerHTML = `フィルタ適用中: <span>${logEntries.length}</span> / ${totalUnfiltered} 件`;
+      }
       countEl.classList.remove('hidden');
     } else {
       countEl.classList.add('hidden');
@@ -286,7 +302,7 @@ const activityLog = (() => {
 
     for (const col of columns) {
       const th = document.createElement('th');
-      th.textContent = col.label;
+      th.textContent = getColumnLabel(col);
       tr.appendChild(th);
     }
 
@@ -381,12 +397,12 @@ const activityLog = (() => {
    */
   function onExportCsv() {
     if (logEntries.length === 0) {
-      alert('エクスポートするログがありません');
+      alert(typeof i18n !== 'undefined' ? i18n.t('log.exportEmpty') : 'エクスポートするログがありません');
       return;
     }
 
     const columns = getActiveColumns();
-    const headers = columns.map(col => col.label);
+    const headers = columns.map(col => getColumnLabel(col));
 
     const rows = logEntries.map(entry => {
       return columns.map(col => {
@@ -427,7 +443,8 @@ const activityLog = (() => {
    * ログをクリアする
    */
   async function onClearLog() {
-    if (!confirm('受信ログをすべてクリアしますか？')) return;
+    const confirmMsg = typeof i18n !== 'undefined' ? i18n.t('log.clearConfirm') : '受信ログをすべてクリアしますか？';
+    if (!confirm(confirmMsg)) return;
 
     try {
       await app.fetchApi('/log', { method: 'DELETE' });
@@ -478,12 +495,13 @@ const activityLog = (() => {
       item.dataset.columnId = col.id;
       item.draggable = true;
 
+      const colLabel = getColumnLabel(col);
       item.innerHTML = `
         <span class="column-drag-handle" title="ドラッグで順序変更">⋮⋮</span>
         <label class="column-checkbox-label">
           <input type="checkbox" ${isActive ? 'checked' : ''} 
                  onchange="activityLog.onColumnToggle('${col.id}', this.checked)">
-          <span>${escapeHtml(col.label)}</span>
+          <span>${escapeHtml(colLabel)}</span>
         </label>
       `;
 
@@ -668,6 +686,16 @@ const activityLog = (() => {
   // DOMContentLoaded後にテーブルヘッダーを初期描画
   document.addEventListener('DOMContentLoaded', () => {
     renderHeader();
+  });
+
+  // 言語切り替え時にテーブルとカラム設定を再描画
+  window.addEventListener('languageChanged', () => {
+    renderTable();
+    updateFilterCount();
+    const modal = document.getElementById('column-settings-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      renderColumnSettingsContent();
+    }
   });
 
   // 公開API

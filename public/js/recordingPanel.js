@@ -68,9 +68,9 @@ const recordingPanel = (() => {
           <div class="rec-meta">${rec.sizeFormatted} · ${formatDate(rec.createdAt)}</div>
         </div>
         <div class="rec-actions">
-          <button class="btn" onclick="recordingPanel.onPlay('${escapeJs(rec.filename)}')" title="再生">▶</button>
-          <button class="btn" onclick="recordingPanel.onDownload('${escapeJs(rec.filename)}')" title="ダウンロード">📥</button>
-          <button class="btn btn-danger" onclick="recordingPanel.onDelete('${escapeJs(rec.filename)}')" title="削除">🗑</button>
+          <button class="btn" onclick="recordingPanel.onPlay('${escapeJs(rec.filename)}')" title="${typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Play' : '再生'}">▶</button>
+          <button class="btn" onclick="recordingPanel.onDownload('${escapeJs(rec.filename)}')" title="${typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Download' : 'ダウンロード'}">📥</button>
+          <button class="btn btn-danger" onclick="recordingPanel.onDelete('${escapeJs(rec.filename)}')" title="${typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Delete' : '削除'}">🗑</button>
         </div>
       </li>
       `;
@@ -201,6 +201,13 @@ const recordingPanel = (() => {
   function escapeJs(str) {
     return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
   }
+
+  // 言語切り替え時にツールチップ等を再描画
+  window.addEventListener('languageChanged', () => {
+    if (recordings.length > 0) {
+      renderList();
+    }
+  });
 
   // 公開API
   return {
