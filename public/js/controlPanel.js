@@ -275,11 +275,81 @@ const controlPanel = (() => {
     }
   }
 
-  // Load configuration on page initialization
+  /**
+   * Initialize keyboard shortcuts for virtual LCD and scanner remote control
+   */
+  function setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (event) => {
+      // Ignore if user is currently typing in an input, textarea, select, or contenteditable element
+      const activeEl = document.activeElement;
+      if (activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable
+      )) {
+        return;
+      }
+
+      // Check if modal dialogs are open
+      const authModal = document.getElementById('auth-modal');
+      if (authModal && !authModal.classList.contains('hidden') && authModal.style.display !== 'none' && authModal.style.display !== '') {
+        return;
+      }
+
+      let handled = false;
+      switch (event.key) {
+        case 'ArrowUp':
+          onKey('^', 'P');
+          handled = true;
+          break;
+        case 'ArrowDown':
+          onKey('V', 'P');
+          handled = true;
+          break;
+        case 'ArrowLeft':
+          onKey('<', 'P');
+          handled = true;
+          break;
+        case 'ArrowRight':
+          onKey('>', 'P');
+          handled = true;
+          break;
+        case 'Enter':
+          onKey('E', 'P');
+          handled = true;
+          break;
+        case 'Escape':
+          onKey('M', 'P');
+          handled = true;
+          break;
+        case 'm':
+        case 'M':
+          onKey('M', 'P');
+          handled = true;
+          break;
+        case 'f':
+        case 'F':
+          onKey('F', 'P');
+          handled = true;
+          break;
+      }
+
+      if (handled) {
+        event.preventDefault();
+      }
+    });
+  }
+
+  // Load configuration and setup keyboard shortcuts on page initialization
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadConfig);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadConfig();
+      setupKeyboardShortcuts();
+    });
   } else {
     loadConfig();
+    setupKeyboardShortcuts();
   }
 
   // Synchronize waiting text on language change

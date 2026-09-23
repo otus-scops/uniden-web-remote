@@ -174,12 +174,17 @@ function parseGlgResponse(rawResponse) {
 }
 
 /**
- * Parse STS (Status) response
+ * Parse STS (Status / LCD Display) response
+ * Format: STS,[DSP_FORM],[L1_CHAR],[L1_MODE],[L2_CHAR],[L2_MODE],...,[SQL],[MUT],[SIG_LVL],...
  * @param {string} rawResponse - Raw STS response string from BCT15X
  * @returns {Object|null} Parsed object
  * @property {string} command - Command name ("STS")
  * @property {string} raw - Raw response string
- * @property {string[]} fields - Array of comma-separated fields
+ * @property {string} displayForm - Display form configuration
+ * @property {Array<{index: number, text: string, mode: string, isReversed: boolean, isBlinking: boolean}>} lines - LCD display lines
+ * @property {boolean} isMenuMode - Whether scanner is currently in menu mode
+ * @property {boolean|null} squelch - Squelch status
+ * @property {boolean|null} mute - Mute status
  */
 function parseStsResponse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== 'string') {
@@ -197,11 +202,65 @@ function parseStsResponse(rawResponse) {
   }
 
   const fields = trimmed.split(',');
+  const displayForm = getField(fields, 1);
+
+  // Extract lines (pairs of CHAR and MODE)
+  const lines = [];
+  let idx = 2;
+  while (idx + 1 < fields.length && lines.length < 8) {
+    const charText = fields[idx];
+    const mode = fields[idx + 1];
+
+    // If 4 lines are already collected and the remaining fields are trailing indicators (<= 3 fields left or 1-char field), stop line parsing
+    if (lines.length >= 4 && (fields.length - idx <= 3 || (charText && charText.length <= 1))) {
+      break;
+    }
+
+    const modeStr = String(mode !== undefined ? mode : '0').trim();
+    const isReversed = modeStr.includes('1') || modeStr === 'R';
+    const isBlinking = modeStr.includes('2') || modeStr === 'B';
+
+    lines.push({
+      index: lines.length + 1,
+      text: charText !== undefined ? charText : '',
+      mode: modeStr,
+      isReversed,
+      isBlinking,
+    });
+    idx += 2;
+  }
+
+  // Extract optional status indicators (SQL, MUT, SIG)
+  const sqlVal = idx < fields.length ? fields[idx++] : null;
+  const mutVal = idx < fields.length ? fields[idx++] : null;
+  const sigVal = idx < fields.length ? fields[idx++] : null;
+
+  const squelch = sqlVal !== null ? sqlVal === '1' : false;
+  const mute = mutVal !== null ? mutVal === '1' : false;
+  const sig = sigVal !== null && !isNaN(parseInt(sigVal, 10)) ? parseInt(sigVal, 10) : 0;
+
+  // Determine if scanner is currently in menu/programming mode
+  const line1 = lines[0] ? lines[0].text.trim() : '';
+  const isMenuMode = line1.startsWith('Menu') ||
+                     line1.startsWith('Program') ||
+                     line1.startsWith('Search for') ||
+                     line1.startsWith('Settings') ||
+                     lines.some((l) => l.isReversed);
 
   return {
     command: 'STS',
     raw: trimmed,
-    fields,
+    displayForm,
+    lines,
+    lineCount: lines.length,
+    isMenuMode,
+    indicators: {
+      sql: squelch,
+      mut: mute,
+      sig,
+    },
+    squelch,
+    mute,
   };
 }
 

@@ -187,6 +187,12 @@ class AppServer {
       }
     });
 
+    this._serialController.on('stsUpdate', (stsData) => {
+      if (stsData) {
+        this._scannerState.onStsUpdate(stsData);
+      }
+    });
+
     this._serialController.on('connected', () => {
       this._scannerState.setConnected(true);
     });
@@ -277,10 +283,11 @@ class AppServer {
         console.warn('[Server] Failed to query firmware version');
       }
 
-      // Start periodic status polling
+      // Start periodic status polling (GLG, PWR, STS)
       this._serialController.startPolling(
         config.scanner.pollIntervalMs,
-        config.scanner.statusIntervalMs
+        500, // PWR interval (ms)
+        config.scanner.statusIntervalMs || 500 // STS interval (ms)
       );
 
       console.log('[Server] ✅ Scanner connected, polling started');

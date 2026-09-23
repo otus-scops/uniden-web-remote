@@ -106,6 +106,14 @@ class WsHandler {
       });
     });
 
+    // Real-time LCD display update (STS)
+    this._scannerState.on('stsUpdate', (stsData) => {
+      this._broadcast({
+        type: 'stsUpdate',
+        data: stsData,
+      });
+    });
+
     // Reception start
     this._scannerState.on('receptionStart', (data) => {
       this._broadcast({

@@ -10,6 +10,8 @@
   },
   "scanner": {
     "title": "📡 Scanner",
+    "modeCyber": "🖥️ Cyber",
+    "modeLcd": "📟 Virtual LCD",
     "badgeScan": "Scan",
     "badgeReceiving": "Receiving",
     "badgeRecording": "Record",

@@ -327,7 +327,9 @@ class ScannerState extends EventEmitter {
    * @param {Object} stsData - Result from parseStsResponse
    */
   onStsUpdate(stsData) {
+    if (!stsData) return;
     this.latestSts = stsData;
+    this.emit('stsUpdate', stsData);
   }
 
   /**
@@ -410,6 +412,7 @@ class ScannerState extends EventEmitter {
       isHoldMode: this.isHoldMode,
       rssi: this.rssi,
       currentReception: this.currentReception ? { ...this.currentReception } : null,
+      lcd: this.latestSts || null,
       timestamp: new Date().toISOString(),
     };
   }

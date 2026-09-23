@@ -10,6 +10,8 @@
   },
   "scanner": {
     "title": "📡 スキャナー",
+    "modeCyber": "🖥️ サイバー",
+    "modeLcd": "📟 実機LCD",
     "badgeScan": "スキャン",
     "badgeReceiving": "受信中",
     "badgeRecording": "録音",

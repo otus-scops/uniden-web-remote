@@ -35,6 +35,24 @@ const scannerDisplay = (() => {
       badgeScan: document.getElementById('badge-scan'),
       badgeReceiving: document.getElementById('badge-receiving'),
       badgeRecording: document.getElementById('badge-recording'),
+      // Virtual Hardware LCD elements
+      cyberDisplayScreen: document.getElementById('cyber-display-screen'),
+      virtualLcdScreen: document.getElementById('virtual-lcd-screen'),
+      btnModeCyber: document.getElementById('btn-mode-cyber'),
+      btnModeLcd: document.getElementById('btn-mode-lcd'),
+      lcdLines: [
+        document.getElementById('lcd-line-1'),
+        document.getElementById('lcd-line-2'),
+        document.getElementById('lcd-line-3'),
+        document.getElementById('lcd-line-4'),
+      ],
+      lcdIndScan: document.getElementById('lcd-ind-scan'),
+      lcdIndHold: document.getElementById('lcd-ind-hold'),
+      lcdIndPri: document.getElementById('lcd-ind-pri'),
+      lcdIndAtt: document.getElementById('lcd-ind-att'),
+      lcdIndMut: document.getElementById('lcd-ind-mut'),
+      lcdIndMenu: document.getElementById('lcd-ind-menu'),
+      lcdSigBars: document.getElementById('lcd-sig-bars'),
       // Live audio player controls
       liveAudioPlayer: document.getElementById('live-audio-player'),
       liveAudioBtn: document.getElementById('btn-live-audio'),
@@ -46,6 +64,114 @@ const scannerDisplay = (() => {
     };
 
     return elements;
+  }
+
+  /** @type {'cyber'|'lcd'} Current active display mode */
+  let currentDisplayMode = 'cyber';
+
+  /** @type {boolean} Flag indicating whether LCD mode was automatically triggered by Menu */
+  let autoSwitchedToLcd = false;
+
+  /** @type {boolean} Whether scanner is currently scanning */
+  let isScanningState = false;
+
+  /**
+   * Set active display mode ('cyber' or 'lcd')
+   * @param {'cyber'|'lcd'} mode - Selected display mode
+   */
+  function setDisplayMode(mode) {
+    if (mode !== 'cyber' && mode !== 'lcd') return;
+    currentDisplayMode = mode;
+    const el = getElements();
+
+    if (el.cyberDisplayScreen && el.virtualLcdScreen) {
+      if (mode === 'cyber') {
+        el.cyberDisplayScreen.classList.remove('hidden');
+        el.virtualLcdScreen.classList.add('hidden');
+        if (el.btnModeCyber) el.btnModeCyber.classList.add('active');
+        if (el.btnModeLcd) el.btnModeLcd.classList.remove('active');
+      } else {
+        el.cyberDisplayScreen.classList.add('hidden');
+        el.virtualLcdScreen.classList.remove('hidden');
+        if (el.btnModeCyber) el.btnModeCyber.classList.remove('active');
+        if (el.btnModeLcd) el.btnModeLcd.classList.add('active');
+      }
+    }
+  }
+
+  /**
+   * Get current display mode
+   * @returns {'cyber'|'lcd'} Current display mode
+   */
+  function getDisplayMode() {
+    return currentDisplayMode;
+  }
+
+  /**
+   * Update virtual LCD screen with real-time STS hardware data
+   * @param {Object} stsData - Parsed STS response
+   */
+  function onStsUpdate(stsData) {
+    if (!stsData) return;
+    const el = getElements();
+
+    // Auto switch to LCD display if scanner enters Menu mode
+    if (stsData.isMenuMode) {
+      if (currentDisplayMode === 'cyber') {
+        autoSwitchedToLcd = true;
+        setDisplayMode('lcd');
+      }
+    } else if (autoSwitchedToLcd) {
+      autoSwitchedToLcd = false;
+      setDisplayMode('cyber');
+    }
+
+    // Update 4 LCD lines
+    if (stsData.lines && Array.isArray(stsData.lines)) {
+      for (let i = 0; i < 4; i++) {
+        const lineEl = el.lcdLines && el.lcdLines[i];
+        if (!lineEl) continue;
+        const lineData = stsData.lines[i] || { text: '', isReversed: false, isBlinking: false };
+
+        let textSpan = lineEl.querySelector('.lcd-text');
+        if (!textSpan) {
+          textSpan = document.createElement('span');
+          textSpan.className = 'lcd-text';
+          lineEl.appendChild(textSpan);
+        }
+        textSpan.textContent = lineData.text || '';
+
+        // Reversed cursor styling
+        lineEl.classList.toggle('reversed', Boolean(lineData.isReversed));
+        // Blink styling
+        lineEl.classList.toggle('blink', Boolean(lineData.isBlinking));
+      }
+    }
+
+    // Update status indicators
+    if (el.lcdIndMenu) {
+      el.lcdIndMenu.classList.toggle('active', Boolean(stsData.isMenuMode));
+    }
+    if (el.lcdIndMut && stsData.indicators) {
+      el.lcdIndMut.classList.toggle('active', Boolean(stsData.indicators.mut));
+    }
+    if (el.lcdIndScan) {
+      const isScan = !stsData.isMenuMode && (stsData.lines?.[0]?.text?.includes('SCAN') || isScanningState);
+      el.lcdIndScan.classList.toggle('active', isScan);
+    }
+    if (el.lcdIndHold) {
+      const isHold = stsData.lines?.some(l => l.text?.includes('HOLD')) || false;
+      el.lcdIndHold.classList.toggle('active', isHold);
+    }
+
+    // Update LCD signal bars (0 - 5)
+    if (el.lcdSigBars && stsData.indicators) {
+      const sigLevel = stsData.indicators.sig || 0;
+      const bars = el.lcdSigBars.querySelectorAll('.sig-bar');
+      bars.forEach((bar, index) => {
+        bar.classList.toggle('active', index < sigLevel);
+      });
+    }
   }
 
   /**
@@ -81,8 +207,16 @@ const scannerDisplay = (() => {
     // Signal strength (RSSI)
     updateRssi(el, status.rssi || 0);
 
+    // Track scanning state
+    isScanningState = Boolean(status.isScanning);
+
     // Status badges
     updateBadges(el, status);
+
+    // If status contains LCD STS snapshot, update virtual LCD
+    if (status.lcd) {
+      onStsUpdate(status.lcd);
+    }
   }
 
   /** @type {boolean} Last known connection state */
@@ -351,6 +485,9 @@ const scannerDisplay = (() => {
   // Public API
   return {
     onStatusUpdate,
+    onStsUpdate,
+    setDisplayMode,
+    getDisplayMode,
     onReceptionStart,
     onReceptionEnd,
     onToggleLiveAudio,

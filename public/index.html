@@ -66,53 +66,97 @@
         <section class="panel scanner-panel" id="scanner-panel">
       <div class="panel-header">
         <h2 data-i18n="scanner.title">📡 スキャナー</h2>
-        <div class="status-badges" id="status-badges">
-          <span class="badge" id="badge-scan"><span class="badge-dot"></span><span data-i18n="scanner.badgeScan">スキャン</span></span>
-          <span class="badge" id="badge-receiving"><span class="badge-dot"></span><span data-i18n="scanner.badgeReceiving">受信中</span></span>
-          <span class="badge" id="badge-recording"><span class="badge-dot"></span><span data-i18n="scanner.badgeRecording">録音</span></span>
+        <div class="scanner-header-controls">
+          <div class="display-mode-selector">
+            <button class="btn btn-mode active" id="btn-mode-cyber" onclick="scannerDisplay.setDisplayMode('cyber')" data-i18n="scanner.modeCyber" title="サイバー大画面表示">🖥️ サイバー</button>
+            <button class="btn btn-mode" id="btn-mode-lcd" onclick="scannerDisplay.setDisplayMode('lcd')" data-i18n="scanner.modeLcd" title="実機風 仮想LCD表示（メニュー操作対応）">📟 実機LCD</button>
+          </div>
+          <div class="status-badges" id="status-badges">
+            <span class="badge" id="badge-scan"><span class="badge-dot"></span><span data-i18n="scanner.badgeScan">スキャン</span></span>
+            <span class="badge" id="badge-receiving"><span class="badge-dot"></span><span data-i18n="scanner.badgeReceiving">受信中</span></span>
+            <span class="badge" id="badge-recording"><span class="badge-dot"></span><span data-i18n="scanner.badgeRecording">録音</span></span>
+          </div>
         </div>
       </div>
       <div class="panel-body scanner-display" id="scanner-display">
-        <!-- Frequency Display -->
-        <div class="frequency-display" id="frequency-display">----.---- MHz</div>
+        <!-- Cyber Modern Display Mode -->
+        <div class="cyber-display-screen" id="cyber-display-screen">
+          <!-- Frequency Display -->
+          <div class="frequency-display" id="frequency-display">----.---- MHz</div>
 
-        <!-- Channel Information -->
-        <div class="channel-info" id="channel-info">
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.system">システム</div>
-            <div class="info-value" id="info-system">---</div>
+          <!-- Channel Information -->
+          <div class="channel-info" id="channel-info">
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.system">システム</div>
+              <div class="info-value" id="info-system">---</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.department">デパートメント</div>
+              <div class="info-value" id="info-department">---</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.channel">チャンネル</div>
+              <div class="info-value" id="info-channel">---</div>
+            </div>
           </div>
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.department">デパートメント</div>
-            <div class="info-value" id="info-department">---</div>
+
+          <!-- Additional Information -->
+          <div class="channel-info">
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.modulation">モード</div>
+              <div class="info-value" id="info-modulation">---</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.ctcssDcs">CTCSS/DCS</div>
+              <div class="info-value" id="info-ctcss">---</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n="scanner.p25nac">P25 NAC</div>
+              <div class="info-value" id="info-nac">---</div>
+            </div>
           </div>
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.channel">チャンネル</div>
-            <div class="info-value" id="info-channel">---</div>
+
+          <!-- RSSI Signal Meter -->
+          <div class="rssi-container">
+            <div class="rssi-label"><span data-i18n="scanner.signalStrength">信号強度 (RSSI)</span>: <span id="rssi-value" class="text-cyan text-mono">0</span></div>
+            <div class="rssi-bar-wrapper">
+              <div class="rssi-bar" id="rssi-bar"></div>
+            </div>
           </div>
         </div>
 
-        <!-- Additional Information -->
-        <div class="channel-info">
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.modulation">モード</div>
-            <div class="info-value" id="info-modulation">---</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.ctcssDcs">CTCSS/DCS</div>
-            <div class="info-value" id="info-ctcss">---</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label" data-i18n="scanner.p25nac">P25 NAC</div>
-            <div class="info-value" id="info-nac">---</div>
-          </div>
-        </div>
+        <!-- Virtual Hardware LCD Display Mode (BCT15X Dot Matrix Emulation) -->
+        <div class="virtual-lcd-screen hidden" id="virtual-lcd-screen">
+          <div class="lcd-bezel">
+            <!-- Top LCD Status Indicators -->
+            <div class="lcd-indicator-bar">
+              <div class="lcd-ind-left">
+                <span class="lcd-badge" id="lcd-ind-scan">SCAN</span>
+                <span class="lcd-badge" id="lcd-ind-hold">HOLD</span>
+                <span class="lcd-badge" id="lcd-ind-pri">PRI</span>
+                <span class="lcd-badge" id="lcd-ind-att">ATT</span>
+                <span class="lcd-badge" id="lcd-ind-mut">MUT</span>
+                <span class="lcd-badge badge-menu" id="lcd-ind-menu">MENU</span>
+              </div>
+              <div class="lcd-ind-right">
+                <span class="lcd-sig-label">SIG</span>
+                <div class="lcd-sig-bars" id="lcd-sig-bars">
+                  <span class="sig-bar"></span>
+                  <span class="sig-bar"></span>
+                  <span class="sig-bar"></span>
+                  <span class="sig-bar"></span>
+                  <span class="sig-bar"></span>
+                </div>
+              </div>
+            </div>
 
-        <!-- RSSI Signal Meter -->
-        <div class="rssi-container">
-          <div class="rssi-label"><span data-i18n="scanner.signalStrength">信号強度 (RSSI)</span>: <span id="rssi-value" class="text-cyan text-mono">0</span></div>
-          <div class="rssi-bar-wrapper">
-            <div class="rssi-bar" id="rssi-bar"></div>
+            <!-- 4-Line Dot Matrix Screen -->
+            <div class="lcd-text-area" id="lcd-text-area">
+              <div class="lcd-line" id="lcd-line-1"><span class="lcd-text">BCT15X</span></div>
+              <div class="lcd-line" id="lcd-line-2"><span class="lcd-text">Scanning...</span></div>
+              <div class="lcd-line" id="lcd-line-3"><span class="lcd-text"></span></div>
+              <div class="lcd-line" id="lcd-line-4"><span class="lcd-text"></span></div>
+            </div>
           </div>
         </div>
 

@@ -276,6 +276,12 @@ const app = (() => {
         }
         break;
 
+      case 'stsUpdate':
+        if (typeof scannerDisplay !== 'undefined') {
+          scannerDisplay.onStsUpdate(message.data);
+        }
+        break;
+
       case 'receptionStart':
         if (typeof scannerDisplay !== 'undefined') {
           scannerDisplay.onReceptionStart(message.data);

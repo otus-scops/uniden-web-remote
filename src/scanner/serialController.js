@@ -4,7 +4,7 @@
  */
 
 const EventEmitter = require('events');
-const { parseResponse, parseGlgResponse, parsePwrResponse } = require('./protocolParser');
+const { parseResponse, parseGlgResponse, parsePwrResponse, parseStsResponse } = require('./protocolParser');
 
 /**
  * BCT15X serial communication controller class
@@ -45,6 +45,9 @@ class SerialController extends EventEmitter {
     /** @type {number|null} PWR polling timer */
     this._pwrTimer = null;
 
+    /** @type {number|null} STS polling timer */
+    this._stsTimer = null;
+
     /** @type {Array<Function>} Command response awaiting queue */
     this._responseQueue = [];
 
@@ -53,6 +56,13 @@ class SerialController extends EventEmitter {
 
     /** @type {boolean} Mock reception in-progress flag */
     this._mockReceiving = false;
+
+    /** @type {Object} Mock menu state for simulation */
+    this._mockMenuState = {
+      active: false,
+      stack: [], // Breadcrumb path of menu objects
+      cursor: 0,
+    };
   }
 
   /**
@@ -227,11 +237,12 @@ class SerialController extends EventEmitter {
   }
 
   /**
-   * Start periodic polling for GLG and PWR
+   * Start periodic polling for GLG, PWR, and STS
    * @param {number} glgIntervalMs - GLG polling interval (ms)
    * @param {number} [pwrIntervalMs=500] - PWR polling interval (ms)
+   * @param {number} [stsIntervalMs=500] - STS polling interval (ms)
    */
-  startPolling(glgIntervalMs, pwrIntervalMs = 500) {
+  startPolling(glgIntervalMs, pwrIntervalMs = 500, stsIntervalMs = 500) {
     this.stopPolling();
 
     // GLG polling
@@ -258,7 +269,27 @@ class SerialController extends EventEmitter {
       }
     }, pwrIntervalMs);
 
-    console.log(`[SerialController] Started polling: GLG=${glgIntervalMs}ms, PWR=${pwrIntervalMs}ms`);
+    // STS polling (LCD display status & menu)
+    this._stsTimer = setInterval(async () => {
+      await this.pollStatus();
+    }, stsIntervalMs);
+
+    console.log(`[SerialController] Started polling: GLG=${glgIntervalMs}ms, PWR=${pwrIntervalMs}ms, STS=${stsIntervalMs}ms`);
+  }
+
+  /**
+   * Manually trigger an immediate STS poll (e.g. after keypress)
+   */
+  async pollStatus() {
+    try {
+      const response = await this.sendCommand('STS');
+      const parsed = parseStsResponse(response);
+      if (parsed) {
+        this.emit('stsUpdate', parsed);
+      }
+    } catch {
+      // Ignore timeouts
+    }
   }
 
   /**
@@ -273,6 +304,10 @@ class SerialController extends EventEmitter {
       clearInterval(this._pwrTimer);
       this._pwrTimer = null;
     }
+    if (this._stsTimer) {
+      clearInterval(this._stsTimer);
+      this._stsTimer = null;
+    }
   }
 
   /**
@@ -282,7 +317,10 @@ class SerialController extends EventEmitter {
    * @returns {Promise<string>}
    */
   async pressKey(key, action = 'P') {
-    return this.sendCommand(`KEY,${key},${action}`);
+    const res = await this.sendCommand(`KEY,${key},${action}`);
+    // Trigger immediate status refresh so LCD reflects key action instantly
+    setTimeout(() => this.pollStatus(), 50);
+    return res;
   }
 
   /**
@@ -361,14 +399,132 @@ class SerialController extends EventEmitter {
         return this._mockReceiving ? `PWR,${Math.floor(Math.random() * 5) + 2}` : 'PWR,0';
 
       case 'STS':
-        return 'STS,011000,,,155.7000,FM,Auto Police,East Precinct,Dispatch,,0';
+        return this._mockStsResponse();
 
       default:
-        if (cmd.startsWith('KEY')) {
+        if (cmd.startsWith('KEY,')) {
+          const parts = cmd.split(',');
+          const key = parts[1];
+          const action = parts[2] || 'P';
+          this._mockHandleKey(key, action);
           return 'OK';
         }
         return 'OK';
     }
+  }
+
+  /**
+   * Handle keypress in mock mode for menu navigation
+   * @param {string} key - Key identifier
+   * @param {string} action - Key action
+   * @private
+   */
+  _mockHandleKey(key, action) {
+    if (key === 'M') {
+      // MENU key
+      if (!this._mockMenuState.active) {
+        this._mockMenuState.active = true;
+        this._mockMenuState.stack = [
+          {
+            title: 'Menu',
+            items: ['Program System', 'Srch/CloCall Opt', 'Close Call', 'Set Scan/Srch Opt', 'Settings'],
+            cursor: 0,
+          },
+        ];
+      } else {
+        this._mockMenuState.stack.pop();
+        if (this._mockMenuState.stack.length === 0) {
+          this._mockMenuState.active = false;
+        }
+      }
+      return;
+    }
+
+    if (!this._mockMenuState.active) {
+      return;
+    }
+
+    const current = this._mockMenuState.stack[this._mockMenuState.stack.length - 1];
+    if (!current) return;
+
+    if (key === '^') {
+      // Up arrow / scroll up
+      current.cursor = (current.cursor - 1 + current.items.length) % current.items.length;
+    } else if (key === 'V') {
+      // Down arrow / scroll down
+      current.cursor = (current.cursor + 1) % current.items.length;
+    } else if (key === 'E') {
+      // Enter / Select
+      const selected = current.items[current.cursor];
+      if (selected === 'Program System') {
+        this._mockMenuState.stack.push({
+          title: 'Select System',
+          items: ['Airband', 'MilitaryAir', 'New System'],
+          cursor: 0,
+        });
+      } else if (selected === 'Airband' || selected === 'MilitaryAir') {
+        this._mockMenuState.stack.push({
+          title: 'Edit System',
+          items: ['Edit Sys Option', 'Edit Name', 'Set Quick Key'],
+          cursor: 0,
+        });
+      } else if (selected === 'Edit Sys Option') {
+        this._mockMenuState.stack.push({
+          title: 'Sys Option',
+          items: ['Set Delay Time', 'Set Attenuator', 'Set Hold Time'],
+          cursor: 0,
+        });
+      } else if (selected === 'Set Delay Time') {
+        this._mockMenuState.stack.push({
+          title: 'Set Delay Time',
+          items: ['-10 sec', '-5 sec', '-2 sec', '0 sec', '1 sec', '2 sec', '5 sec'],
+          cursor: 5, // Default +2 sec
+        });
+      } else if (current.title === 'Set Delay Time') {
+        // Selection made: return to previous level
+        this._mockMenuState.stack.pop();
+      }
+    }
+  }
+
+  /**
+   * Generate realistic STS response for mock mode
+   * @returns {string}
+   * @private
+   */
+  _mockStsResponse() {
+    if (this._mockMenuState.active && this._mockMenuState.stack.length > 0) {
+      const current = this._mockMenuState.stack[this._mockMenuState.stack.length - 1];
+      const title = current.title;
+      const startIdx = Math.max(0, Math.min(current.cursor - 1, current.items.length - 3));
+      const visibleItems = current.items.slice(startIdx, startIdx + 3);
+
+      const l1 = title;
+      const m1 = '0';
+      const l2 = visibleItems[0] || '';
+      const m2 = current.cursor === startIdx ? '1' : '0';
+      const l3 = visibleItems[1] || '';
+      const m3 = current.cursor === startIdx + 1 ? '1' : '0';
+      const l4 = visibleItems[2] || '';
+      const m4 = current.cursor === startIdx + 2 ? '1' : '0';
+
+      return `STS,0000,${l1},${m1},${l2},${m2},${l3},${m3},${l4},${m4},0,0`;
+    }
+
+    // Normal scanner status display
+    const freqs = ['133.5500 MHz  AM', '128.1250 MHz  AM', '122.0000 MHz  AM', '121.1750 MHz  AM'];
+    const systems = ['Airband', 'Airband', 'MilitaryAir', 'Airband'];
+    const depts = ['Control', 'Control', 'Gifu', 'Centrair'];
+    const channels = ['KobeCtrl.N47', 'FukuokaCtrl.F05', 'TWR', 'TCA'];
+    const idx = Math.floor(this._mockCounter / 50) % freqs.length;
+
+    const l1 = systems[idx];
+    const l2 = depts[idx];
+    const l3 = channels[idx];
+    const l4 = freqs[idx];
+    const sql = this._mockReceiving ? '1' : '0';
+
+    return `STS,0000,${l1},0,${l2},0,${l3},0,${l4},0,${sql},0`;
   }
 
   /**
