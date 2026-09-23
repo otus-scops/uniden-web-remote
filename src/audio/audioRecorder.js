@@ -173,6 +173,7 @@ class AudioRecorder extends EventEmitter {
     const duration = this._recordingStartTime
       ? (endTime - this._recordingStartTime) / 1000
       : 0;
+    const isSaved = duration >= 1.0;
 
     // Stop recording pipe in AudioStreamer
     if (!this._mockMode) {
@@ -188,14 +189,15 @@ class AudioRecorder extends EventEmitter {
       startTime: this._recordingStartTime,
       endTime,
       durationSec: Math.round(duration * 10) / 10,
+      saved: isSaved,
     };
 
-    console.log(`[AudioRecorder] Recording stopped: ${result.filename} (${result.durationSec}s)`);
+    console.log(`[AudioRecorder] Recording stopped: ${result.filename} (${result.durationSec}s, saved=${isSaved})`);
 
     this.emit('recordingStop', result);
 
     // Delete recordings that are too short (less than 1 second)
-    if (duration < 1.0) {
+    if (!isSaved) {
       if (this._currentFilePath && fs.existsSync(this._currentFilePath)) {
         try {
           fs.unlinkSync(this._currentFilePath);
@@ -204,9 +206,7 @@ class AudioRecorder extends EventEmitter {
           // Ignore error
         }
       }
-      result.saved = false;
     } else {
-      result.saved = true;
       // Write sidecar JSON metadata and add to store for valid recordings
       const currentFilePath = this._currentFilePath;
       const metadata = {

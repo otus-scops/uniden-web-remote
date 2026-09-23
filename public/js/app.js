@@ -304,6 +304,9 @@ const app = (() => {
         if (typeof recordingPanel !== 'undefined') {
           recordingPanel.onRecordingStop(message.data);
         }
+        if (message.data && message.data.saved && message.data.filename && typeof activityLog !== 'undefined') {
+          activityLog.onLogEntryUpdated({ logEntry: { recordingFile: message.data.filename } });
+        }
         break;
 
       case 'recordingError':

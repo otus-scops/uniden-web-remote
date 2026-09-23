@@ -773,25 +773,34 @@ const activityLog = (() => {
    * @param {Object} data.logEntry - Updated log entry
    */
   function onLogEntryUpdated(data) {
-    if (!data || !data.logEntry) return;
-
-    const updated = data.logEntry;
+    if (!data) return;
+    const updated = data.logEntry || data;
+    if (!updated || !updated.recordingFile) return;
 
     // Update in memory array
-    const existing = logEntries.find(e => e.id === updated.id);
-    if (existing) {
-      existing.recordingFile = updated.recordingFile;
-    } else if (logEntries.length > 0 && !logEntries[0].recordingFile) {
-      logEntries[0].recordingFile = updated.recordingFile;
+    let target = null;
+    if (updated.id) {
+      target = logEntries.find(e => e.id === updated.id);
+    }
+    if (!target && logEntries.length > 0) {
+      target = logEntries.find(e => !e.recordingFile) || logEntries[0];
+    }
+    if (target) {
+      target.recordingFile = updated.recordingFile;
     }
 
     // Update in DOM
     const tbody = document.getElementById('log-tbody');
     if (!tbody) return;
 
-    let tr = tbody.querySelector(`tr[data-log-id="${updated.id}"]`);
-    if (!tr && tbody.firstChild) {
-      tr = tbody.firstChild; // Most recent row
+    let tr = null;
+    if (updated.id) {
+      tr = tbody.querySelector(`tr[data-log-id="${updated.id}"]`);
+    }
+    if (!tr) {
+      // Find the first row whose playback-cell still displays "-"
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      tr = rows.find(r => r.querySelector('.log-no-audio')) || tbody.firstChild;
     }
 
     if (tr && updated.recordingFile) {
@@ -804,9 +813,10 @@ const activityLog = (() => {
         btn.innerHTML = '▶';
         btn.onclick = (e) => {
           e.stopPropagation();
-          onPlayLogAudio(updated.recordingFile, tr, updated);
+          onPlayLogAudio(updated.recordingFile, tr, target || updated);
         };
         cell.appendChild(btn);
+        console.log('[ActivityLog] 🔗 Play button rendered for row:', updated.recordingFile);
       }
     }
   }

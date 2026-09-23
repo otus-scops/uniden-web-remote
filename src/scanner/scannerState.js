@@ -235,6 +235,7 @@ class ScannerState extends EventEmitter {
 
     if (targetEntry) {
       targetEntry.recordingFile = filename;
+      console.log(`[ScannerState] 🔗 Attached recording "${filename}" to log entry id=${targetEntry.id}`);
       this.emit('logEntryUpdated', { logEntry: targetEntry });
       return targetEntry;
     }
