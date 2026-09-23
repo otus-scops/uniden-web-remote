@@ -16,20 +16,21 @@ Runs seamlessly on Docker and is accessible from any modern Web browser (desktop
 
 Unlike traditional desktop applications designed primarily for direct, tethered operation beside a local PC, **`uniden-web-remote` is designed with the philosophy of running a scanner 24/7 on a home server for continuous recording, while providing convenient remote listening and virtual control from any browser**.
 
-Rather than prioritizing ultra-low latency for direct desktop listening, our focus is placed on **unattended 24/7 recording reliability, effortless setup via Docker containerization, and the flexibility to access your scanner from any client device across your home network**. Consequently, a reasonable buffering latency over network streaming is deliberately accepted as a natural trade-off.
+While prioritizing **unattended 24/7 recording reliability, effortless setup via Docker containerization, and the flexibility to access your scanner from any client device across your home network**, the modern **WebSocket + Web Audio API pipeline delivers an ultra-low latency (100–300ms) listening experience** that brings web playback virtually in sync with the physical scanner hardware.
 
 - **Intended Usage Style**:
   Deploy the Docker container on a home server, Linux box, mini-PC, or Raspberry Pi connected to the scanner, then access the Web interface from any machine on your LAN (desktop, laptop, tablet, or smartphone) via `http://<server-local-ip>:3000`. (Running locally on a single machine via `http://localhost:3000` is also fully supported).
 
 ---
 
-## ⚠️ Notes on Live Audio Latency & Remote Operation Feel
+## ⚡ Ultra Low-Latency Live Audio & Real-Time Sync
 
-- **Buffering Latency in Web Streaming**:
-  Because this system is built around remote distribution from a home server, standard HTML5 chunked audio streaming is used with a small buffer to ensure smooth, dropout-free playback in standard Web browsers. Compared to native desktop applications or listening directly to the scanner's speaker, audible latency is an expected characteristic.
-- **Operational Command vs. Audio Feedback**:
-  When executing commands such as **Temporary Lockout (L/O)**, **Hold**, or **Scan**, serial control signals reach the scanner hardware almost instantaneously. However, **the resulting change in audio will only be heard after the buffered audio arrives at your browser**. 
-- Please keep this inherent operational feeling of remote Web streaming in mind when controlling the radio remotely.
+- **Sub-Second Streaming via WebSocket + Web Audio API (100–300ms)**:
+  Bypasses the multi-second buffering of standard HTML5 `<audio>` tags by streaming raw PCM chunks directly over WebSocket and rendering them immediately via the Web Audio API (`AudioContext`).
+- **Complete Synchronization with Display & Commands**:
+  When squelch opens or when you execute commands like **Hold**, **Scan**, or **Temporary Lockout**, the incoming audio matches the on-screen channel metadata in real time.
+- **Automatic Drift Compensation**:
+  Continuously monitors jitter buffer depth and automatically catches up to the live edge if network hiccups occur, preventing delay accumulation over long listening sessions.
 
 ---
 
@@ -42,7 +43,7 @@ Rather than prioritizing ultra-low latency for direct desktop listening, our foc
 ## 🌟 Key Features (Community Edition / Open Source)
 
 - 📡 **Virtual Control & Real-Time Display**: Live frequency/TGID display, alpha tags (System / Group / Channel), modulation, tone/code (CTCSS/DCS), and RSSI signal level meter.
-- 🔊 **Web Live Audio Streaming**: Listen to scanner audio directly in your browser with chunked audio streaming.
+- 🔊 **Ultra Low-Latency Live Audio Streaming**: Real-time raw PCM streaming (100–300ms latency) via WebSocket and Web Audio API with automatic drift compensation.
 - 🎛️ **Full Keypad & Menu Control**: Interactive virtual panel simulating Scan, Hold, Menu, Function, and Direct Numpad entry with volume and squelch adjustments.
 - 📝 **Spreadsheet Memory Editor**:
   - **Full Scanner Memory Sync**: Complete download and upload of Systems, Groups, and Channels using Uniden DMA (Dynamic Memory Architecture) serial protocol.
