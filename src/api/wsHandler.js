@@ -12,16 +12,21 @@ const { verifyToken } = require('./authMiddleware');
  */
 class WsHandler {
   /**
-   * @param {Object} deps - Dependencies
-   * @param {import('http').Server} deps.server - HTTP server instance
+    * @param {Object} deps - Dependencies
+   * @param {import('http').Server} [deps.server] - HTTP server instance (optional if using manual upgrade)
+   * @param {boolean} [deps.noServer=false] - Whether to create in noServer mode
    * @param {import('../scanner/scannerState')} deps.scannerState - Scanner state manager
    * @param {import('../scanner/serialController')} deps.serialController - Serial controller
    * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
    * @param {Object} [deps.authConfig={}] - Authentication configuration
    */
-  constructor({ server, scannerState, serialController, audioRecorder, authConfig = {} }) {
+  constructor({ server, noServer = false, scannerState, serialController, audioRecorder, authConfig = {} }) {
     /** @type {WebSocket.Server} WebSocket server instance */
-    this._wss = new WebSocket.Server({ server, path: '/ws' });
+    if (noServer || !server) {
+      this._wss = new WebSocket.Server({ noServer: true });
+    } else {
+      this._wss = new WebSocket.Server({ server, path: '/ws' });
+    }
 
     /** @type {import('../scanner/scannerState')} */
     this._scannerState = scannerState;
@@ -40,6 +45,18 @@ class WsHandler {
 
     this._setupWebSocketServer();
     this._setupEventForwarding();
+  }
+
+  /**
+   * Handle HTTP upgrade request for scanner WebSocket endpoint (/ws)
+   * @param {import('http').IncomingMessage} request
+   * @param {import('net').Socket} socket
+   * @param {Buffer} head
+   */
+  handleUpgrade(request, socket, head) {
+    this._wss.handleUpgrade(request, socket, head, (ws) => {
+      this._wss.emit('connection', ws, request);
+    });
   }
 
   /**

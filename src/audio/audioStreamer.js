@@ -46,13 +46,19 @@ class AudioStreamer extends EventEmitter {
     /** @type {boolean} Streaming in-progress flag */
     this._isStreaming = false;
 
-    /** @type {Set<PassThrough>} Connected client streams */
+    /** @type {Set<PassThrough>} Connected client streams (HTTP) */
     this._clients = new Set();
+
+    /** @type {Set<any>} Connected audio listeners (WebSocket / custom) */
+    this._audioListeners = new Set();
+
+    /** @type {import('child_process').ChildProcess|null} Recording encoder process */
+    this._recordingProcess = null;
 
     /** @type {number|null} Mock streaming interval timer */
     this._mockTimer = null;
 
-    /** @type {Buffer|null} Mock MP3 silence frame */
+    /** @type {Buffer|null} Mock PCM silence frame */
     this._mockSilenceFrame = null;
 
     /** @type {boolean} Flag indicating intentional stop to prevent close event race conditions */
@@ -61,7 +67,7 @@ class AudioStreamer extends EventEmitter {
     /** @type {Promise<void>|null} Promise tracking SOX process exit */
     this._stopPromise = null;
 
-    /** @type {fs.WriteStream|null} Recording file write stream */
+    /** @type {fs.WriteStream|import('stream').Writable|null} Recording file/stdin write stream */
     this._recordingStream = null;
 
     /** @type {string|null} Current recording file path */
@@ -88,11 +94,44 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * Get connected client count
+   * Get connected client / listener count
    * @returns {number}
    */
   getClientCount() {
-    return this._clients.size;
+    return this._clients.size + this._audioListeners.size;
+  }
+
+  /**
+   * Add a generic audio listener (e.g. WebSocket client identifier or object)
+   * Starts audio capture if not already running.
+   * @param {any} listener
+   */
+  addAudioListener(listener) {
+    this._audioListeners.add(listener);
+    console.log(`[AudioStreamer] Audio listener added (total listeners: ${this.getClientCount()})`);
+    this.emit('clientConnected', { clientCount: this.getClientCount() });
+
+    if (!this._isStreaming) {
+      this._startStreaming();
+    }
+  }
+
+  /**
+   * Remove an audio listener
+   * Stops audio capture if no listeners and not recording.
+   * @param {any} listener
+   */
+  removeAudioListener(listener) {
+    if (!this._audioListeners.has(listener)) {
+      return;
+    }
+    this._audioListeners.delete(listener);
+    console.log(`[AudioStreamer] Audio listener removed (total listeners: ${this.getClientCount()})`);
+    this.emit('clientDisconnected', { clientCount: this.getClientCount() });
+
+    if (this.getClientCount() === 0 && !this._isRecording) {
+      this._stopStreaming();
+    }
   }
 
   /**
@@ -114,8 +153,8 @@ class AudioStreamer extends EventEmitter {
       this._removeClient(clientStream);
     });
 
-    console.log(`[AudioStreamer] Client connected (current: ${this._clients.size})`);
-    this.emit('clientConnected', { clientCount: this._clients.size });
+    console.log(`[AudioStreamer] Client connected (current: ${this.getClientCount()})`);
+    this.emit('clientConnected', { clientCount: this.getClientCount() });
 
     // Start streaming if not already running
     if (!this._isStreaming) {
@@ -136,11 +175,11 @@ class AudioStreamer extends EventEmitter {
     }
 
     this._clients.delete(clientStream);
-    console.log(`[AudioStreamer] Client disconnected (remaining: ${this._clients.size})`);
-    this.emit('clientDisconnected', { clientCount: this._clients.size });
+    console.log(`[AudioStreamer] Client disconnected (remaining: ${this.getClientCount()})`);
+    this.emit('clientDisconnected', { clientCount: this.getClientCount() });
 
     // Stop streaming if all clients disconnected and not currently recording
-    if (this._clients.size === 0 && !this._isRecording) {
+    if (this.getClientCount() === 0 && !this._isRecording) {
       this._stopStreaming();
     }
   }
@@ -148,6 +187,7 @@ class AudioStreamer extends EventEmitter {
   /**
    * Start recording pipe (write SOX output to file)
    * Spawns SOX process if not already running.
+   * If format is mp3 and not in mock mode, spawns SoX encoder process piping PCM to MP3.
    * @param {string} filePath - Recording file path
    */
   startRecordingPipe(filePath) {
@@ -159,11 +199,46 @@ class AudioStreamer extends EventEmitter {
     this._recordingFilePath = filePath;
 
     try {
-      this._recordingStream = fs.createWriteStream(filePath);
+      if (this._mockMode) {
+        this._recordingStream = fs.createWriteStream(filePath);
+      } else {
+        const config = this._audioConfig;
+        const encodeArgs = [
+          '-t', 'raw',
+          '-r', String(config.sampleRate || 16000),
+          '-c', String(config.channels || 1),
+          '-b', '16',
+          '-e', 'signed-integer',
+          '-',
+          '-t', 'mp3',
+          '-C', String(config.mp3Bitrate || 32),
+          filePath,
+        ];
+
+        console.log(`[AudioStreamer] Spawning recording encoder: sox ${encodeArgs.join(' ')}`);
+        this._recordingProcess = spawn('sox', encodeArgs, {
+          stdio: ['pipe', 'ignore', 'pipe'],
+        });
+
+        this._recordingProcess.on('error', (err) => {
+          console.error('[AudioStreamer] Recording encoder process error:', err.message);
+          this.stopRecordingPipe();
+        });
+
+        this._recordingProcess.stderr.on('data', (data) => {
+          const msg = data.toString().trim();
+          if (msg && !msg.includes('In:') && !msg.includes('Input File')) {
+            console.log(`[AudioStreamer] Encoder SOX: ${msg}`);
+          }
+        });
+
+        this._recordingStream = this._recordingProcess.stdin;
+      }
+
       this._isRecording = true;
 
       this._recordingStream.on('error', (err) => {
-        console.error(`[AudioStreamer] Recording file write error:`, err.message);
+        console.error(`[AudioStreamer] Recording file/pipe write error:`, err.message);
         this.stopRecordingPipe();
       });
 
@@ -178,6 +253,7 @@ class AudioStreamer extends EventEmitter {
       console.error(`[AudioStreamer] Recording pipe start failed:`, err.message);
       this._isRecording = false;
       this._recordingStream = null;
+      this._recordingProcess = null;
       this._recordingFilePath = null;
     }
   }
@@ -193,7 +269,7 @@ class AudioStreamer extends EventEmitter {
 
     const filePath = this._recordingFilePath;
 
-    // Close file stream
+    // Close file/stdin stream
     if (this._recordingStream) {
       try {
         this._recordingStream.end();
@@ -203,14 +279,22 @@ class AudioStreamer extends EventEmitter {
       this._recordingStream = null;
     }
 
+    if (this._recordingProcess) {
+      const proc = this._recordingProcess;
+      this._recordingProcess = null;
+      proc.on('close', (code) => {
+        console.log(`[AudioStreamer] Recording encoder process exited: code=${code}`);
+      });
+    }
+
     this._isRecording = false;
     this._recordingFilePath = null;
 
     console.log(`[AudioStreamer] Recording pipe stopped: ${filePath}`);
     this.emit('recordingPipeStop', { filePath });
 
-    // Stop SOX process if all clients are also disconnected
-    if (this._clients.size === 0) {
+    // Stop SOX process if all listeners are disconnected
+    if (this.getClientCount() === 0) {
       this._stopStreaming();
     }
 
@@ -247,7 +331,7 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * Start real audio streaming via SOX
+   * Start real audio streaming via SOX (raw PCM output)
    * @private
    */
   _startSoxStreaming() {
@@ -264,7 +348,7 @@ class AudioStreamer extends EventEmitter {
 
       this._isStreaming = true;
 
-      // Read MP3 data from SOX stdout and broadcast to all clients and recording stream
+      // Read PCM data from SOX stdout and broadcast to all listeners and recording stream
       this._soxProcess.stdout.on('data', (chunk) => {
         this._broadcastChunk(chunk);
       });
@@ -295,10 +379,10 @@ class AudioStreamer extends EventEmitter {
         }
 
         // On abnormal termination, attempt restart if clients or recordings still active
-        if (code !== 0 && (this._clients.size > 0 || this._isRecording)) {
+        if (code !== 0 && (this.getClientCount() > 0 || this._isRecording)) {
           console.log('[AudioStreamer] SOX process exited unexpectedly. Restarting in 3 seconds...');
           setTimeout(() => {
-            if (this._clients.size > 0 || this._isRecording) {
+            if (this.getClientCount() > 0 || this._isRecording) {
               this._startStreaming();
             }
           }, 3000);
@@ -314,13 +398,16 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * Build SOX command arguments
+   * Build SOX command arguments for low-latency raw PCM streaming
    * @returns {string[]} SOX command line arguments
    * @private
    */
   _buildSoxStreamArgs() {
     const config = this._audioConfig;
-    const args = [];
+    const args = [
+      // Minimize SOX buffer to reduce capture latency
+      '--buffer', '1024',
+    ];
 
     // Input audio device
     if (config.device && config.device !== 'default') {
@@ -329,17 +416,16 @@ class AudioStreamer extends EventEmitter {
       args.push('-t', 'alsa', 'default');
     }
 
-    // Output format: MP3 to stdout
-    args.push('-t', 'mp3');
+    // Output format: 16-bit signed integer raw PCM
+    args.push('-t', 'raw');
+    args.push('-e', 'signed-integer');
+    args.push('-b', '16');
 
     // Channel count
     args.push('-c', String(config.channels || 1));
 
-    // Sample rate
-    args.push('-r', String(config.sampleRate || 22050));
-
-    // Compression quality / bitrate for SOX MP3 output (-C setting)
-    args.push('-C', String(config.mp3Bitrate || 64));
+    // Sample rate (default: 16000Hz)
+    args.push('-r', String(config.sampleRate || 16000));
 
     // Output destination: stdout ( - )
     args.push('-');
@@ -348,21 +434,23 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * Start mock streaming (periodically transmits valid MP3 silence frames)
+   * Start mock streaming (periodically transmits valid raw PCM silence frames)
    * @private
    */
   _startMockStreaming() {
-    console.log('[AudioStreamer] Starting mock streaming');
+    console.log('[AudioStreamer] Starting mock streaming (raw PCM)');
     this._isStreaming = true;
     this._intentionalStop = false;
 
-    // Generate valid MP3 silence frame
-    this._mockSilenceFrame = this._generateValidMp3SilenceFrame();
+    // 20ms of silence @ 16000Hz 16-bit Mono: 16000 * 0.02 * 2 = 640 bytes
+    const sampleRate = this._audioConfig.sampleRate || 16000;
+    const channels = this._audioConfig.channels || 1;
+    const frameIntervalMs = 20;
+    const frameSizeBytes = Math.floor(sampleRate * (frameIntervalMs / 1000)) * channels * 2;
+    this._mockSilenceFrame = Buffer.alloc(frameSizeBytes, 0);
 
-    // Transmit frames at ~26ms intervals (~26ms per MP3 frame @22050Hz)
-    const frameIntervalMs = 26;
     this._mockTimer = setInterval(() => {
-      if ((this._clients.size > 0 || this._isRecording) && this._mockSilenceFrame) {
+      if ((this.getClientCount() > 0 || this._isRecording) && this._mockSilenceFrame) {
         this._broadcastChunk(this._mockSilenceFrame);
       }
     }, frameIntervalMs);
@@ -371,41 +459,15 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
-   * Generate a valid MP3 silence frame that browsers can decode and play.
-   * MPEG2 Layer3 64kbps 22050Hz Mono frame.
-   * Frame size = 72 * 64000 / 22050 = 208.98... approx 209 bytes
-   * @returns {Buffer} Valid MP3 frame buffer
-   * @private
-   */
-  _generateValidMp3SilenceFrame() {
-    // MPEG2 Layer3 header (4 bytes):
-    // Byte 0: 0xFF (sync)
-    // Byte 1: 0xF3 (sync + MPEG2, Layer3, no CRC protection)
-    // Byte 2: 0x68 (64kbps for MPEG2 Layer3, 22050Hz, padding=0)
-    // Byte 3: 0xC0 (mono, no mode extension, no copyright, original, no emphasis)
-    const frameSize = 209;
-    const frame = Buffer.alloc(frameSize, 0);
-
-    // Write header
-    frame[0] = 0xFF;
-    frame[1] = 0xF3;
-    frame[2] = 0x68;
-    frame[3] = 0xC0;
-
-    // Side information (MPEG2 Layer3 mono = 9 bytes)
-    // main_data_begin = 0 (first 2 bits), remaining bits zero for silence
-    // Bytes 4-12 remain all 0x00 (silent side information)
-
-    return frame;
-  }
-
-  /**
-   * Broadcast MP3 data chunk to all connected clients and recording pipe
-   * @param {Buffer} chunk - MP3 data chunk
+   * Broadcast audio data chunk to all connected clients, listeners, and recording pipe
+   * @param {Buffer} chunk - Audio data chunk
    * @private
    */
   _broadcastChunk(chunk) {
-    // Distribute to streaming clients
+    // Emit event for WebSocket listeners and subscribers
+    this.emit('audioData', chunk);
+
+    // Distribute to HTTP streaming clients
     for (const client of this._clients) {
       try {
         if (!client.destroyed) {
@@ -509,6 +571,7 @@ class AudioStreamer extends EventEmitter {
       }
     }
     this._clients.clear();
+    this._audioListeners.clear();
   }
 
   /**

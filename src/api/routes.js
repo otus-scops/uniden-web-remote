@@ -151,13 +151,13 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   // ------ Live Audio Streaming ------
 
   /**
-   * GET /api/audio/stream - Live MP3 audio stream
-   * Delivers continuous MP3 audio chunk stream.
+   * GET /api/audio/stream - Live raw PCM audio stream (16kHz 16-bit Mono)
+   * Delivers continuous raw PCM audio chunk stream.
    * Cleans up client resources on disconnect.
    */
   router.get('/audio/stream', requireListener(authConfig), (req, res) => {
-    // Set streaming HTTP response headers
-    res.setHeader('Content-Type', 'audio/mpeg');
+    // Set streaming HTTP response headers (raw 16-bit PCM Mono 16kHz)
+    res.setHeader('Content-Type', 'audio/l16; rate=16000; channels=1');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');

@@ -216,175 +216,56 @@ const scannerDisplay = (() => {
     }, 500);
   }
 
-  /** @type {boolean} Whether live audio streaming is active */
-  let isLiveAudioPlaying = false;
+  /** @type {AudioPlayer|null} AudioPlayer instance */
+  let audioPlayer = null;
 
-  /** @type {number|null} Reconnection timer ID */
-  let liveAudioReconnectTimer = null;
+  /**
+   * Get or initialize AudioPlayer instance
+   * @returns {AudioPlayer}
+   * @private
+   */
+  function getAudioPlayer() {
+    if (!audioPlayer) {
+      audioPlayer = new AudioPlayer({
+        sampleRate: 16000,
+        channels: 1,
+        bufferLatencySec: 0.06,
+        maxLatencySec: 0.25,
+        onStateChange: (isPlaying, statusText) => {
+          updateLiveAudioUI(isPlaying, statusText);
+        },
+        onError: (err) => {
+          console.error('[ScannerDisplay] Audio error:', err);
+          updateLiveAudioUI(false, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioRetry') : 'クリックして再試行');
+        },
+      });
 
-  /** @type {boolean} Stopping in progress flag (guard against duplicate triggers) */
-  let isStopping = false;
+      const el = getElements();
+      if (el.liveAudioVolume) {
+        audioPlayer.setVolume(parseInt(el.liveAudioVolume.value, 10) || 80);
+      }
+    }
+    return audioPlayer;
+  }
+
+  /**
+   * Check whether live audio is active
+   * @returns {boolean}
+   */
+  function isLiveAudioActive() {
+    return audioPlayer ? audioPlayer.isPlaying() : false;
+  }
 
   /**
    * Toggle live audio playback ON/OFF
    */
   function onToggleLiveAudio() {
-    // Ignore clicks while stopping
-    if (isStopping) {
-      console.log('[ScannerDisplay] Ignoring toggle request: currently stopping audio');
-      return;
-    }
-
-    if (isLiveAudioPlaying) {
-      stopLiveAudio();
+    const player = getAudioPlayer();
+    if (player.isPlaying()) {
+      player.stop();
     } else {
-      startLiveAudio();
+      player.start();
     }
-  }
-
-  /**
-   * Recreate audio element to completely flush stale buffers and connections
-   * @returns {HTMLAudioElement} Fresh audio element
-   * @private
-   */
-  function resetAudioElement() {
-    const el = getElements();
-    const oldPlayer = el.liveAudioPlayer;
-
-    if (oldPlayer) {
-      // Clear event listeners
-      oldPlayer.onerror = null;
-      oldPlayer.onended = null;
-      oldPlayer.oncanplay = null;
-      oldPlayer.pause();
-      oldPlayer.removeAttribute('src');
-      oldPlayer.load();
-    }
-
-    // Create and insert clean audio element
-    const newPlayer = document.createElement('audio');
-    newPlayer.id = 'live-audio-player';
-    newPlayer.preload = 'none';
-
-    if (oldPlayer && oldPlayer.parentNode) {
-      oldPlayer.parentNode.replaceChild(newPlayer, oldPlayer);
-    }
-
-    // Update cache
-    elements.liveAudioPlayer = newPlayer;
-    return newPlayer;
-  }
-
-  /**
-   * Start live audio streaming
-   */
-  function startLiveAudio() {
-    const el = getElements();
-
-    // Guard against re-entry while stopping
-    if (isStopping) {
-      console.log('[ScannerDisplay] Delaying start: audio is stopping...');
-      setTimeout(() => {
-        if (!isStopping && !isLiveAudioPlaying) {
-          startLiveAudio();
-        }
-      }, 500);
-      return;
-    }
-
-    // Clear any pending reconnection timer
-    if (liveAudioReconnectTimer) {
-      clearTimeout(liveAudioReconnectTimer);
-      liveAudioReconnectTimer = null;
-    }
-
-    // Reset audio element to ensure clean connection
-    const player = resetAudioElement();
-
-    // Immediately update UI for fast user feedback
-    isLiveAudioPlaying = true;
-    updateLiveAudioUI(true, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioConnecting') : '接続中...');
-
-    // Attach event handlers before setting src
-    player.onerror = () => {
-      if (isLiveAudioPlaying) {
-        console.log('[ScannerDisplay] Stream error, reconnecting in 3 seconds...');
-        const reconnectingMsg = typeof i18n !== 'undefined' && i18n.getLanguage() === 'en' ? 'Reconnecting...' : '再接続中...';
-        updateLiveAudioUI(true, reconnectingMsg);
-        liveAudioReconnectTimer = setTimeout(() => {
-          if (isLiveAudioPlaying) {
-            startLiveAudio();
-          }
-        }, 3000);
-      }
-    };
-
-    player.onended = () => {
-      if (isLiveAudioPlaying) {
-        console.log('[ScannerDisplay] Stream ended, reconnecting...');
-        liveAudioReconnectTimer = setTimeout(() => {
-          if (isLiveAudioPlaying) {
-            startLiveAudio();
-          }
-        }, 1000);
-      }
-    };
-
-    // canplay event: update to streaming UI
-    player.oncanplay = () => {
-      if (isLiveAudioPlaying) {
-        updateLiveAudioUI(true);
-      }
-    };
-
-    // Append timestamp query parameter to bypass browser caching
-    const streamUrl = `/api/audio/stream?t=${Date.now()}`;
-    player.src = streamUrl;
-    player.volume = (el.liveAudioVolume ? el.liveAudioVolume.value : 80) / 100;
-
-    const playPromise = player.play();
-    if (playPromise) {
-      playPromise.then(() => {
-        updateLiveAudioUI(true);
-        console.log('[ScannerDisplay] Live audio stream started');
-      }).catch((err) => {
-        // If intentionally stopped, ignore interruption
-        if (!isLiveAudioPlaying) {
-          return;
-        }
-        console.error('[ScannerDisplay] Live audio playback error:', err.message);
-        // Handle autoplay policy restrictions
-        isLiveAudioPlaying = false;
-        updateLiveAudioUI(false, typeof i18n !== 'undefined' ? i18n.t('scanner.liveAudioRetry') : 'クリックして再試行');
-      });
-    }
-  }
-
-  /**
-   * Stop live audio streaming
-   */
-  function stopLiveAudio() {
-    const el = getElements();
-
-    // Set flags first to prevent error handlers from showing retry prompts
-    isLiveAudioPlaying = false;
-    isStopping = true;
-
-    if (liveAudioReconnectTimer) {
-      clearTimeout(liveAudioReconnectTimer);
-      liveAudioReconnectTimer = null;
-    }
-
-    // Recreate audio element to cleanly disconnect stream
-    resetAudioElement();
-
-    updateLiveAudioUI(false);
-    console.log('[ScannerDisplay] Live audio stopped');
-
-    // Brief delay to allow server-side streaming process to terminate
-    setTimeout(() => {
-      isStopping = false;
-    }, 500);
   }
 
   /**
@@ -394,10 +275,8 @@ const scannerDisplay = (() => {
   function onVolumeChange(value) {
     const el = getElements();
     const vol = parseInt(value, 10);
-
-    if (el.liveAudioPlayer) {
-      el.liveAudioPlayer.volume = vol / 100;
-    }
+    const player = getAudioPlayer();
+    player.setVolume(vol);
 
     if (el.volumeValue) {
       el.volumeValue.textContent = `${vol}%`;
@@ -462,7 +341,7 @@ const scannerDisplay = (() => {
   window.addEventListener('languageChanged', () => {
     const el = getElements();
     updateConnectionStatus(el, lastConnectedState);
-    updateLiveAudioUI(isLiveAudioPlaying);
+    updateLiveAudioUI(isLiveAudioActive());
   });
 
   // Public API

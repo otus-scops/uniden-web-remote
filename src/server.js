@@ -15,6 +15,7 @@ const AudioRecorder = require('./audio/audioRecorder');
 const AudioStreamer = require('./audio/audioStreamer');
 const createRoutes = require('./api/routes');
 const WsHandler = require('./api/wsHandler');
+const AudioWsHandler = require('./api/audioWsHandler');
 const { parseMdlResponse, parseVerResponse } = require('./scanner/protocolParser');
 
 /**
@@ -50,6 +51,9 @@ class AppServer {
 
     /** @type {WsHandler|null} */
     this._wsHandler = null;
+
+    /** @type {AudioWsHandler|null} */
+    this._audioWsHandler = null;
   }
 
   /**
@@ -69,13 +73,36 @@ class AppServer {
     // Configure Express middleware and routes
     this._setupExpress();
 
-    // Setup WebSocket handler
+    // Setup WebSocket handlers
     this._wsHandler = new WsHandler({
-      server: this._server,
+      noServer: true,
       scannerState: this._scannerState,
       serialController: this._serialController,
       audioRecorder: this._audioRecorder,
       authConfig: config.auth,
+    });
+
+    this._audioWsHandler = new AudioWsHandler({
+      audioStreamer: this._audioStreamer,
+      authConfig: config.auth,
+    });
+
+    // Handle HTTP upgrade requests for WebSockets
+    this._server.on('upgrade', (request, socket, head) => {
+      try {
+        const host = request.headers.host || 'localhost';
+        const urlObj = new URL(request.url, `http://${host}`);
+        if (urlObj.pathname === '/ws') {
+          this._wsHandler.handleUpgrade(request, socket, head);
+        } else if (urlObj.pathname === '/ws/audio') {
+          this._audioWsHandler.handleUpgrade(request, socket, head);
+        } else {
+          socket.destroy();
+        }
+      } catch (err) {
+        console.error('[Server] WebSocket upgrade error:', err.message);
+        socket.destroy();
+      }
     });
 
     // Wire internal events between subsystems
@@ -88,7 +115,8 @@ class AppServer {
     return new Promise((resolve) => {
       this._server.listen(config.server.port, config.server.host, () => {
         console.log(`\n  🌐 Web UI: http://localhost:${config.server.port}`);
-        console.log(`  📡 WebSocket: ws://localhost:${config.server.port}/ws`);
+        console.log(`  📡 WebSocket (Control): ws://localhost:${config.server.port}/ws`);
+        console.log(`  🔊 WebSocket (Live Audio): ws://localhost:${config.server.port}/ws/audio`);
         console.log(`  📂 Recordings Directory: ${config.audio.recordingsDir}`);
         if (config.gdrive.enabled) {
           console.log(`  ☁️  Google Drive Sync: Enabled (${config.gdrive.remotePath})`);
@@ -263,6 +291,10 @@ class AppServer {
 
     if (this._wsHandler) {
       this._wsHandler.destroy();
+    }
+
+    if (this._audioWsHandler) {
+      this._audioWsHandler.destroy();
     }
 
     this._scannerState.destroy();
