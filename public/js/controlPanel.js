@@ -216,6 +216,37 @@ const controlPanel = (() => {
     }
   }
 
+  /**
+   * Load and synchronize system configuration from server
+   */
+  async function loadConfig() {
+    try {
+      const data = await app.fetchApi('/config');
+      if (data && data.fileNaming && data.fileNaming.template) {
+        const input = document.getElementById('filename-template');
+        if (input) {
+          input.value = data.fileNaming.template;
+          onTemplatePreview(data.fileNaming.template);
+        }
+      }
+      if (data && data.audio && data.audio.autoRecord !== undefined) {
+        const toggle = document.querySelector('#toggle-auto-record input');
+        if (toggle) {
+          toggle.checked = data.audio.autoRecord;
+        }
+      }
+    } catch (err) {
+      console.warn('[ControlPanel] Failed to load initial configuration:', err.message);
+    }
+  }
+
+  // Load configuration on page initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadConfig);
+  } else {
+    loadConfig();
+  }
+
   // Synchronize waiting text on language change
   window.addEventListener('languageChanged', () => {
     const output = document.getElementById('command-output');
@@ -237,5 +268,6 @@ const controlPanel = (() => {
     onSendCommand,
     onCommandResponse,
     onStatusUpdate,
+    loadConfig,
   };
 })();

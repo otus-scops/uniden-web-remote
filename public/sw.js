@@ -4,7 +4,7 @@
  * while explicitly bypassing real-time streams and API endpoints.
  */
 
-const CACHE_NAME = 'bct15x-remote-v4';
+const CACHE_NAME = 'bct15x-remote-v5';
 
 /**
  * Static asset URLs to pre-cache on installation
@@ -15,6 +15,7 @@ const PRECACHE_ASSETS = [
   '/css/index.css',
   '/js/app.js',
   '/js/i18n.js',
+  '/js/audioPlayer.js',
   '/js/scannerDisplay.js',
   '/js/controlPanel.js',
   '/js/recordingPanel.js',

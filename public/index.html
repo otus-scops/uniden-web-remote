@@ -230,7 +230,7 @@
           <div class="input-group">
             <label for="filename-template" data-i18n="control.filenameTemplate">ファイル名テンプレート</label>
             <input type="text" id="filename-template"
-                   value="{date}_{time}_{freq}_{system}_{channel}"
+                   placeholder="{system}/{department}/{channel}/{date}_{time}_{freq}"
                    onchange="controlPanel.onTemplateChange(this.value)"
                    oninput="controlPanel.onTemplatePreview(this.value)">
             <div class="template-help" data-i18n="control.templateHelp">
