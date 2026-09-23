@@ -106,30 +106,116 @@ body::before {
 .app-container {
   position: relative;
   z-index: 1;
-  max-width: 1440px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: var(--space-md);
-  display: grid;
-  grid-template-areas:
-    "header header"
-    "scanner controls"
-    "log recordings";
-  grid-template-columns: 1fr 360px;
-  grid-template-rows: auto 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-md);
   min-height: 100vh;
 }
 
-@media (max-width: 1024px) {
-  .app-container {
-    grid-template-areas:
-      "header"
-      "scanner"
-      "controls"
-      "log"
-      "recordings";
+/* --- Scanner View Container --- */
+.scanner-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* ==========================================================================
+   Hardware Scanner Unit (Faceplate) - 1DIN Horizontal Form Factor
+   ========================================================================== */
+.scanner-unit {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: var(--space-md);
+  background: linear-gradient(180deg, #1b2436 0%, #0d1424 100%);
+  border: 2px solid #334155;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+/* Industrial corner screw accents for physical hardware realism */
+.scanner-unit::before,
+.scanner-unit::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #64748b 30%, #1e293b 80%);
+  border: 1px solid #475569;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.scanner-unit::before { left: 7px; }
+.scanner-unit::after { right: 7px; }
+
+/* Dedicated Faceplate styling for BCT15X model */
+.scanner-unit[data-model="BCT15X"],
+.scanner-unit[data-model="bct15x"] {
+  border-color: #3b485d;
+  background: linear-gradient(180deg, #182235 0%, #09101f 100%);
+}
+
+.scanner-unit .scanner-panel,
+.scanner-unit .control-panel {
+  margin: 0;
+  height: 100%;
+}
+
+.scanner-unit .scanner-panel {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.scanner-unit .control-panel {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scanner-unit .control-panel .panel-body {
+  max-height: 650px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.scanner-unit .control-panel .panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scanner-unit .control-panel .panel-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   Auxiliary Data Grid (Logs & Recordings)
+   ========================================================================== */
+.aux-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.aux-data-grid .panel {
+  min-height: 480px;
+}
+
+/* Responsive breakpoint: Switch to 1 column on narrower screens */
+@media (max-width: 1080px) {
+  .scanner-unit {
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
+  }
+  .aux-data-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -375,16 +461,16 @@ body::before {
 }
 
 .control-section {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 
 .control-section-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--color-text-dim);
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-xs);
+  padding-bottom: 2px;
   border-bottom: 1px solid var(--color-border);
 }
 

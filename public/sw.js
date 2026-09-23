@@ -4,7 +4,7 @@
  * while explicitly bypassing real-time streams and API endpoints.
  */
 
-const CACHE_NAME = 'bct15x-remote-v5';
+const CACHE_NAME = 'bct15x-remote-v6';
 
 /**
  * Static asset URLs to pre-cache on installation

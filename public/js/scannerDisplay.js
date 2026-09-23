@@ -61,6 +61,10 @@ const scannerDisplay = (() => {
     // Model and firmware version
     if (status.model) {
       el.scannerModel.textContent = `${status.model}${status.firmwareVersion ? ' - ' + status.firmwareVersion : ''}`;
+      const scannerUnit = document.getElementById('scanner-unit');
+      if (scannerUnit) {
+        scannerUnit.setAttribute('data-model', status.model);
+      }
     }
 
     // Active reception display

@@ -59,9 +59,11 @@
     </header>
 
     <!-- Standard Scanner View -->
-    <div id="scanner-view" class="app-grid">
-    <!-- Scanner Display Panel -->
-    <section class="panel scanner-panel" id="scanner-panel">
+    <div id="scanner-view" class="scanner-view-container">
+      <!-- Upper Section: Hardware Scanner Unit (Faceplate) -->
+      <div class="scanner-unit" id="scanner-unit" data-model="BCT15X">
+        <!-- Scanner Display Panel (Left) -->
+        <section class="panel scanner-panel" id="scanner-panel">
       <div class="panel-header">
         <h2 data-i18n="scanner.title">📡 スキャナー</h2>
         <div class="status-badges" id="status-badges">
@@ -258,9 +260,12 @@
         </div>
       </div>
     </section>
+    </div><!-- /.scanner-unit -->
 
-    <!-- Reception Log -->
-    <section class="panel log-panel" id="log-panel">
+    <!-- Lower Section: Auxiliary Data & Logs -->
+    <div class="aux-data-grid" id="aux-data-grid">
+      <!-- Reception Log -->
+      <section class="panel log-panel" id="log-panel">
       <div class="panel-header">
         <h2 data-i18n="log.title">📋 受信ログ</h2>
         <div>
@@ -458,6 +463,7 @@
         </div>
       </div>
     </section>
+    </div><!-- /.aux-data-grid -->
 
   </div><!-- /#scanner-view -->
 
