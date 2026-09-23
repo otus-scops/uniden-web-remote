@@ -89,7 +89,10 @@ class SerialController extends EventEmitter {
       });
 
       this._parser = this._port.pipe(
-        new ReadlineParser({ delimiter: this._config.delimiter || '\r' })
+        new ReadlineParser({
+          delimiter: this._config.delimiter || '\r',
+          encoding: 'latin1',
+        })
       );
 
       // Data reception handler

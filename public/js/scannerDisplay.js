@@ -139,7 +139,9 @@ const scannerDisplay = (() => {
           textSpan.className = 'lcd-text';
           lineEl.appendChild(textSpan);
         }
-        textSpan.textContent = lineData.text || '';
+        // Ensure no stray replacement characters (\uFFFD) break UI rendering
+        const cleanText = (lineData.text || '').replace(/\uFFFD/g, ' ');
+        textSpan.textContent = cleanText;
 
         // Reversed cursor styling
         lineEl.classList.toggle('reversed', Boolean(lineData.isReversed));

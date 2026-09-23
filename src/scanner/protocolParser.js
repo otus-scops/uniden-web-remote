@@ -104,6 +104,93 @@ function formatFrequencyForFilename(rawFreq) {
 }
 
 /**
+ * Uniden custom LCD character mapping table
+ * Maps scanner internal font codes (0x80-0xFF, control codes) to clean Unicode characters
+ */
+const UNIDEN_CHAR_MAP = {
+  0x10: '▶',
+  0x11: '◀',
+  0x1E: '▲',
+  0x1F: '▼',
+  0x7F: ' ',
+  0x80: '↑',
+  0x81: '↓',
+  0x82: '→',
+  0x83: '←',
+  0x84: '█',
+  0x85: '▌',
+  0x86: '▪',
+  0x87: '▫',
+  0x88: '*',
+  0x89: '-',
+  0x8A: '•',
+  0x8B: '▲',
+  0x8C: '▼',
+  0x8D: '▶',
+  0x8E: '◀',
+  0x8F: '■',
+  0x90: 'S',
+  0x91: '0',
+  0x92: '1',
+  0x93: '2',
+  0x94: '3',
+  0x95: '4',
+  0x96: '5',
+  0x97: '6',
+  0x98: '7',
+  0x99: '8',
+  0x9A: '9',
+  0x9B: '*',
+  0x9C: '-',
+  0xA0: ' ', // Non-breaking space
+  0xFF: ' ', // Empty fill
+};
+
+/**
+ * Sanitize LCD line text by translating Uniden custom character codes to Unicode
+ * and stripping invalid replacement characters (\uFFFD).
+ * @param {string} text - Raw LCD text string
+ * @returns {string} Sanitized displayable text
+ */
+function sanitizeLcdText(text) {
+  if (!text || typeof text !== 'string') return '';
+
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+
+    // Standard printable ASCII (0x20 ' ' to 0x7E '~')
+    if (code >= 0x20 && code <= 0x7E) {
+      result += text[i];
+      continue;
+    }
+
+    // Check specific mapping table
+    if (UNIDEN_CHAR_MAP[code] !== undefined) {
+      result += UNIDEN_CHAR_MAP[code];
+      continue;
+    }
+
+    // Unicode replacement character (\uFFFD) -> replace with space
+    if (code === 0xFFFD) {
+      result += ' ';
+      continue;
+    }
+
+    // Other non-printable or extended codes
+    if (code >= 0x80 && code <= 0xFF) {
+      result += ' ';
+    } else if (code < 0x20) {
+      result += ' ';
+    } else {
+      result += text[i];
+    }
+  }
+
+  return result;
+}
+
+/**
  * Parse GLG (Get LCD / Reception State) response
  * @param {string} rawResponse - Raw GLG response string from BCT15X
  * @returns {Object|null} Parsed object, or null if unparseable
@@ -161,9 +248,9 @@ function parseGlgResponse(rawResponse) {
     modulation: getField(fields, GlgFields.MOD),
     attenuator: getField(fields, GlgFields.ATT),
     ctcssDcs: getField(fields, GlgFields.CTCSS_DCS),
-    name1: getField(fields, GlgFields.NAME1),
-    name2: getField(fields, GlgFields.NAME2),
-    name3: getField(fields, GlgFields.NAME3),
+    name1: sanitizeLcdText(getField(fields, GlgFields.NAME1)),
+    name2: sanitizeLcdText(getField(fields, GlgFields.NAME2)),
+    name3: sanitizeLcdText(getField(fields, GlgFields.NAME3)),
     squelch: getField(fields, GlgFields.SQL),
     mute: getField(fields, GlgFields.MUT),
     sysTag: getField(fields, GlgFields.SYS_TAG),
@@ -222,7 +309,7 @@ function parseStsResponse(rawResponse) {
 
     lines.push({
       index: lines.length + 1,
-      text: charText !== undefined ? charText : '',
+      text: sanitizeLcdText(charText !== undefined ? charText : ''),
       mode: modeStr,
       isReversed,
       isBlinking,
@@ -432,6 +519,8 @@ module.exports = {
   isErrorResponse,
   formatFrequency,
   formatFrequencyForFilename,
+  sanitizeLcdText,
+  UNIDEN_CHAR_MAP,
   ErrorCodes,
   GlgFields,
   ModulationNames,
