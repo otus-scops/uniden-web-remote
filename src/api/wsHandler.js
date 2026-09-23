@@ -126,6 +126,14 @@ class WsHandler {
       });
     });
 
+    // Log entry updated (e.g. recording file attached)
+    this._scannerState.on('logEntryUpdated', (data) => {
+      this._broadcast({
+        type: 'logEntryUpdated',
+        data,
+      });
+    });
+
     // Recording start
     this._audioRecorder.on('recordingStart', (data) => {
       this._broadcast({
@@ -144,6 +152,7 @@ class WsHandler {
         data: {
           filename: data.filename,
           durationSec: data.durationSec,
+          saved: data.saved,
         },
       });
     });

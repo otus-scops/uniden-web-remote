@@ -220,6 +220,9 @@ class AppServer {
 
     this._audioRecorder.on('recordingStop', (data) => {
       console.log(`[Server] ⏹️  Recording stopped: ${data.filename} (${data.durationSec}s)`);
+      if (data.saved) {
+        this._scannerState.attachRecordingFile(data.filename);
+      }
     });
 
     this._audioRecorder.on('recordingError', (data) => {

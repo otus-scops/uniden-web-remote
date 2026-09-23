@@ -263,12 +263,44 @@ const recordingPanel = (() => {
   /**
    * Play recording file by filename
    * @param {string} filename - Filename to play
+   * @param {Object} [meta] - Optional fallback metadata if not in current recordings list
    */
-  function onPlay(filename) {
+  function onPlay(filename, meta = {}) {
     const targetIndex = recordings.findIndex((r) => r.filename === filename);
-    if (targetIndex === -1) return;
+    if (targetIndex !== -1) {
+      playAtIndex(targetIndex);
+      return;
+    }
 
-    playAtIndex(targetIndex);
+    // Direct playback for files outside active filter / current list
+    currentlyPlaying = filename;
+    currentIndex = -1;
+
+    const container = document.getElementById('audio-player-container');
+    const player = document.getElementById('audio-player');
+    const nameSpan = document.getElementById('now-playing-name');
+    const tagsSpan = document.getElementById('now-playing-tags');
+
+    if (container) container.classList.remove('hidden');
+
+    const title = meta.channel ? `${meta.channel} (${meta.frequency || ''}MHz)` : filename;
+    if (nameSpan) nameSpan.textContent = title;
+
+    if (tagsSpan) {
+      const tags = [];
+      if (meta.system) tags.push(`<span class="smart-player-tag">${escapeHtml(meta.system)}</span>`);
+      if (meta.department) tags.push(`<span class="smart-player-tag">${escapeHtml(meta.department)}</span>`);
+      tagsSpan.innerHTML = tags.join(' ');
+    }
+
+    if (player) {
+      const encodedPath = filename.split('/').map(encodeURIComponent).join('/');
+      player.src = `/api/recordings/${encodedPath}`;
+      player.playbackRate = playbackRate;
+      player.play().catch(() => {});
+    }
+
+    renderList();
   }
 
   /**

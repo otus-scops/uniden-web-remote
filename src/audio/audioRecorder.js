@@ -195,57 +195,69 @@ class AudioRecorder extends EventEmitter {
     this.emit('recordingStop', result);
 
     // Delete recordings that are too short (less than 1 second)
-    if (duration < 1.0 && this._currentFilePath && fs.existsSync(this._currentFilePath)) {
-      try {
-        fs.unlinkSync(this._currentFilePath);
-        console.log(`[AudioRecorder] Removed short duration recording: ${result.filename}`);
-      } catch {
-        // Ignore error
-      }
-      // Write sidecar JSON metadata and add to store
-      try {
-        const jsonPath = this._currentFilePath.replace(/\.[^.]+$/, '.json');
-        const metadata = {
-          filename: result.filename,
-          startTime: this._recordingStartTime ? this._recordingStartTime.toISOString() : null,
-          endTime: endTime.toISOString(),
-          durationSec: result.durationSec,
-          system: this._currentReception ? this._currentReception.system || '' : '',
-          department: this._currentReception ? this._currentReception.department || '' : '',
-          channel: this._currentReception ? this._currentReception.channel || '' : '',
-          frequency: this._currentReception ? this._currentReception.freqTgid || this._currentReception.rawFreqTgid || '' : '',
-          freqForFilename: this._currentReception ? this._currentReception.freqForFilename || '' : '',
-          modulation: this._currentReception ? this._currentReception.modulation || '' : '',
-          tone: this._currentReception ? this._currentReception.ctcssDcs || '' : '',
-        };
-        fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2), 'utf8');
-
-        // Add to recording store
-        if (this._recordingStore) {
-          let stat = { size: 0, birthtime: new Date(), mtime: new Date() };
-          try {
-            stat = fs.statSync(this._currentFilePath);
-          } catch {
-            // Ignore
-          }
-          this._recordingStore.add({
-            filename: result.filename,
-            size: stat.size,
-            sizeFormatted: formatFileSize(stat.size),
-            createdAt: metadata.startTime || stat.birthtime.toISOString(),
-            modifiedAt: metadata.endTime || stat.mtime.toISOString(),
-            durationSec: result.durationSec,
-            system: metadata.system || 'General',
-            department: metadata.department || 'Default',
-            channel: metadata.channel || 'Ch',
-            frequency: metadata.frequency || '',
-            modulation: metadata.modulation || '',
-            meta: metadata,
-          });
+    if (duration < 1.0) {
+      if (this._currentFilePath && fs.existsSync(this._currentFilePath)) {
+        try {
+          fs.unlinkSync(this._currentFilePath);
+          console.log(`[AudioRecorder] Removed short duration recording: ${result.filename}`);
+        } catch {
+          // Ignore error
         }
-      } catch (err) {
-        console.warn('[AudioRecorder] Failed to write sidecar metadata or update store:', err.message);
       }
+      result.saved = false;
+    } else {
+      result.saved = true;
+      // Write sidecar JSON metadata and add to store for valid recordings
+      const currentFilePath = this._currentFilePath;
+      const metadata = {
+        filename: result.filename,
+        startTime: this._recordingStartTime ? this._recordingStartTime.toISOString() : null,
+        endTime: endTime.toISOString(),
+        durationSec: result.durationSec,
+        system: this._currentReception ? this._currentReception.system || '' : '',
+        department: this._currentReception ? this._currentReception.department || '' : '',
+        channel: this._currentReception ? this._currentReception.channel || '' : '',
+        frequency: this._currentReception ? this._currentReception.freqTgid || this._currentReception.rawFreqTgid || '' : '',
+        freqForFilename: this._currentReception ? this._currentReception.freqForFilename || '' : '',
+        modulation: this._currentReception ? this._currentReception.modulation || '' : '',
+        tone: this._currentReception ? this._currentReception.ctcssDcs || '' : '',
+      };
+
+      // Write metadata and add to store after a slight delay to allow SoX encoder to finish writing MP3
+      setTimeout(() => {
+        try {
+          if (currentFilePath && fs.existsSync(currentFilePath)) {
+            const jsonPath = currentFilePath.replace(/\.[^.]+$/, '.json');
+            fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2), 'utf8');
+
+            if (this._recordingStore) {
+              let stat = { size: 0, birthtime: new Date(), mtime: new Date() };
+              try {
+                stat = fs.statSync(currentFilePath);
+              } catch {
+                // Ignore
+              }
+              this._recordingStore.add({
+                filename: result.filename,
+                size: stat.size,
+                sizeFormatted: formatFileSize(stat.size),
+                createdAt: metadata.startTime || stat.birthtime.toISOString(),
+                modifiedAt: metadata.endTime || stat.mtime.toISOString(),
+                durationSec: result.durationSec,
+                system: metadata.system || 'General',
+                department: metadata.department || 'Default',
+                channel: metadata.channel || 'Ch',
+                frequency: metadata.frequency || '',
+                modulation: metadata.modulation || '',
+                meta: metadata,
+              });
+              console.log(`[AudioRecorder] Successfully added recording to store: ${result.filename} (${stat.size} bytes)`);
+            }
+          }
+        } catch (err) {
+          console.warn('[AudioRecorder] Failed to write sidecar metadata or update store:', err.message);
+        }
+      }, 150);
     }
 
     this._currentFilePath = null;

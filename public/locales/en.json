@@ -89,7 +89,9 @@
     "colNac": "P25 NAC",
     "colSignal": "Signal",
     "colDuration": "Duration",
-    "colAudio": "Audio"
+    "colAudio": "Audio",
+    "colPlayback": "Play",
+    "playTooltip": "Play recording"
   },
   "auth": {
     "login": "Login",

@@ -89,7 +89,9 @@
     "colNac": "P25 NAC",
     "colSignal": "シグナル",
     "colDuration": "秒数",
-    "colAudio": "録音"
+    "colAudio": "録音",
+    "colPlayback": "再生",
+    "playTooltip": "この通信の録音を再生"
   },
   "auth": {
     "login": "ログイン",

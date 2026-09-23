@@ -27,6 +27,7 @@ const activityLog = (() => {
    * @type {Array<Object>}
    */
   const AVAILABLE_COLUMNS = [
+    { id: 'playback',   label: '再生',         i18nKey: 'log.colPlayback',   field: 'recordingFile', cssClass: 'playback-cell' },
     { id: 'time',       label: '時刻',         i18nKey: 'log.colTime',       field: 'startTime',    cssClass: 'time-cell',  format: formatTime },
     { id: 'freqTgid',   label: '周波数/TGID',  i18nKey: 'log.colFreq',       field: 'freqTgid',     cssClass: 'freq-cell',  fallbackField: 'rawFreqTgid' },
     { id: 'system',     label: 'システム',     i18nKey: 'log.colSystem',     field: 'system',       cssClass: '' },
@@ -45,7 +46,10 @@ const activityLog = (() => {
    */
   function getColumnLabel(col) {
     if (typeof i18n !== 'undefined' && col.i18nKey) {
-      return i18n.t(col.i18nKey);
+      const translated = i18n.t(col.i18nKey);
+      if (translated && translated !== col.i18nKey) {
+        return translated;
+      }
     }
     return col.label;
   }
@@ -54,7 +58,7 @@ const activityLog = (() => {
    * Default active column IDs with order
    * @type {Array<string>}
    */
-  const DEFAULT_COLUMN_IDS = ['time', 'freqTgid', 'system', 'channel', 'modulation', 'duration'];
+  const DEFAULT_COLUMN_IDS = ['playback', 'time', 'freqTgid', 'system', 'channel', 'modulation', 'duration'];
 
   /**
    * Current active column IDs with ordering
@@ -73,6 +77,10 @@ const activityLog = (() => {
         // Keep only column IDs that still exist in AVAILABLE_COLUMNS
         const validIds = AVAILABLE_COLUMNS.map(c => c.id);
         activeColumnIds = parsed.filter(id => validIds.includes(id));
+        // Auto-insert playback column if not present in legacy saved settings
+        if (!activeColumnIds.includes('playback')) {
+          activeColumnIds.unshift('playback');
+        }
         if (activeColumnIds.length === 0) {
           activeColumnIds = [...DEFAULT_COLUMN_IDS];
         }
@@ -334,6 +342,9 @@ const activityLog = (() => {
   function addLogRow(entry, isNew) {
     const tbody = document.getElementById('log-tbody');
     const tr = document.createElement('tr');
+    if (entry.id) {
+      tr.dataset.logId = String(entry.id);
+    }
 
     if (isNew) {
       tr.classList.add('new-entry');
@@ -343,6 +354,26 @@ const activityLog = (() => {
 
     for (const col of columns) {
       const td = document.createElement('td');
+
+      // Playback action column
+      if (col.id === 'playback') {
+        td.className = 'playback-cell';
+        if (entry.recordingFile) {
+          const btn = document.createElement('button');
+          btn.className = 'btn-log-play';
+          btn.title = typeof i18n !== 'undefined' ? i18n.t('log.playTooltip') : 'この通信の録音を再生';
+          btn.innerHTML = '▶';
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            onPlayLogAudio(entry.recordingFile, tr, entry);
+          };
+          td.appendChild(btn);
+        } else {
+          td.innerHTML = '<span class="log-no-audio">-</span>';
+        }
+        tr.appendChild(td);
+        continue;
+      }
 
       // Retrieve cell value
       let value = entry[col.field];
@@ -698,11 +729,95 @@ const activityLog = (() => {
     }
   });
 
+  /**
+   * Play audio recording associated with a log row
+   * @param {string} filename - Recording filename
+   * @param {HTMLElement} trElement - Table row element
+   * @param {Object} [entry] - Log entry metadata
+   */
+  function onPlayLogAudio(filename, trElement, entry = {}) {
+    if (!filename || typeof recordingPanel === 'undefined') return;
+
+    // Remove active highlight from previously playing rows
+    const playingRows = document.querySelectorAll('#log-tbody tr.log-row-playing');
+    playingRows.forEach(r => r.classList.remove('log-row-playing'));
+
+    if (trElement) {
+      trElement.classList.add('log-row-playing');
+    }
+
+    // Call recordingPanel player with metadata fallback
+    recordingPanel.onPlay(filename, {
+      system: entry.system,
+      department: entry.department,
+      channel: entry.channel,
+      frequency: entry.freqTgid || entry.rawFreqTgid,
+    });
+
+    // Listen to audio player pause/ended to clear highlight
+    const player = document.getElementById('audio-player');
+    if (player) {
+      const onEndedOrPaused = () => {
+        if (trElement) trElement.classList.remove('log-row-playing');
+        player.removeEventListener('ended', onEndedOrPaused);
+        player.removeEventListener('pause', onEndedOrPaused);
+      };
+      player.addEventListener('ended', onEndedOrPaused);
+      player.addEventListener('pause', onEndedOrPaused);
+    }
+  }
+
+  /**
+   * Handle real-time log entry update (e.g. recording file attached)
+   * @param {Object} data - Update payload
+   * @param {Object} data.logEntry - Updated log entry
+   */
+  function onLogEntryUpdated(data) {
+    if (!data || !data.logEntry) return;
+
+    const updated = data.logEntry;
+
+    // Update in memory array
+    const existing = logEntries.find(e => e.id === updated.id);
+    if (existing) {
+      existing.recordingFile = updated.recordingFile;
+    } else if (logEntries.length > 0 && !logEntries[0].recordingFile) {
+      logEntries[0].recordingFile = updated.recordingFile;
+    }
+
+    // Update in DOM
+    const tbody = document.getElementById('log-tbody');
+    if (!tbody) return;
+
+    let tr = tbody.querySelector(`tr[data-log-id="${updated.id}"]`);
+    if (!tr && tbody.firstChild) {
+      tr = tbody.firstChild; // Most recent row
+    }
+
+    if (tr && updated.recordingFile) {
+      const cell = tr.querySelector('.playback-cell');
+      if (cell) {
+        cell.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.className = 'btn-log-play';
+        btn.title = typeof i18n !== 'undefined' ? i18n.t('log.playTooltip') : 'この通信の録音を再生';
+        btn.innerHTML = '▶';
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          onPlayLogAudio(updated.recordingFile, tr, updated);
+        };
+        cell.appendChild(btn);
+      }
+    }
+  }
+
   // Public API
   return {
     onReceptionStart,
     onReceptionEnd,
     onLogData,
+    onLogEntryUpdated,
+    onPlayLogAudio,
     onExportCsv,
     onClearLog,
     onOpenColumnSettings,

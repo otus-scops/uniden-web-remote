@@ -322,6 +322,12 @@ const app = (() => {
         }
         break;
 
+      case 'logEntryUpdated':
+        if (typeof activityLog !== 'undefined') {
+          activityLog.onLogEntryUpdated(message.data);
+        }
+        break;
+
       case 'serialData':
         // Raw serial debug data
         break;

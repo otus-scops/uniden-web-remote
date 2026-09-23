@@ -180,6 +180,7 @@ class ScannerState extends EventEmitter {
       startTime: this._receptionStartTime ? this._receptionStartTime.toISOString() : null,
       endTime: endTime.toISOString(),
       durationSec: Math.round(duration * 10) / 10,
+      recordingFile: null,
       ...this.currentReception,
     };
 
@@ -213,6 +214,31 @@ class ScannerState extends EventEmitter {
     this._receptionStartTime = null;
 
     this.emit('statusUpdate', this.getStatus());
+  }
+
+  /**
+   * Attach recorded audio file path to matching or most recent log entry
+   * @param {string} filename - Relative path of recording file
+   * @param {number} [logEntryId] - Optional log entry ID
+   * @returns {Object|null} Updated log entry
+   */
+  attachRecordingFile(filename, logEntryId) {
+    if (!filename) return null;
+
+    let targetEntry = null;
+    if (logEntryId) {
+      targetEntry = this._receptionLog.find(e => e.id === logEntryId);
+    } else if (this._receptionLog.length > 0) {
+      // Default to most recent entry if not yet assigned
+      targetEntry = this._receptionLog.find(e => !e.recordingFile) || this._receptionLog[0];
+    }
+
+    if (targetEntry) {
+      targetEntry.recordingFile = filename;
+      this.emit('logEntryUpdated', { logEntry: targetEntry });
+      return targetEntry;
+    }
+    return null;
   }
 
   /**
