@@ -228,6 +228,21 @@ class AppServer {
     this._audioRecorder.on('recordingError', (data) => {
       console.error(`[Server] ❌ Recording error: ${data.error}`);
     });
+
+    // Scanner State -> Max Reception Duration Exceeded (Forced Scan Resume)
+    this._scannerState.on('receptionMaxDurationExceeded', async (data) => {
+      const channelInfo = (data.reception && data.reception.freqTgid)
+        ? data.reception.freqTgid
+        : 'current channel';
+      console.log(`[Server] ⏱️ Maximum reception duration (${data.durationSec}s) reached on ${channelInfo}. Auto-resuming scan...`);
+
+      try {
+        await this._serialController.startScan();
+        this._scannerState.setHoldMode(false);
+      } catch (err) {
+        console.error('[Server] ❌ Failed to auto-resume scan after max reception timeout:', err.message);
+      }
+    });
   }
 
   /**

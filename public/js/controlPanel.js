@@ -71,6 +71,27 @@ const controlPanel = (() => {
   }
 
   /**
+   * Handle maximum reception duration select change
+   * @param {string|number} sec - Duration in seconds (0 = disabled)
+   */
+  async function onMaxReceptionDurationChange(sec) {
+    app.requireOperator(async () => {
+      try {
+        const duration = parseInt(sec, 10) || 0;
+        await app.fetchApi('/config', {
+          method: 'PUT',
+          body: JSON.stringify({
+            scanner: { maxReceptionDurationSec: duration },
+          }),
+        });
+        console.log(`[ControlPanel] Updated max reception duration: ${duration}s`);
+      } catch (err) {
+        console.error('[ControlPanel] Failed to update max reception duration:', err);
+      }
+    });
+  }
+
+  /**
    * Handle scanner hardware volume change
    * @param {number} level - 0-15
    */
@@ -214,6 +235,14 @@ const controlPanel = (() => {
     if (toggle && status.autoRecordEnabled !== undefined) {
       toggle.checked = status.autoRecordEnabled;
     }
+
+    // Synchronize max reception duration select
+    if (status.maxReceptionDurationSec !== undefined) {
+      const select = document.getElementById('select-max-reception');
+      if (select && document.activeElement !== select) {
+        select.value = String(status.maxReceptionDurationSec);
+      }
+    }
   }
 
   /**
@@ -233,6 +262,12 @@ const controlPanel = (() => {
         const toggle = document.querySelector('#toggle-auto-record input');
         if (toggle) {
           toggle.checked = data.audio.autoRecord;
+        }
+      }
+      if (data && data.scanner && data.scanner.maxReceptionDurationSec !== undefined) {
+        const select = document.getElementById('select-max-reception');
+        if (select) {
+          select.value = String(data.scanner.maxReceptionDurationSec);
         }
       }
     } catch (err) {
@@ -263,6 +298,7 @@ const controlPanel = (() => {
     onVolumeChange,
     onSquelchChange,
     onToggleAutoRecord,
+    onMaxReceptionDurationChange,
     onTemplateChange,
     onTemplatePreview,
     onSendCommand,

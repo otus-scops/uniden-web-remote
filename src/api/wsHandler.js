@@ -134,6 +134,18 @@ class WsHandler {
       });
     });
 
+    // Maximum reception duration exceeded (forced scan resume)
+    this._scannerState.on('receptionMaxDurationExceeded', (data) => {
+      this._broadcast({
+        type: 'scanTimeoutResumed',
+        data: {
+          freqTgid: data.reception ? data.reception.freqTgid : null,
+          durationSec: data.durationSec,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    });
+
     // Recording start
     this._audioRecorder.on('recordingStart', (data) => {
       this._broadcast({

@@ -50,6 +50,7 @@ services:
       # Scanner polling settings
       - POLL_INTERVAL=${POLL_INTERVAL:-200}
       - RECEPTION_TIMEOUT=${RECEPTION_TIMEOUT:-1500}
+      - MAX_RECEPTION_DURATION_SEC=${MAX_RECEPTION_DURATION_SEC:-0}
 
       # Timezone
       - TZ=${TZ:-Asia/Tokyo}

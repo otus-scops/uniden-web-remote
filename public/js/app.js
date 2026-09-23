@@ -319,6 +319,10 @@ const app = (() => {
         }
         break;
 
+      case 'scanTimeoutResumed':
+        console.log(`[App] ⏱️ Scan auto-resumed after exceeding ${message.data?.durationSec}s on ${message.data?.freqTgid || 'channel'}`);
+        break;
+
       case 'log':
         if (typeof activityLog !== 'undefined') {
           activityLog.onLogData(message.data);

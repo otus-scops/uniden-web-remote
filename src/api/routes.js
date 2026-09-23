@@ -96,6 +96,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   router.post('/scanner/scan', requireOperator(authConfig), async (req, res) => {
     try {
       const response = await serialController.startScan();
+      scannerState.setHoldMode(false);
       res.json({ action: 'scan', response });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -108,6 +109,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
   router.post('/scanner/hold', requireOperator(authConfig), async (req, res) => {
     try {
       const response = await serialController.hold();
+      scannerState.setHoldMode(true);
       res.json({ action: 'hold', response });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -357,6 +359,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
       scanner: {
         pollIntervalMs: config.scanner.pollIntervalMs,
         receptionTimeoutMs: config.scanner.receptionTimeoutMs,
+        maxReceptionDurationSec: config.scanner.maxReceptionDurationSec || 0,
       },
       gdrive: {
         enabled: config.gdrive.enabled,
@@ -386,6 +389,13 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     // Update reception timeout threshold
     if (updates.scanner && updates.scanner.receptionTimeoutMs) {
       config.scanner.receptionTimeoutMs = updates.scanner.receptionTimeoutMs;
+    }
+
+    // Update maximum reception duration before auto-resuming scan (0 = disabled)
+    if (updates.scanner && updates.scanner.maxReceptionDurationSec !== undefined) {
+      const sec = parseInt(updates.scanner.maxReceptionDurationSec, 10) || 0;
+      config.scanner.maxReceptionDurationSec = sec;
+      scannerState.setMaxReceptionDurationSec(sec);
     }
 
     res.json({ updated: true, config: req.body });

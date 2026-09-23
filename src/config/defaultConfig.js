@@ -48,6 +48,8 @@ const defaultConfig = {
     reconnectIntervalMs: 5000,
     /** Maximum activity log entries retained in memory */
     maxLogEntries: parseInt(process.env.MAX_LOG_ENTRIES, 10) || 10000,
+    /** Maximum consecutive reception duration (seconds) before forcing scan resume (0 = disabled/OFF) */
+    maxReceptionDurationSec: parseInt(process.env.MAX_RECEPTION_DURATION_SEC, 10) || 0,
   },
 
   /** Audio streaming and recording settings */

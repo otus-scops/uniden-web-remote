@@ -59,6 +59,15 @@ class ScannerState extends EventEmitter {
 
     /** @type {boolean} Auto-recording enabled flag */
     this.autoRecordEnabled = true;
+
+    /** @type {number} Maximum consecutive reception duration in seconds before forcing scan resume (0 = disabled/OFF) */
+    this.maxReceptionDurationSec = (config && config.maxReceptionDurationSec) ? parseInt(config.maxReceptionDurationSec, 10) : 0;
+
+    /** @type {boolean} Flag indicating whether scanner is in hold mode */
+    this.isHoldMode = false;
+
+    /** @type {number|null} Timer for maximum consecutive reception duration */
+    this._maxDurationTimer = null;
   }
 
   /**
@@ -110,6 +119,7 @@ class ScannerState extends EventEmitter {
 
     if (isNewReception) {
       this._receptionStartTime = new Date();
+      this._setMaxDurationTimer();
 
       /**
        * Reception start event
@@ -136,7 +146,67 @@ class ScannerState extends EventEmitter {
     // If timer is already running, do nothing (timeout will handle reception termination)
     if (!this.isReceiving) {
       this.currentReception = null;
+      this._clearMaxDurationTimer();
     }
+  }
+
+  /**
+   * Set timer for maximum consecutive reception duration
+   * @private
+   */
+  _setMaxDurationTimer() {
+    this._clearMaxDurationTimer();
+
+    // 0 = disabled/OFF, or hold mode is active: do not force scan resume
+    if (this.maxReceptionDurationSec <= 0 || this.isHoldMode) {
+      return;
+    }
+
+    this._maxDurationTimer = setTimeout(() => {
+      this._onMaxDurationExceeded();
+    }, this.maxReceptionDurationSec * 1000);
+  }
+
+  /**
+   * Clear maximum reception duration timer
+   * @private
+   */
+  _clearMaxDurationTimer() {
+    if (this._maxDurationTimer) {
+      clearTimeout(this._maxDurationTimer);
+      this._maxDurationTimer = null;
+    }
+  }
+
+  /**
+   * Handler invoked when maximum consecutive reception duration is reached
+   * @private
+   */
+  _onMaxDurationExceeded() {
+    this._clearMaxDurationTimer();
+
+    if (!this.isReceiving || this.isHoldMode || this.maxReceptionDurationSec <= 0) {
+      return;
+    }
+
+    const freq = (this.currentReception && this.currentReception.freqTgid)
+      ? this.currentReception.freqTgid
+      : 'current channel';
+    console.log(`[ScannerState] ⏱️ Maximum reception duration (${this.maxReceptionDurationSec}s) reached on ${freq}. Requesting scan resume.`);
+
+    /**
+     * Maximum reception duration exceeded event
+     * @event ScannerState#receptionMaxDurationExceeded
+     * @type {Object}
+     * @property {Object} reception - Current reception metadata
+     * @property {number} durationSec - Configured maximum duration
+     * @property {Date} startTime - Reception start time
+     */
+    this.emit('receptionMaxDurationExceeded', {
+      reception: this.currentReception ? { ...this.currentReception } : {},
+      durationSec: this.maxReceptionDurationSec,
+      startTime: this._receptionStartTime,
+    });
   }
 
   /**
@@ -166,6 +236,8 @@ class ScannerState extends EventEmitter {
    * @private
    */
   _onReceptionEnd() {
+    this._clearMaxDurationTimer();
+
     if (!this.isReceiving) {
       return;
     }
@@ -293,6 +365,36 @@ class ScannerState extends EventEmitter {
   }
 
   /**
+   * Set hold mode state
+   * @param {boolean} isHold - Whether scanner is in hold mode
+   */
+  setHoldMode(isHold) {
+    this.isHoldMode = !!isHold;
+    if (this.isHoldMode) {
+      this._clearMaxDurationTimer();
+    } else if (this.isReceiving && this.maxReceptionDurationSec > 0) {
+      this._setMaxDurationTimer();
+    }
+    this.emit('statusUpdate', this.getStatus());
+  }
+
+  /**
+   * Set maximum consecutive reception duration in seconds
+   * @param {number} sec - Duration in seconds (0 = disabled/OFF)
+   */
+  setMaxReceptionDurationSec(sec) {
+    const parsed = parseInt(sec, 10);
+    this.maxReceptionDurationSec = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+    console.log(`[ScannerState] ⏱️ Max reception duration set to: ${this.maxReceptionDurationSec}s`);
+
+    if (this.maxReceptionDurationSec <= 0 || this.isHoldMode) {
+      this._clearMaxDurationTimer();
+    } else if (this.isReceiving) {
+      this._setMaxDurationTimer();
+    }
+  }
+
+  /**
    * Get current scanner status snapshot
    * @returns {Object} Status snapshot object
    */
@@ -304,6 +406,8 @@ class ScannerState extends EventEmitter {
       isReceiving: this.isReceiving,
       isRecording: this.isRecording,
       autoRecordEnabled: this.autoRecordEnabled,
+      maxReceptionDurationSec: this.maxReceptionDurationSec,
+      isHoldMode: this.isHoldMode,
       rssi: this.rssi,
       currentReception: this.currentReception ? { ...this.currentReception } : null,
       timestamp: new Date().toISOString(),

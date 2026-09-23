@@ -153,9 +153,19 @@ All configurable options supported in `.env` or `docker-compose.yml`.
 | `POLL_INTERVAL` | `200` | Fast status polling interval in ms (GLG command) |
 | `STATUS_INTERVAL` | `1000` | Full status polling interval in ms (STS command) |
 | `RECEPTION_TIMEOUT`| `1500` | Signal drop threshold in ms to mark transmission as ended |
+| `MAX_RECEPTION_DURATION_SEC` | `0` | Max consecutive reception duration in seconds before forcing scan resume (`0` = disabled/OFF) |
 | `MAX_LOG_ENTRIES` | `10000` | Maximum reception activity log records retained in memory |
 | `TZ` | `Asia/Tokyo` | Container timezone |
 | `MOCK_MODE` | `false` | Enable simulation mode without physical hardware |
+
+> [!TIP]
+> **💡 Design Intent for Max Reception Duration (Forced Scan Resume)**:
+> - **Recommended Hybrid Setup**:
+>   This feature is specifically designed to be paired with **hardware positive delay (e.g., standard `+2s` delay set on the scanner itself)** while emulating negative delay via software.
+>   - **Scanner Hardware Delay (`+2s`)**: Holds the channel across pauses to ensure two-way conversations and replies aren't cut short.
+>   - **Software Max Duration (e.g., `30s`)**: Prevents the scanner from getting permanently stuck on weak carrier noise or long uninterrupted chatter, automatically forcing scan resumption.
+> - **When to Keep this Feature Disabled (`0` / OFF)**:
+>   If your scanner is already configured with hardware negative delay (`-2s`, `-5s`, `-10s`) or if you intend to listen to long continuous transmissions without interruption, set this value to `0` (Unlimited / OFF) in the Web UI or via this environment variable. When set to `0`, all timer and scan resume routines are completely bypassed without interfering with hardware behavior.
 
 ---
 
