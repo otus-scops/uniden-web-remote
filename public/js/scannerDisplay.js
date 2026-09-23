@@ -40,12 +40,14 @@ const scannerDisplay = (() => {
       virtualLcdScreen: document.getElementById('virtual-lcd-screen'),
       btnModeCyber: document.getElementById('btn-mode-cyber'),
       btnModeLcd: document.getElementById('btn-mode-lcd'),
+      lcdTextArea: document.getElementById('lcd-text-area'),
       lcdLines: [
         document.getElementById('lcd-line-1'),
         document.getElementById('lcd-line-2'),
         document.getElementById('lcd-line-3'),
         document.getElementById('lcd-line-4'),
-      ],
+        document.getElementById('lcd-line-5'),
+      ].filter(Boolean),
       lcdIndScan: document.getElementById('lcd-ind-scan'),
       lcdIndHold: document.getElementById('lcd-ind-hold'),
       lcdIndPri: document.getElementById('lcd-ind-pri'),
@@ -126,11 +128,20 @@ const scannerDisplay = (() => {
       setDisplayMode('cyber');
     }
 
-    // Update 4 LCD lines
+    // Update LCD lines (support 4, 5, or up to 8 lines dynamically)
     if (stsData.lines && Array.isArray(stsData.lines)) {
-      for (let i = 0; i < 4; i++) {
-        const lineEl = el.lcdLines && el.lcdLines[i];
+      const lineCount = stsData.lines.length;
+      for (let i = 0; i < lineCount; i++) {
+        let lineEl = el.lcdLines && el.lcdLines[i];
+        if (!lineEl && el.lcdTextArea) {
+          lineEl = document.createElement('div');
+          lineEl.className = 'lcd-line';
+          lineEl.id = `lcd-line-${i + 1}`;
+          el.lcdTextArea.appendChild(lineEl);
+          el.lcdLines.push(lineEl);
+        }
         if (!lineEl) continue;
+
         const lineData = stsData.lines[i] || { text: '', isReversed: false, isBlinking: false };
 
         let textSpan = lineEl.querySelector('.lcd-text');
@@ -143,10 +154,23 @@ const scannerDisplay = (() => {
         const cleanText = (lineData.text || '').replace(/\uFFFD/g, ' ');
         textSpan.textContent = cleanText;
 
+        // Tooltip showing raw hex for easy character code inspection
+        if (lineData.rawHex) {
+          lineEl.title = `Line ${i + 1}: ${lineData.rawHex}`;
+        }
+
         // Reversed cursor styling
         lineEl.classList.toggle('reversed', Boolean(lineData.isReversed));
         // Blink styling
         lineEl.classList.toggle('blink', Boolean(lineData.isBlinking));
+        lineEl.style.display = 'flex';
+      }
+
+      // Hide extra lines if scanner sends fewer lines
+      for (let i = lineCount; i < el.lcdLines.length; i++) {
+        if (el.lcdLines[i]) {
+          el.lcdLines[i].style.display = 'none';
+        }
       }
     }
 

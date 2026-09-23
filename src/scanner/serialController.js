@@ -286,6 +286,10 @@ class SerialController extends EventEmitter {
   async pollStatus() {
     try {
       const response = await this.sendCommand('STS');
+      if (response && !this._mockMode) {
+        console.log('[DEBUG STS RAW]:', response);
+        console.log('[DEBUG STS HEX]:', Buffer.from(response, 'latin1').toString('hex'));
+      }
       const parsed = parseStsResponse(response);
       if (parsed) {
         this.emit('stsUpdate', parsed);

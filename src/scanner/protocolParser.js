@@ -129,19 +129,6 @@ const UNIDEN_CHAR_MAP = {
   0x8D: '▶',
   0x8E: '◀',
   0x8F: '■',
-  0x90: 'S',
-  0x91: '0',
-  0x92: '1',
-  0x93: '2',
-  0x94: '3',
-  0x95: '4',
-  0x96: '5',
-  0x97: '6',
-  0x98: '7',
-  0x99: '8',
-  0x9A: '9',
-  0x9B: '*',
-  0x9C: '-',
   0xA0: ' ', // Non-breaking space
   0xFF: ' ', // Empty fill
 };
@@ -298,8 +285,8 @@ function parseStsResponse(rawResponse) {
     const charText = fields[idx];
     const mode = fields[idx + 1];
 
-    // If 4 lines are already collected and the remaining fields are trailing indicators (<= 3 fields left or 1-char field), stop line parsing
-    if (lines.length >= 4 && (fields.length - idx <= 3 || (charText && charText.length <= 1))) {
+    // If remaining fields are trailing 1-char indicator flags (SQL, MUT, SIG), stop line parsing
+    if (charText !== undefined && charText.length <= 1 && !isNaN(parseInt(charText, 10)) && lines.length >= 4) {
       break;
     }
 
@@ -307,9 +294,12 @@ function parseStsResponse(rawResponse) {
     const isReversed = modeStr.includes('1') || modeStr === 'R';
     const isBlinking = modeStr.includes('2') || modeStr === 'B';
 
+    const rawHex = Buffer.from(charText || '', 'latin1').toString('hex');
     lines.push({
       index: lines.length + 1,
       text: sanitizeLcdText(charText !== undefined ? charText : ''),
+      rawText: charText !== undefined ? charText : '',
+      rawHex,
       mode: modeStr,
       isReversed,
       isBlinking,
@@ -337,6 +327,7 @@ function parseStsResponse(rawResponse) {
   return {
     command: 'STS',
     raw: trimmed,
+    rawHex: Buffer.from(rawResponse, 'latin1').toString('hex'),
     displayForm,
     lines,
     lineCount: lines.length,
