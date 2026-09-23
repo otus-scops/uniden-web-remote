@@ -37,3 +37,4 @@ docker-compose.pro.yml
 .agents/
 .vscode/
 .idea/
+docs/
