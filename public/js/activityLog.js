@@ -746,13 +746,17 @@ const activityLog = (() => {
       trElement.classList.add('log-row-playing');
     }
 
-    // Call recordingPanel player with metadata fallback
-    recordingPanel.onPlay(filename, {
-      system: entry.system,
-      department: entry.department,
-      channel: entry.channel,
-      frequency: entry.freqTgid || entry.rawFreqTgid,
-    });
+    // Call recordingPanel player in single-play mode with metadata fallback
+    recordingPanel.onPlay(
+      filename,
+      {
+        system: entry.system,
+        department: entry.department,
+        channel: entry.channel,
+        frequency: entry.freqTgid || entry.rawFreqTgid,
+      },
+      { isSinglePlay: true }
+    );
 
     // Listen to audio player pause/ended to clear highlight
     const player = document.getElementById('audio-player');

@@ -428,23 +428,32 @@
         <div class="rec-filter-grid">
           <div class="rec-filter-item">
             <label for="rec-filter-date" data-i18n="recordings.datePreset">期間</label>
-            <select id="rec-filter-date" onchange="recordingPanel.onFilterChange()">
+            <select id="rec-filter-date" onchange="recordingPanel.onDatePresetChange()">
               <option value="" data-i18n="recordings.allDates">すべての期間</option>
               <option value="today" data-i18n="recordings.today">今日</option>
               <option value="yesterday" data-i18n="recordings.yesterday">昨日</option>
               <option value="24h" data-i18n="recordings.last24h">直近24時間</option>
               <option value="7d" data-i18n="recordings.last7d">過去7日間</option>
+              <option value="custom" data-i18n="recordings.customDate">日時指定 (カスタム)</option>
             </select>
           </div>
           <div class="rec-filter-item">
-            <label for="rec-filter-system" data-i18n="recordings.system">システム</label>
-            <select id="rec-filter-system" onchange="recordingPanel.onFilterChange()">
+            <label for="rec-filter-date-from" data-i18n="recordings.dateFrom">開始日時 (いつから)</label>
+            <input type="datetime-local" id="rec-filter-date-from" onchange="recordingPanel.onDateRangeChange()">
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-date-to" data-i18n="recordings.dateTo">終了日時 (いつまで)</label>
+            <input type="datetime-local" id="rec-filter-date-to" onchange="recordingPanel.onDateRangeChange()">
+          </div>
+          <div class="rec-filter-item">
+            <label for="rec-filter-system" data-i18n="recordings.system">システム (空港/地域)</label>
+            <select id="rec-filter-system" onchange="recordingPanel.onSystemChange()">
               <option value="" data-i18n="recordings.allSystems">すべてのシステム</option>
             </select>
           </div>
           <div class="rec-filter-item">
             <label for="rec-filter-department" data-i18n="recordings.department">デパートメント</label>
-            <select id="rec-filter-department" onchange="recordingPanel.onFilterChange()">
+            <select id="rec-filter-department" onchange="recordingPanel.onDepartmentChange()">
               <option value="" data-i18n="recordings.allDepartments">すべてのデパートメント</option>
             </select>
           </div>

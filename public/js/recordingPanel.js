@@ -16,6 +16,9 @@ const recordingPanel = (() => {
   /** @type {string|null} Currently playing filename */
   let currentlyPlaying = null;
 
+  /** @type {boolean} Single track play mode (stops when track ends, no auto-next) */
+  let isSinglePlayMode = false;
+
   /** @type {boolean} Auto-play next track */
   let isAutoPlayNext = true;
 
@@ -28,6 +31,8 @@ const recordingPanel = (() => {
   /** @type {Object} Filter criteria */
   let currentFilters = {
     datePreset: '',
+    dateFrom: '',
+    dateTo: '',
     system: '',
     department: '',
     channel: '',
@@ -41,15 +46,27 @@ const recordingPanel = (() => {
   /** @type {boolean} Tags fetched flag */
   let tagsLoaded = false;
 
+  /** @type {Object} Raw tags and hierarchy storage */
+  let rawTags = {
+    systems: [],
+    departments: [],
+    channels: [],
+    hierarchy: {},
+  };
+
   /**
-   * Fetch distinct systems, departments, channels for filter options
+   * Fetch distinct systems, departments, channels and hierarchy for filter options
    */
   async function fetchTags() {
     try {
       const tags = await app.fetchApi('/recordings/tags');
-      populateTagOptions('rec-filter-system', tags.systems || []);
-      populateTagOptions('rec-filter-department', tags.departments || []);
-      populateTagOptions('rec-filter-channel', tags.channels || []);
+      rawTags = {
+        systems: tags.systems || [],
+        departments: tags.departments || [],
+        channels: tags.channels || [],
+        hierarchy: tags.hierarchy || {},
+      };
+      updateTagDropdowns();
       tagsLoaded = true;
     } catch {
       // Ignore
@@ -57,15 +74,59 @@ const recordingPanel = (() => {
   }
 
   /**
+   * Update system, department, channel dropdowns dynamically based on selected hierarchy
+   */
+  function updateTagDropdowns() {
+    const sysEl = document.getElementById('rec-filter-system');
+    const deptEl = document.getElementById('rec-filter-department');
+    const chnEl = document.getElementById('rec-filter-channel');
+
+    // Populate systems
+    populateTagOptions('rec-filter-system', rawTags.systems, currentFilters.system);
+
+    // Determine available departments based on selected system
+    let availableDepartments = [];
+    if (currentFilters.system && rawTags.hierarchy[currentFilters.system]) {
+      availableDepartments = Object.keys(rawTags.hierarchy[currentFilters.system]).sort();
+    } else {
+      availableDepartments = rawTags.departments;
+    }
+    if (currentFilters.department && !availableDepartments.includes(currentFilters.department)) {
+      currentFilters.department = '';
+      if (deptEl) deptEl.value = '';
+    }
+    populateTagOptions('rec-filter-department', availableDepartments, currentFilters.department);
+
+    // Determine available channels based on selected system and department
+    let availableChannels = [];
+    if (currentFilters.system && currentFilters.department && rawTags.hierarchy[currentFilters.system]?.[currentFilters.department]) {
+      availableChannels = rawTags.hierarchy[currentFilters.system][currentFilters.department];
+    } else if (currentFilters.system && rawTags.hierarchy[currentFilters.system]) {
+      const chnSet = new Set();
+      Object.values(rawTags.hierarchy[currentFilters.system]).forEach((list) => {
+        list.forEach((ch) => chnSet.add(ch));
+      });
+      availableChannels = Array.from(chnSet).sort();
+    } else {
+      availableChannels = rawTags.channels;
+    }
+    if (currentFilters.channel && !availableChannels.includes(currentFilters.channel)) {
+      currentFilters.channel = '';
+      if (chnEl) chnEl.value = '';
+    }
+    populateTagOptions('rec-filter-channel', availableChannels, currentFilters.channel);
+  }
+
+  /**
    * Populate select dropdown with tag options
    * @param {string} selectId
    * @param {string[]} options
+   * @param {string} [selectedValue]
    */
-  function populateTagOptions(selectId, options) {
+  function populateTagOptions(selectId, options, selectedValue = '') {
     const el = document.getElementById(selectId);
     if (!el) return;
 
-    const currentValue = el.value;
     const firstOption = el.options[0];
 
     el.innerHTML = '';
@@ -78,7 +139,7 @@ const recordingPanel = (() => {
       el.appendChild(optionEl);
     });
 
-    el.value = currentValue;
+    el.value = selectedValue;
   }
 
   /**
@@ -87,7 +148,11 @@ const recordingPanel = (() => {
    */
   function buildQueryUrl() {
     const params = new URLSearchParams();
-    if (currentFilters.datePreset) params.set('datePreset', currentFilters.datePreset);
+    if (currentFilters.datePreset && currentFilters.datePreset !== 'custom') {
+      params.set('datePreset', currentFilters.datePreset);
+    }
+    if (currentFilters.dateFrom) params.set('dateFrom', currentFilters.dateFrom);
+    if (currentFilters.dateTo) params.set('dateTo', currentFilters.dateTo);
     if (currentFilters.system) params.set('system', currentFilters.system);
     if (currentFilters.department) params.set('department', currentFilters.department);
     if (currentFilters.channel) params.set('channel', currentFilters.channel);
@@ -134,18 +199,80 @@ const recordingPanel = (() => {
   }
 
   /**
-   * Handle filter value changes
+   * Handle date preset change event
+   */
+  function onDatePresetChange() {
+    const dateEl = document.getElementById('rec-filter-date');
+    const fromEl = document.getElementById('rec-filter-date-from');
+    const toEl = document.getElementById('rec-filter-date-to');
+
+    currentFilters.datePreset = dateEl ? dateEl.value : '';
+
+    if (currentFilters.datePreset !== 'custom') {
+      // Clear custom date inputs when choosing a preset
+      if (fromEl) fromEl.value = '';
+      if (toEl) toEl.value = '';
+      currentFilters.dateFrom = '';
+      currentFilters.dateTo = '';
+    }
+
+    onRefresh();
+  }
+
+  /**
+   * Handle custom datetime-local range change event
+   */
+  function onDateRangeChange() {
+    const dateEl = document.getElementById('rec-filter-date');
+    const fromEl = document.getElementById('rec-filter-date-from');
+    const toEl = document.getElementById('rec-filter-date-to');
+
+    const fromVal = fromEl ? fromEl.value : '';
+    const toVal = toEl ? toEl.value : '';
+
+    currentFilters.dateFrom = fromVal ? new Date(fromVal).toISOString() : '';
+    currentFilters.dateTo = toVal ? new Date(toVal).toISOString() : '';
+
+    if (fromVal || toVal) {
+      currentFilters.datePreset = 'custom';
+      if (dateEl) dateEl.value = 'custom';
+    }
+
+    onRefresh();
+  }
+
+  /**
+   * Handle system filter change with hierarchical cascade
+   */
+  function onSystemChange() {
+    const sysEl = document.getElementById('rec-filter-system');
+    currentFilters.system = sysEl ? sysEl.value : '';
+    currentFilters.department = '';
+    currentFilters.channel = '';
+
+    updateTagDropdowns();
+    onRefresh();
+  }
+
+  /**
+   * Handle department filter change with hierarchical cascade
+   */
+  function onDepartmentChange() {
+    const deptEl = document.getElementById('rec-filter-department');
+    currentFilters.department = deptEl ? deptEl.value : '';
+    currentFilters.channel = '';
+
+    updateTagDropdowns();
+    onRefresh();
+  }
+
+  /**
+   * Handle filter value changes for channel, minDuration, etc.
    */
   function onFilterChange() {
-    const dateEl = document.getElementById('rec-filter-date');
-    const sysEl = document.getElementById('rec-filter-system');
-    const deptEl = document.getElementById('rec-filter-department');
     const chnEl = document.getElementById('rec-filter-channel');
     const minDurEl = document.getElementById('rec-filter-min-duration');
 
-    currentFilters.datePreset = dateEl ? dateEl.value : '';
-    currentFilters.system = sysEl ? sysEl.value : '';
-    currentFilters.department = deptEl ? deptEl.value : '';
     currentFilters.channel = chnEl ? chnEl.value : '';
     currentFilters.minDuration = minDurEl ? minDurEl.value : '';
 
@@ -164,6 +291,8 @@ const recordingPanel = (() => {
    */
   function onResetFilters() {
     const dateEl = document.getElementById('rec-filter-date');
+    const fromEl = document.getElementById('rec-filter-date-from');
+    const toEl = document.getElementById('rec-filter-date-to');
     const sysEl = document.getElementById('rec-filter-system');
     const deptEl = document.getElementById('rec-filter-department');
     const chnEl = document.getElementById('rec-filter-channel');
@@ -171,6 +300,8 @@ const recordingPanel = (() => {
     const searchEl = document.getElementById('rec-search-input');
 
     if (dateEl) dateEl.value = '';
+    if (fromEl) fromEl.value = '';
+    if (toEl) toEl.value = '';
     if (sysEl) sysEl.value = '';
     if (deptEl) deptEl.value = '';
     if (chnEl) chnEl.value = '';
@@ -179,6 +310,8 @@ const recordingPanel = (() => {
 
     currentFilters = {
       datePreset: '',
+      dateFrom: '',
+      dateTo: '',
       system: '',
       department: '',
       channel: '',
@@ -186,6 +319,7 @@ const recordingPanel = (() => {
       search: '',
     };
 
+    updateTagDropdowns();
     onRefresh();
   }
 
@@ -264,11 +398,15 @@ const recordingPanel = (() => {
    * Play recording file by filename
    * @param {string} filename - Filename to play
    * @param {Object} [meta] - Optional fallback metadata if not in current recordings list
+   * @param {Object} [options] - Playback options
+   * @param {boolean} [options.isSinglePlay=false] - Whether to play only this file and stop without auto-next
    */
-  function onPlay(filename, meta = {}) {
+  function onPlay(filename, meta = {}, options = {}) {
+    isSinglePlayMode = !!options.isSinglePlay;
+
     const targetIndex = recordings.findIndex((r) => r.filename === filename);
     if (targetIndex !== -1) {
-      playAtIndex(targetIndex);
+      playAtIndex(targetIndex, options);
       return;
     }
 
@@ -306,9 +444,14 @@ const recordingPanel = (() => {
   /**
    * Play recording file by array index
    * @param {number} index
+   * @param {Object} [options]
    */
-  function playAtIndex(index) {
+  function playAtIndex(index, options = {}) {
     if (index < 0 || index >= recordings.length) return;
+
+    if (options.isSinglePlay !== undefined) {
+      isSinglePlayMode = !!options.isSinglePlay;
+    }
 
     const rec = recordings[index];
     currentIndex = index;
@@ -351,6 +494,7 @@ const recordingPanel = (() => {
    * Play next recording in sequence
    */
   function onPlayNext() {
+    isSinglePlayMode = false;
     if (recordings.length === 0) return;
 
     let nextIndex = currentIndex + 1;
@@ -365,6 +509,7 @@ const recordingPanel = (() => {
    * Play previous recording
    */
   function onPlayPrev() {
+    isSinglePlayMode = false;
     if (recordings.length === 0) return;
 
     let prevIndex = currentIndex - 1;
@@ -547,6 +692,13 @@ const recordingPanel = (() => {
     const player = document.getElementById('audio-player');
     if (player) {
       player.addEventListener('ended', () => {
+        if (isSinglePlayMode) {
+          isSinglePlayMode = false;
+          currentlyPlaying = null;
+          currentIndex = -1;
+          renderList();
+          return;
+        }
         if (isAutoPlayNext) {
           onPlayNext();
         }
@@ -578,6 +730,10 @@ const recordingPanel = (() => {
     onRecordingStart,
     onRecordingStop,
     onSearchChange,
+    onDatePresetChange,
+    onDateRangeChange,
+    onSystemChange,
+    onDepartmentChange,
     onFilterChange,
     onApplyFilters,
     onResetFilters,

@@ -203,9 +203,9 @@ class RecordingStore extends EventEmitter {
 
     let filtered = validList;
 
-    // Handle date presets
+    // Handle date presets and custom ranges
     const now = new Date();
-    if (filters.datePreset) {
+    if (filters.datePreset && filters.datePreset !== 'custom') {
       if (filters.datePreset === 'today') {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         filtered = filtered.filter((f) => new Date(f.createdAt) >= startOfToday);
@@ -223,18 +223,19 @@ class RecordingStore extends EventEmitter {
         const past7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         filtered = filtered.filter((f) => new Date(f.createdAt) >= past7d);
       }
-    } else {
-      if (filters.dateFrom) {
-        const from = new Date(filters.dateFrom);
-        if (!isNaN(from.getTime())) {
-          filtered = filtered.filter((f) => new Date(f.createdAt) >= from);
-        }
+    }
+
+    // Specific date range (from / to)
+    if (filters.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      if (!isNaN(from.getTime())) {
+        filtered = filtered.filter((f) => new Date(f.createdAt) >= from);
       }
-      if (filters.dateTo) {
-        const to = new Date(filters.dateTo);
-        if (!isNaN(to.getTime())) {
-          filtered = filtered.filter((f) => new Date(f.createdAt) <= to);
-        }
+    }
+    if (filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      if (!isNaN(to.getTime())) {
+        filtered = filtered.filter((f) => new Date(f.createdAt) <= to);
       }
     }
 
@@ -282,25 +283,54 @@ class RecordingStore extends EventEmitter {
   }
 
   /**
-   * Get unique systems, departments, and channels across all active recordings
-   * @returns {Object} { systems: string[], departments: string[], channels: string[] }
+   * Get unique systems, departments, channels, and their hierarchical relationship
+   * @returns {Object} { systems: string[], departments: string[], channels: string[], hierarchy: Object }
    */
   getTags() {
     const list = Array.from(this._index.values());
     const systems = new Set();
     const departments = new Set();
     const channels = new Set();
+    const hierarchy = {};
 
     for (const item of list) {
-      if (item.system && item.system.trim()) systems.add(item.system.trim());
-      if (item.department && item.department.trim()) departments.add(item.department.trim());
-      if (item.channel && item.channel.trim()) channels.add(item.channel.trim());
+      const sys = (item.system && item.system.trim()) || '';
+      const dept = (item.department && item.department.trim()) || '';
+      const chn = (item.channel && item.channel.trim()) || '';
+
+      if (sys) systems.add(sys);
+      if (dept) departments.add(dept);
+      if (chn) channels.add(chn);
+
+      if (sys) {
+        if (!hierarchy[sys]) {
+          hierarchy[sys] = {};
+        }
+        if (dept) {
+          if (!hierarchy[sys][dept]) {
+            hierarchy[sys][dept] = new Set();
+          }
+          if (chn) {
+            hierarchy[sys][dept].add(chn);
+          }
+        }
+      }
+    }
+
+    // Convert Sets in hierarchy to sorted arrays
+    const hierarchyObj = {};
+    for (const sys of Object.keys(hierarchy)) {
+      hierarchyObj[sys] = {};
+      for (const dept of Object.keys(hierarchy[sys])) {
+        hierarchyObj[sys][dept] = Array.from(hierarchy[sys][dept]).sort();
+      }
     }
 
     return {
       systems: Array.from(systems).sort(),
       departments: Array.from(departments).sort(),
       channels: Array.from(channels).sort(),
+      hierarchy: hierarchyObj,
     };
   }
 
