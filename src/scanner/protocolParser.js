@@ -314,7 +314,34 @@ function parseStsResponse(rawResponse) {
 
   const squelch = sqlVal !== null ? sqlVal === '1' : false;
   const mute = mutVal !== null ? mutVal === '1' : false;
-  const sig = sigVal !== null && !isNaN(parseInt(sigVal, 10)) ? parseInt(sigVal, 10) : 0;
+  let sig = sigVal !== null && !isNaN(parseInt(sigVal, 10)) ? parseInt(sigVal, 10) : 0;
+
+  // Detect signal meter character in Line 1 (Uniden hardware places antenna bar characters at the end of Line 1)
+  let detectedSig = 0;
+  if (lines.length > 0 && lines[0]) {
+    const rawLine1 = lines[0].rawText || '';
+    for (let i = rawLine1.length - 1; i >= 0; i--) {
+      const code = rawLine1.charCodeAt(i);
+      // Uniden BCT15X character codes for antenna signal bars:
+      // 0x8B: 1 bar, 0x8C: 2 bars, 0x8D: 3 bars, 0x8E: 4 bars, 0x8F: 5 bars (Full)
+      if (code >= 0x8B && code <= 0x8F) {
+        detectedSig = code - 0x8A;
+        break;
+      } else if (code >= 0x84 && code <= 0x87) {
+        detectedSig = code - 0x83;
+        break;
+      }
+    }
+
+    // Clean Line 1 display text by trimming trailing antenna/block characters ('■', '█', '▌', etc.)
+    const cleanL1 = lines[0].text.replace(/[\u0084-\u008F■█▌▪▫▲▼◀▶]+$/, '').trimEnd();
+    lines[0].text = cleanL1;
+    lines[0].signalLevel = detectedSig;
+  }
+
+  if (detectedSig > 0 && sig === 0) {
+    sig = detectedSig;
+  }
 
   // Determine if scanner is currently in menu/programming mode
   const line1 = lines[0] ? lines[0].text.trim() : '';
@@ -337,6 +364,7 @@ function parseStsResponse(rawResponse) {
       mut: mute,
       sig,
     },
+    signalLevel: sig,
     squelch,
     mute,
   };

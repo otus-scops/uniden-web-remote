@@ -53,8 +53,11 @@ const scannerDisplay = (() => {
       lcdIndPri: document.getElementById('lcd-ind-pri'),
       lcdIndAtt: document.getElementById('lcd-ind-att'),
       lcdIndMut: document.getElementById('lcd-ind-mut'),
+      lcdIndMod: document.getElementById('lcd-ind-mod'),
       lcdIndMenu: document.getElementById('lcd-ind-menu'),
+      lcdSigAnt: document.getElementById('lcd-sig-ant'),
       lcdSigBars: document.getElementById('lcd-sig-bars'),
+      lcdLine1Antenna: document.getElementById('lcd-line1-antenna'),
       // Live audio player controls
       liveAudioPlayer: document.getElementById('live-audio-player'),
       liveAudioBtn: document.getElementById('btn-live-audio'),
@@ -67,6 +70,12 @@ const scannerDisplay = (() => {
 
     return elements;
   }
+
+  /** @type {Object|null} Latest reception metadata (from GLG) */
+  let latestReception = null;
+
+  /** @type {number} Current RSSI value (0-7) */
+  let currentRssiLevel = 0;
 
   /** @type {'cyber'|'lcd'} Current active display mode */
   let currentDisplayMode = 'cyber';
@@ -128,6 +137,18 @@ const scannerDisplay = (() => {
       setDisplayMode('cyber');
     }
 
+    // Determine current modulation from latest reception
+    const mod = (latestReception && latestReception.modulation) ? latestReception.modulation.toUpperCase().trim() : '';
+
+    // Extract signal level from STS indicators, Line 1 characters, or RSSI fallback
+    let sigLevel = stsData.indicators?.sig || stsData.signalLevel || 0;
+
+    // Check if modulation is already present in any LCD line
+    let hasModInLines = false;
+    if (stsData.lines && Array.isArray(stsData.lines)) {
+      hasModInLines = stsData.lines.some((l) => mod && l.text && l.text.toUpperCase().includes(mod));
+    }
+
     // Update LCD lines (support 4, 5, or up to 8 lines dynamically)
     if (stsData.lines && Array.isArray(stsData.lines)) {
       const lineCount = stsData.lines.length;
@@ -150,8 +171,48 @@ const scannerDisplay = (() => {
           textSpan.className = 'lcd-text';
           lineEl.appendChild(textSpan);
         }
-        // Ensure no stray replacement characters (\uFFFD) break UI rendering
-        const cleanText = (lineData.text || '').replace(/\uFFFD/g, ' ');
+
+        // Clean text and handle Line 1 antenna character detection
+        let cleanText = (lineData.text || '').replace(/\uFFFD/g, ' ');
+
+        if (i === 0) {
+          // If Line 1 has antenna/block symbols ('■', '█', '▌', etc.), detect signal level
+          const matchSigChar = cleanText.match(/[■█▌▪▫▲▼◀▶]+$/);
+          if (matchSigChar) {
+            const char = matchSigChar[0];
+            if (sigLevel === 0) {
+              if (char.includes('■') || char.includes('█')) sigLevel = 5;
+              else if (char.includes('▌')) sigLevel = 4;
+              else if (char.includes('▶')) sigLevel = 3;
+              else if (char.includes('▼')) sigLevel = 2;
+              else sigLevel = 1;
+            }
+            cleanText = cleanText.replace(/[■█▌▪▫▲▼◀▶]+$/, '').trimEnd();
+          }
+        }
+
+        // Modulation display support:
+        // When receiving without modulation in lines, display '   AM' on line 3 (or line 4) matching physical BCT15X display
+        if (isCurrentlyReceiving && mod && !hasModInLines) {
+          if (lineCount >= 4 && i === 2) {
+            // Line 3: If empty/blank or only whitespace, display modulation matching physical unit LCD
+            if (!cleanText.trim()) {
+              cleanText = `   ${mod}`;
+              hasModInLines = true;
+            } else if (/^\d{3}\.\d+/.test(cleanText.trim()) && !cleanText.includes(mod)) {
+              // If frequency is shown on Line 3, append modulation
+              cleanText = `${cleanText.trimEnd()}   ${mod}`;
+              hasModInLines = true;
+            }
+          } else if (lineCount >= 5 && i === 3) {
+            // Line 4 in 5-line mode: If empty, display modulation
+            if (!cleanText.trim()) {
+              cleanText = `   ${mod}`;
+              hasModInLines = true;
+            }
+          }
+        }
+
         textSpan.textContent = cleanText;
 
         // Tooltip showing raw hex for easy character code inspection
@@ -174,6 +235,11 @@ const scannerDisplay = (() => {
       }
     }
 
+    // Fallback signal level calculation if still 0 but actively receiving signal
+    if (sigLevel === 0 && (isCurrentlyReceiving || stsData.indicators?.sql)) {
+      sigLevel = currentRssiLevel > 0 ? Math.max(1, Math.min(5, Math.round((currentRssiLevel / 7) * 5))) : 3;
+    }
+
     // Update status indicators
     if (el.lcdIndMenu) {
       el.lcdIndMenu.classList.toggle('active', Boolean(stsData.isMenuMode));
@@ -190,13 +256,27 @@ const scannerDisplay = (() => {
       el.lcdIndHold.classList.toggle('active', isHold);
     }
 
-    // Update LCD signal bars (0 - 5)
-    if (el.lcdSigBars && stsData.indicators) {
-      const sigLevel = stsData.indicators.sig || 0;
+    // Update Modulation indicator badge
+    if (el.lcdIndMod) {
+      if (mod) el.lcdIndMod.textContent = mod;
+      el.lcdIndMod.classList.toggle('active', Boolean(isCurrentlyReceiving && mod));
+    }
+
+    // Update LCD signal bars (0 - 5) and Antenna icon
+    if (el.lcdSigBars) {
       const bars = el.lcdSigBars.querySelectorAll('.sig-bar');
       bars.forEach((bar, index) => {
         bar.classList.toggle('active', index < sigLevel);
       });
+    }
+    if (el.lcdSigAnt) {
+      el.lcdSigAnt.classList.toggle('active', sigLevel > 0);
+    }
+
+    // Update Line 1 antenna bar pictograph matching physical BCT15X display
+    if (el.lcdLine1Antenna) {
+      const ANTENNA_PICTS = ['', ' ▂', ' ▂▄', ' ▂▄▆', ' ▂▄▆█', ' ▂▄▆█'];
+      el.lcdLine1Antenna.textContent = ANTENNA_PICTS[sigLevel] || '';
     }
   }
 
@@ -206,6 +286,11 @@ const scannerDisplay = (() => {
    */
   function onStatusUpdate(status) {
     const el = getElements();
+
+    // Cache latest RSSI
+    if (status.rssi !== undefined) {
+      currentRssiLevel = status.rssi;
+    }
 
     // Connection state
     updateConnectionStatus(el, status.isConnected);
@@ -221,6 +306,7 @@ const scannerDisplay = (() => {
 
     // Active reception display
     if (status.currentReception && status.isReceiving) {
+      latestReception = status.currentReception;
       updateReceptionDisplay(el, status.currentReception);
       setReceivingState(el, true);
     } else if (!status.isReceiving) {
@@ -228,6 +314,9 @@ const scannerDisplay = (() => {
         clearReceptionDisplay(el);
       }
       setReceivingState(el, false);
+      if (el.lcdIndMod) {
+        el.lcdIndMod.classList.remove('active');
+      }
     }
 
     // Signal strength (RSSI)

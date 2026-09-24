@@ -136,9 +136,11 @@
                 <span class="lcd-badge" id="lcd-ind-pri">PRI</span>
                 <span class="lcd-badge" id="lcd-ind-att">ATT</span>
                 <span class="lcd-badge" id="lcd-ind-mut">MUT</span>
+                <span class="lcd-badge badge-mod" id="lcd-ind-mod">AM</span>
                 <span class="lcd-badge badge-menu" id="lcd-ind-menu">MENU</span>
               </div>
               <div class="lcd-ind-right">
+                <span class="lcd-sig-ant" id="lcd-sig-ant" title="Signal Antenna">📶</span>
                 <span class="lcd-sig-label">SIG</span>
                 <div class="lcd-sig-bars" id="lcd-sig-bars">
                   <span class="sig-bar"></span>
@@ -150,9 +152,12 @@
               </div>
             </div>
 
-            <!-- 4-Line Dot Matrix Screen -->
+            <!-- Dot Matrix Screen (Supports 4 to 8 lines) -->
             <div class="lcd-text-area" id="lcd-text-area">
-              <div class="lcd-line" id="lcd-line-1"><span class="lcd-text">BCT15X</span></div>
+              <div class="lcd-line" id="lcd-line-1">
+                <span class="lcd-text">BCT15X</span>
+                <span class="lcd-antenna-pict" id="lcd-line1-antenna"></span>
+              </div>
               <div class="lcd-line" id="lcd-line-2"><span class="lcd-text">Scanning...</span></div>
               <div class="lcd-line" id="lcd-line-3"><span class="lcd-text"></span></div>
               <div class="lcd-line" id="lcd-line-4"><span class="lcd-text"></span></div>

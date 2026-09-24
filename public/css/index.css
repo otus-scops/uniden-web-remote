@@ -2674,17 +2674,39 @@ body::before {
   text-shadow: 0 0 8px rgba(255, 170, 0, 0.7);
 }
 
+.lcd-badge.badge-mod {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.lcd-badge.badge-mod.active {
+  color: #ffcc00;
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.8);
+}
+
 .lcd-badge.badge-menu.active {
   color: #00e5ff;
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
   font-weight: 800;
 }
 
-/* SIG Signal Meter */
+/* SIG Signal Meter & Antenna */
 .lcd-ind-right {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.lcd-sig-ant {
+  font-size: 0.82rem;
+  color: rgba(255, 170, 0, 0.2);
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+  line-height: 1;
+}
+
+.lcd-sig-ant.active {
+  color: #ffaa00;
+  text-shadow: 0 0 8px rgba(255, 170, 0, 0.7);
 }
 
 .lcd-sig-label {
@@ -2738,6 +2760,19 @@ body::before {
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.lcd-line#lcd-line-1 {
+  justify-content: space-between;
+}
+
+.lcd-antenna-pict {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #ffaa00;
+  text-shadow: 0 0 6px rgba(255, 170, 0, 0.7);
+  letter-spacing: -1px;
+  font-family: monospace;
 }
 
 /* Reversed display line for active cursor/selection */
