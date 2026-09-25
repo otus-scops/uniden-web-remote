@@ -144,7 +144,7 @@ All configurable options supported in `.env` or `docker-compose.yml`.
 ### Audio & Recording Quality
 | Variable | Default | Description |
 |:---|:---|:---|
-| `AUDIO_FORMAT` | `mp3` | Recording audio format (`mp3`) |
+| `AUDIO_FORMAT` | `mp3` | Recording format (Currently optimized and fixed to `mp3` for maximum storage efficiency & browser playback) |
 | `AUDIO_SAMPLE_RATE` | `16000` | Sampling rate in Hz. Optimized for narrow-band radio voice communications |
 | `AUDIO_CHANNELS` | `1` | Channel count (1: Mono / 2: Stereo) |
 | `AUDIO_BITRATE` | `32` | MP3 bitrate in kbps. Preserves voice clarity while cutting storage by ~50% (~14.4MB/hr) |
@@ -152,6 +152,13 @@ All configurable options supported in `.env` or `docker-compose.yml`.
 | `SILENCE_THRESHOLD` | `1.0` | SoX silence detection threshold (%) |
 | `SILENCE_DURATION` | `3.0` | Silence duration to consider transmission ended (seconds) |
 | `FILENAME_TEMPLATE` | `{system}/{department}/{channel}/{date}_{time}_{freq}` | File & directory template (`/` creates automatic nested folders) |
+
+> [!NOTE]
+> **🎙️ Audio Engine Architecture & Format Implementation**:
+> - **Lightweight SoX (Sound eXchange) Pipeline**:
+>   Instead of a heavy FFmpeg dependency, this application leverages **SoX** coupled with direct ALSA device bindings. Operating with a tiny buffer (`--buffer 1024`), it achieves real-time 100–300ms WebSocket streaming with minimal CPU overhead, making it ideal for continuous 24/7 background operation on low-power devices like Raspberry Pi.
+> - **MP3 Storage & Browser Optimization**:
+>   Recording is currently tuned specifically for `mp3` output at 32 kbps Mono (~14.4 MB/hour), ensuring weeks of continuous radio logging on minimal disk space while guaranteeing native, zero-transcoding in-browser playback across all desktop and mobile browsers (iOS Safari, Android Chrome, Edge, Firefox).
 
 ### Storage Retention Policy
 | Variable | Default | Description |
