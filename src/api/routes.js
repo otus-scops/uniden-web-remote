@@ -240,7 +240,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * GET /api/recordings/* - Download or stream recording file
    * Supports subdirectory paths (e.g. /api/recordings/System/Dept/Ch/file.mp3)
    */
-  router.get('/recordings/*', requireListener(authConfig), (req, res) => {
+  router.get(/\/recordings\/(.+)/, requireListener(authConfig), (req, res) => {
     // Extract relative file path from wildcard capture
     const relativePath = req.params[0];
     if (!relativePath) {
@@ -269,7 +269,7 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * DELETE /api/recordings/* - Delete recording file
    * Supports subdirectory paths
    */
-  router.delete('/recordings/*', requireOperator(authConfig), (req, res) => {
+  router.delete(/\/recordings\/(.+)/, requireOperator(authConfig), (req, res) => {
     const relativePath = req.params[0];
     if (!relativePath) {
       return res.status(400).json({ error: 'Recording path is required' });

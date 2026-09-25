@@ -10,6 +10,10 @@ Runs seamlessly on Docker and is accessible from any modern Web browser (desktop
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](docker-compose.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-v20-339933.svg?logo=nodedotjs&logoColor=white)](package.json)
 
+<p align="center">
+  <img src="assets/dashboard-cyber-en.png" alt="Uniden Bearcat BCT15X Web Remote Main Dashboard" width="100%">
+</p>
+
 ---
 
 ## 🎯 Design Philosophy & Target Use Case
@@ -40,22 +44,39 @@ While prioritizing **unattended 24/7 recording reliability, effortless setup via
 
 ---
 
-## 🌟 Key Features (Community Edition / Open Source)
+## 🌟 Key Features & Interface Tour (Community Edition)
 
-- 📡 **Virtual Control & Real-Time Display**: Live frequency/TGID display, alpha tags (System / Group / Channel), modulation, tone/code (CTCSS/DCS), and RSSI signal level meter.
-- 🔊 **Ultra Low-Latency Live Audio Streaming**: Real-time raw PCM streaming (100–300ms latency) via WebSocket and Web Audio API with automatic drift compensation.
-- 🎛️ **Full Keypad & Menu Control**: Interactive virtual panel simulating Scan, Hold, Menu, Function, and Direct Numpad entry with volume and squelch adjustments.
-- 📝 **Spreadsheet Memory Editor**:
-  - **Full Scanner Memory Sync**: Complete download and upload of Systems, Groups, and Channels using Uniden DMA (Dynamic Memory Architecture) serial protocol.
-  - **Spreadsheet-Style Grid Editor**: Inline editing for Channel Name, Frequency (MHz), Modulation (AUTO/AM/FM/NFM/WFM), Tone/Code (CTCSS/DCS), Lockout, Priority, and Attenuator.
-  - **Excel / Spreadsheet Batch Paste**: Easily copy dozens or hundreds of channels from Excel or Google Sheets and batch-import them in one click.
-  - **Automated Safety Backups**: Automatically creates timestamped JSON backups prior to scanner memory upload, with one-click restore history.
-  - **Import & Export**: Full support for CSV and JSON format backups.
-- 🎙️ **Automatic Transmission Recording**: Automatically records audio when squelch opens; tags and splits files per transmission (MP3 format) with in-browser playback and search.
-- 📋 **Activity Logging**: Chronological reception history logging with filterable query options and CSV export.
-- 🌐 **Internationalization (i18n)**: One-click instant language switching (English 🇺🇸 / Japanese 🇯🇵) with zero page reload.
-- 📱 **Progressive Web App (PWA) Ready**: Install directly on mobile (iOS/Android) or desktop (Chrome/Edge) as a standalone app with custom home icons, app manifest, and offline UI shell caching.
-- 🖥️ **Mock Simulation Mode**: Test and explore all UI features without connecting physical scanner hardware.
+### 1. 📡 Real-Time Virtual Scanner Dashboard
+Complete control center showing live frequency/TGID, alpha tags (System / Department / Channel), modulation mode, CTCSS/DCS tone, and RSSI signal level meter in real time. Includes an interactive virtual faceplate mimicking physical rotary knob and keypad, ultra-low latency live audio player, and instant transmission recording playback.
+
+Toggle between two display styles with one click:
+- **🖥️ Cyber Mode**: High-visibility neon frequency readout and fluid signal bar
+- **📟 Virtual LCD Mode**: Faithful retro reproduction of the original amber backlit hardware LCD
+
+<p align="center">
+  <img src="assets/dashboard-lcd.png" alt="Virtual Hardware LCD Mode" width="100%">
+  <em>▲ Virtual Hardware LCD Mode with full menu and navigation simulation</em>
+</p>
+
+### 2. 📝 Full Spreadsheet Memory Editor
+In-browser channel and bank manager with Uniden Dynamic Memory Architecture (DMA) serial synchronization:
+- **Scanner DMA Sync**: Full bulk download and upload of Systems, Groups, and Channels
+- **Spreadsheet Grid Editing**: Inline edit frequency, modulation, tone/code, lockout, priority, and attenuator
+- **Excel & Google Sheets Batch Paste**: Effortlessly copy and paste channel blocks from any spreadsheet
+- **Automated Safety Backups**: Automatically creates timestamped JSON backups before hardware programming
+- **CSV & JSON I/O**: Export and import memory archives seamlessly
+
+<p align="center">
+  <img src="assets/memory-editor-en.png" alt="Spreadsheet-Style Memory Editor" width="100%">
+  <em>▲ Full Spreadsheet Memory Editor (Excel batch paste & DMA hardware sync)</em>
+</p>
+
+### 3. Additional Powerful Capabilities
+- 🎙️ **Automatic Transmission Recording**: Automatically records audio when squelch opens; tags and splits files per transmission (MP3 format) with in-browser playback and search
+- 📋 **Activity Logging**: Chronological reception history logging with filterable query options and CSV export
+- 🌐 **Internationalization (i18n)**: One-click instant language switching (English 🇺🇸 / Japanese 🇯🇵)
+- 📱 **Progressive Web App (PWA) Ready**: Install directly on mobile (iOS/Android) or desktop as a standalone app
+- 🖥️ **Mock Simulation Mode**: Test and explore all UI features without connecting physical scanner hardware
 
 ---
 

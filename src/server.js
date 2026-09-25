@@ -166,7 +166,7 @@ class AppServer {
     this._app.use('/api/memory', memoryRoutes);
 
     // SPA fallback
-    this._app.get('*', (req, res) => {
+    this._app.get(/.*/, (req, res) => {
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
   }
