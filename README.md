@@ -202,7 +202,23 @@ Then visit `http://localhost:3000`.
 
 ---
 
+## ⚠️ Legal Disclaimer
+
+### Trademark Notice
+- This project is an independent open-source initiative and is **not affiliated with, endorsed by, sponsored by, or associated with Uniden America Corporation** or any of its subsidiaries.
+- "Uniden", "Bearcat", and associated product names are registered trademarks or trademarks of Uniden America Corporation. Any use of these names is purely for identification and hardware compatibility reference purposes (nominative fair use).
+
+### Regulatory Compliance & Privacy of Communications
+- This software is provided strictly for **lawful private use** on a local personal network (LAN) in full compliance with all applicable local, national, and international laws and telecommunications regulations.
+- Users are solely responsible for ensuring that their use of this software complies with their jurisdiction's radio communication laws (e.g., the Japanese Radio Act Article 59 regarding the protection of communication privacy, the US Electronic Communications Privacy Act, and equivalent regional legislation):
+  - **No Public Re-Broadcasting**: Do not re-transmit, publish, or stream live intercepted radio communications over the public Internet to unrestricted audiences without proper legal authorization. Always enable authentication (`AUTH_ENABLED=true`) if exposing endpoints beyond your immediate private network.
+  - **Recorded Audio & Logs**: Do not distribute, publicly share, or upload private intercepted transmission audio or frequency activity records to public platforms or social media.
+- The authors and contributors assume no liability and shall not be held responsible for any misuse, statutory violations, or damages resulting from the use of this software. Use entirely at your own risk.
+
+---
+
 ## 📄 License
 
 This project is licensed under the **Apache License 2.0**.
 See the [LICENSE](LICENSE) file for complete details.
+
