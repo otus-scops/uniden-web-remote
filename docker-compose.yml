@@ -47,10 +47,12 @@ services:
       # Filename template (hierarchical directory structure: System / Department / Channel / Date_Time_Freq)
       - FILENAME_TEMPLATE=${FILENAME_TEMPLATE:-{system}/{department}/{channel}/{date}_{time}_{freq}}
 
-      # Scanner polling settings
+      # Scanner polling settings & hardware initial levels
       - POLL_INTERVAL=${POLL_INTERVAL:-200}
       - RECEPTION_TIMEOUT=${RECEPTION_TIMEOUT:-1500}
       - MAX_RECEPTION_DURATION_SEC=${MAX_RECEPTION_DURATION_SEC:-0}
+      - SCANNER_INITIAL_VOLUME=${SCANNER_INITIAL_VOLUME:-8}
+      - SCANNER_INITIAL_SQUELCH=${SCANNER_INITIAL_SQUELCH:-2}
 
       # Timezone
       - TZ=${TZ:-Asia/Tokyo}

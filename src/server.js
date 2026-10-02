@@ -283,6 +283,17 @@ class AppServer {
         console.warn('[Server] Failed to query firmware version');
       }
 
+      // Initialize volume and squelch from configuration/saved state
+      try {
+        const initVol = this._scannerState.volume;
+        const initSql = this._scannerState.squelch;
+        await this._serialController.setVolume(initVol);
+        await this._serialController.setSquelch(initSql);
+        console.log(`[Server] 🎛️ Initialized Scanner Volume=${initVol}, Squelch=${initSql}`);
+      } catch (err) {
+        console.warn('[Server] Failed to initialize volume/squelch:', err.message);
+      }
+
       // Start periodic status polling (GLG, PWR, STS)
       this._serialController.startPolling(
         config.scanner.pollIntervalMs,

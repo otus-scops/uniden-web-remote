@@ -4,6 +4,18 @@
  */
 
 const path = require('path');
+const { loadRuntimeConfig } = require('./runtimeConfig');
+
+// 永続化された前回の設定をロード
+const savedConfig = loadRuntimeConfig();
+
+// .env からの初期値設定
+const envInitialVolume = process.env.SCANNER_INITIAL_VOLUME !== undefined
+  ? parseInt(process.env.SCANNER_INITIAL_VOLUME, 10)
+  : 8;
+const envInitialSquelch = process.env.SCANNER_INITIAL_SQUELCH !== undefined
+  ? parseInt(process.env.SCANNER_INITIAL_SQUELCH, 10)
+  : 2;
 
 /**
  * Default configuration object
@@ -49,7 +61,21 @@ const defaultConfig = {
     /** Maximum activity log entries retained in memory */
     maxLogEntries: parseInt(process.env.MAX_LOG_ENTRIES, 10) || 10000,
     /** Maximum consecutive reception duration (seconds) before forcing scan resume (0 = disabled/OFF) */
-    maxReceptionDurationSec: parseInt(process.env.MAX_RECEPTION_DURATION_SEC, 10) || 0,
+    maxReceptionDurationSec: savedConfig.maxReceptionDurationSec !== undefined
+      ? savedConfig.maxReceptionDurationSec
+      : (parseInt(process.env.MAX_RECEPTION_DURATION_SEC, 10) || 0),
+    /** Initial volume (0-15) from .env */
+    initialVolume: !isNaN(envInitialVolume) && envInitialVolume >= 0 && envInitialVolume <= 15 ? envInitialVolume : 8,
+    /** Initial squelch (0-15) from .env */
+    initialSquelch: !isNaN(envInitialSquelch) && envInitialSquelch >= 0 && envInitialSquelch <= 15 ? envInitialSquelch : 2,
+    /** Current/persisted active volume level (0-15) */
+    volume: savedConfig.volume !== undefined
+      ? savedConfig.volume
+      : (!isNaN(envInitialVolume) && envInitialVolume >= 0 && envInitialVolume <= 15 ? envInitialVolume : 8),
+    /** Current/persisted active squelch level (0-15) */
+    squelch: savedConfig.squelch !== undefined
+      ? savedConfig.squelch
+      : (!isNaN(envInitialSquelch) && envInitialSquelch >= 0 && envInitialSquelch <= 15 ? envInitialSquelch : 2),
   },
 
   /** Audio streaming and recording settings */
@@ -67,7 +93,9 @@ const defaultConfig = {
     /** Persistent recordings directory */
     recordingsDir: process.env.RECORDINGS_DIR || path.join(__dirname, '../../recordings'),
     /** Auto recording enabled flag */
-    autoRecord: process.env.AUTO_RECORD !== 'false',
+    autoRecord: savedConfig.autoRecord !== undefined
+      ? savedConfig.autoRecord
+      : (process.env.AUTO_RECORD !== 'false'),
     /** SoX silence threshold (percentage) */
     silenceThreshold: parseFloat(process.env.SILENCE_THRESHOLD) || 1.0,
     /** SoX silence duration (seconds) */
@@ -98,7 +126,7 @@ const defaultConfig = {
      *   {modulation} - Modulation mode
      *   {seq}        - Sequential number
      */
-    template: process.env.FILENAME_TEMPLATE || '{system}/{department}/{channel}/{date}_{time}_{freq}',
+    template: savedConfig.template || process.env.FILENAME_TEMPLATE || '{system}/{department}/{channel}/{date}_{time}_{freq}',
     /** Date format */
     dateFormat: 'YYYY-MM-DD',
     /** Time format */

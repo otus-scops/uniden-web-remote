@@ -5,6 +5,8 @@
 
 /* --- CSS Variables (Design Tokens) --- */
 :root {
+  color-scheme: dark;
+
   /* Primary Colors */
   --color-bg-primary: #0a0e17;
   --color-bg-secondary: #111827;
@@ -581,23 +583,25 @@ body::before {
 
 .control-select {
   flex: 1;
-  background: transparent;
+  background: var(--color-bg-input);
   color: var(--color-text-primary);
-  border: none;
+  border: 1px solid var(--color-border);
   outline: none;
   font-size: 0.8rem;
   font-family: inherit;
   padding: 3px 6px;
   cursor: pointer;
   border-radius: var(--radius-sm);
+  color-scheme: dark;
 }
 
 .control-select:focus {
-  outline: 1px solid var(--color-accent-cyan);
+  outline: none;
+  border-color: var(--color-accent-cyan);
 }
 
 .control-select option {
-  background: var(--color-bg-card);
+  background-color: var(--color-bg-panel);
   color: var(--color-text-primary);
 }
 

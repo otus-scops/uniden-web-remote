@@ -243,6 +243,30 @@ const controlPanel = (() => {
         select.value = String(status.maxReceptionDurationSec);
       }
     }
+
+    // Synchronize volume slider
+    if (status.volume !== undefined) {
+      const sliderVol = document.getElementById('slider-vol');
+      const displayVol = document.getElementById('vol-level-display');
+      if (sliderVol && document.activeElement !== sliderVol) {
+        sliderVol.value = status.volume;
+      }
+      if (displayVol && document.activeElement !== sliderVol) {
+        displayVol.textContent = status.volume;
+      }
+    }
+
+    // Synchronize squelch slider
+    if (status.squelch !== undefined) {
+      const sliderSql = document.getElementById('slider-sql');
+      const displaySql = document.getElementById('sql-level-display');
+      if (sliderSql && document.activeElement !== sliderSql) {
+        sliderSql.value = status.squelch;
+      }
+      if (displaySql && document.activeElement !== sliderSql) {
+        displaySql.textContent = status.squelch;
+      }
+    }
   }
 
   /**
@@ -264,10 +288,24 @@ const controlPanel = (() => {
           toggle.checked = data.audio.autoRecord;
         }
       }
-      if (data && data.scanner && data.scanner.maxReceptionDurationSec !== undefined) {
-        const select = document.getElementById('select-max-reception');
-        if (select) {
-          select.value = String(data.scanner.maxReceptionDurationSec);
+      if (data && data.scanner) {
+        if (data.scanner.maxReceptionDurationSec !== undefined) {
+          const select = document.getElementById('select-max-reception');
+          if (select) {
+            select.value = String(data.scanner.maxReceptionDurationSec);
+          }
+        }
+        if (data.scanner.volume !== undefined) {
+          const sliderVol = document.getElementById('slider-vol');
+          const displayVol = document.getElementById('vol-level-display');
+          if (sliderVol) sliderVol.value = data.scanner.volume;
+          if (displayVol) displayVol.textContent = data.scanner.volume;
+        }
+        if (data.scanner.squelch !== undefined) {
+          const sliderSql = document.getElementById('slider-sql');
+          const displaySql = document.getElementById('sql-level-display');
+          if (sliderSql) sliderSql.value = data.scanner.squelch;
+          if (displaySql) displaySql.textContent = data.scanner.squelch;
         }
       }
     } catch (err) {

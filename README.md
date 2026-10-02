@@ -182,6 +182,8 @@ All configurable options supported in `.env` or `docker-compose.yml`.
 | `STATUS_INTERVAL` | `1000` | Full status polling interval in ms (STS command) |
 | `RECEPTION_TIMEOUT`| `1500` | Signal drop threshold in ms to mark transmission as ended |
 | `MAX_RECEPTION_DURATION_SEC` | `0` | Max consecutive reception duration in seconds before forcing scan resume (`0` = disabled/OFF) |
+| `SCANNER_INITIAL_VOLUME` | `8` | Initial hardware volume level (0-15). Changes from Web UI are automatically remembered |
+| `SCANNER_INITIAL_SQUELCH` | `2` | Initial hardware squelch level (0-15). Changes from Web UI are automatically remembered |
 | `MAX_LOG_ENTRIES` | `10000` | Maximum reception activity log records retained in memory |
 | `TZ` | `Asia/Tokyo` | Container timezone |
 | `MOCK_MODE` | `false` | Enable simulation mode without physical hardware |

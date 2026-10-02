@@ -178,6 +178,8 @@ docker compose logs -f scanner
 | `STATUS_INTERVAL` | `1000` | 詳細状態取得 (STS) のポーリング間隔 (ms) |
 | `RECEPTION_TIMEOUT`| `1500` | 信号途絶判定までのタイムアウトしきい値 (ms) |
 | `MAX_RECEPTION_DURATION_SEC` | `0` | 最長連続受信時間制限 (秒)。同一周波数を連続受信し続けた場合に強制的にスキャンを再開 (`0` で無効/OFF) |
+| `SCANNER_INITIAL_VOLUME` | `8` | ハードウェア初期ボリューム値 (0〜15)。Web画面での操作値は自動記憶されます |
+| `SCANNER_INITIAL_SQUELCH` | `2` | ハードウェア初期スケルチ値 (0〜15)。Web画面での操作値は自動記憶されます |
 | `MAX_LOG_ENTRIES` | `10000` | メモリ内に保持する受信ログの最大件数 |
 | `TZ` | `Asia/Tokyo` | タイムゾーン |
 | `MOCK_MODE` | `false` | 実機なしテストモード (`true` でハードウェアなしシミュレーション動作) |

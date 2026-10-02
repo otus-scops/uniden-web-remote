@@ -66,6 +66,16 @@ class ScannerState extends EventEmitter {
     /** @type {boolean} Flag indicating whether scanner is in hold mode */
     this.isHoldMode = false;
 
+    /** @type {number} Current scanner volume level (0-15) */
+    this.volume = (config && config.volume !== undefined)
+      ? config.volume
+      : ((config && config.initialVolume !== undefined) ? config.initialVolume : 8);
+
+    /** @type {number} Current scanner squelch level (0-15) */
+    this.squelch = (config && config.squelch !== undefined)
+      ? config.squelch
+      : ((config && config.initialSquelch !== undefined) ? config.initialSquelch : 2);
+
     /** @type {number|null} Timer for maximum consecutive reception duration */
     this._maxDurationTimer = null;
   }
@@ -397,6 +407,30 @@ class ScannerState extends EventEmitter {
   }
 
   /**
+   * Set volume level
+   * @param {number} level - Volume level (0-15)
+   */
+  setVolume(level) {
+    const parsed = parseInt(level, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 15) {
+      this.volume = parsed;
+      this.emit('statusUpdate', this.getStatus());
+    }
+  }
+
+  /**
+   * Set squelch level
+   * @param {number} level - Squelch level (0-15)
+   */
+  setSquelch(level) {
+    const parsed = parseInt(level, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 15) {
+      this.squelch = parsed;
+      this.emit('statusUpdate', this.getStatus());
+    }
+  }
+
+  /**
    * Get current scanner status snapshot
    * @returns {Object} Status snapshot object
    */
@@ -409,6 +443,8 @@ class ScannerState extends EventEmitter {
       isRecording: this.isRecording,
       autoRecordEnabled: this.autoRecordEnabled,
       maxReceptionDurationSec: this.maxReceptionDurationSec,
+      volume: this.volume,
+      squelch: this.squelch,
       isHoldMode: this.isHoldMode,
       rssi: this.rssi,
       currentReception: this.currentReception ? { ...this.currentReception } : null,

@@ -222,12 +222,12 @@
           <div class="slider-group">
             <div class="slider-row">
               <span class="slider-label">VOL</span>
-              <input type="range" class="control-slider" min="0" max="15" value="8" onchange="controlPanel.onVolumeChange(this.value)">
+              <input type="range" class="control-slider" id="slider-vol" min="0" max="15" value="8" oninput="document.getElementById('vol-level-display').textContent = this.value" onchange="controlPanel.onVolumeChange(this.value)">
               <span class="slider-value" id="vol-level-display">8</span>
             </div>
             <div class="slider-row">
               <span class="slider-label">SQ</span>
-              <input type="range" class="control-slider" min="0" max="15" value="2" onchange="controlPanel.onSquelchChange(this.value)">
+              <input type="range" class="control-slider" id="slider-sql" min="0" max="15" value="2" oninput="document.getElementById('sql-level-display').textContent = this.value" onchange="controlPanel.onSquelchChange(this.value)">
               <span class="slider-value" id="sql-level-display">2</span>
             </div>
           </div>

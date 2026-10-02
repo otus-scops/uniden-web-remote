@@ -7,6 +7,7 @@ const express = require('express');
 const path = require('path');
 const { generatePreview } = require('../audio/fileNamer');
 const { requireOperator, requireListener } = require('./authMiddleware');
+const { saveRuntimeConfig } = require('../config/runtimeConfig');
 
 /**
  * Create Express router for API routes
@@ -127,6 +128,11 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
         return res.status(400).json({ error: 'Valid level parameter (0-15) is required' });
       }
       const response = await serialController.setVolume(level);
+      scannerState.setVolume(level);
+      if (config.scanner) {
+        config.scanner.volume = level;
+      }
+      saveRuntimeConfig({ volume: level });
       res.json({ action: 'vol', level, response });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -144,6 +150,11 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
         return res.status(400).json({ error: 'Valid level parameter (0-15) is required' });
       }
       const response = await serialController.setSquelch(level);
+      scannerState.setSquelch(level);
+      if (config.scanner) {
+        config.scanner.squelch = level;
+      }
+      saveRuntimeConfig({ squelch: level });
       res.json({ action: 'sql', level, response });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -360,6 +371,10 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
         pollIntervalMs: config.scanner.pollIntervalMs,
         receptionTimeoutMs: config.scanner.receptionTimeoutMs,
         maxReceptionDurationSec: config.scanner.maxReceptionDurationSec || 0,
+        initialVolume: config.scanner.initialVolume,
+        initialSquelch: config.scanner.initialSquelch,
+        volume: scannerState.volume,
+        squelch: scannerState.squelch,
       },
       gdrive: {
         enabled: config.gdrive.enabled,
@@ -374,16 +389,19 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    */
   router.put('/config', requireOperator(authConfig), (req, res) => {
     const updates = req.body;
+    const persistUpdates = {};
 
     // Update filename template pattern
     if (updates.fileNaming && updates.fileNaming.template) {
       config.fileNaming.template = updates.fileNaming.template;
+      persistUpdates.template = updates.fileNaming.template;
     }
 
     // Update auto-recording setting
     if (updates.audio && updates.audio.autoRecord !== undefined) {
       config.audio.autoRecord = updates.audio.autoRecord;
       scannerState.autoRecordEnabled = updates.audio.autoRecord;
+      persistUpdates.autoRecord = updates.audio.autoRecord;
     }
 
     // Update reception timeout threshold
@@ -396,6 +414,12 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
       const sec = parseInt(updates.scanner.maxReceptionDurationSec, 10) || 0;
       config.scanner.maxReceptionDurationSec = sec;
       scannerState.setMaxReceptionDurationSec(sec);
+      persistUpdates.maxReceptionDurationSec = sec;
+    }
+
+    // Persist runtime settings
+    if (Object.keys(persistUpdates).length > 0) {
+      saveRuntimeConfig(persistUpdates);
     }
 
     res.json({ updated: true, config: req.body });
