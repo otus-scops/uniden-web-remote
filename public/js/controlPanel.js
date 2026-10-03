@@ -7,44 +7,46 @@
  * Control Panel UI controller
  */
 const controlPanel = (() => {
+  /** @type {number} Long press threshold duration in ms */
+  const LONG_PRESS_DURATION_MS = 650;
+
   /**
    * Handle Scan button click
    */
   async function onScan() {
-    app.requireOperator(async () => {
-      try {
-        await app.fetchApi('/scanner/scan', { method: 'POST' });
-      } catch (err) {
-        console.error('[ControlPanel] Scan command error:', err);
-      }
-    });
+    return onKey('S', 'P');
   }
 
   /**
    * Handle Hold button click
    */
   async function onHold() {
-    app.requireOperator(async () => {
-      try {
-        await app.fetchApi('/scanner/hold', { method: 'POST' });
-      } catch (err) {
-        console.error('[ControlPanel] Hold command error:', err);
-      }
-    });
+    return onKey('H', 'P');
   }
 
   /**
    * Simulate key press action
    * @param {string} key - Key name identifier
-   * @param {string} action - Key action ('P' for Press, 'H' for Hold, 'R' for Release)
+   * @param {string} [action='P'] - Key action ('P' for Press, 'H' for Hold, 'R' for Release)
    */
-  async function onKey(key, action) {
+  async function onKey(key, action = 'P') {
     app.requireOperator(async () => {
       try {
         await app.fetchApi('/scanner/key', {
           method: 'POST',
           body: JSON.stringify({ key, action }),
         });
+
+        // Show feedback notification on specific long-press actions
+        if (action === 'H' && typeof app.showNotification === 'function' && typeof i18n !== 'undefined') {
+          if (key === 'L') {
+            app.showNotification(i18n.t('control.unlockAllSuccess'), 'success');
+          } else if (key === 'H') {
+            app.showNotification(i18n.t('control.systemHoldNotice'), 'info');
+          } else if (key === '.') {
+            app.showNotification(i18n.t('control.quickStoreNotice'), 'info');
+          }
+        }
       } catch (err) {
         console.error('[ControlPanel] Key command error:', err);
       }
@@ -267,6 +269,108 @@ const controlPanel = (() => {
         displaySql.textContent = status.squelch;
       }
     }
+
+    // Synchronize temporary lockouts (T-L/O)
+    if (status.temporaryLockouts !== undefined) {
+      renderTemporaryLockouts(status.temporaryLockouts);
+    }
+  }
+
+  /**
+   * Render temporary lockout (T-L/O) tracking list
+   * @param {Array<Object>} list - List of tracked T-L/O channels
+   */
+  function renderTemporaryLockouts(list = []) {
+    const badge = document.getElementById('tlo-count-badge');
+    const btnUnlock = document.getElementById('btn-unlock-all');
+    const container = document.getElementById('tlo-list-container');
+
+    if (badge) {
+      badge.textContent = list.length;
+      if (list.length > 0) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
+      }
+    }
+
+    if (btnUnlock) {
+      btnUnlock.disabled = list.length === 0;
+    }
+
+    if (!container) return;
+
+    if (!list || list.length === 0) {
+      const emptyText = typeof i18n !== 'undefined' ? i18n.t('control.tloEmpty') : '一時ロックアウト中の項目はありません';
+      container.innerHTML = `<div class="tlo-empty-text">${emptyText}</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map((item) => {
+      const freq = item.freqTgid || '---';
+      const name = item.channel || item.system || '';
+      const system = (item.system && item.channel) ? `[${item.system}]` : '';
+      const removeTitle = typeof i18n !== 'undefined' ? i18n.t('control.tloRemove') : '解除';
+
+      return `
+        <div class="tlo-item" data-id="${item.id}">
+          <div class="tlo-item-info">
+            <span class="tlo-item-freq">${freq}</span>
+            ${name ? `<span class="tlo-item-name">${name}</span>` : ''}
+            ${system ? `<span class="tlo-item-system">${system}</span>` : ''}
+          </div>
+          <button class="tlo-item-remove" onclick="controlPanel.onRemoveTlo('${item.id}')" title="${removeTitle}">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Unlock all temporary lockouts (Sends L/O long press to hardware & clears web list)
+   */
+  async function onUnlockAll() {
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi('/scanner/unlock-all', { method: 'POST' });
+        renderTemporaryLockouts([]);
+        if (typeof app.showNotification === 'function') {
+          const msg = typeof i18n !== 'undefined' ? i18n.t('control.unlockAllSuccess') : 'すべてのT-L/O（一時ロックアウト）を解除しました';
+          app.showNotification(msg, 'success');
+        }
+      } catch (err) {
+        console.error('[ControlPanel] Unlock-all error:', err);
+      }
+    });
+  }
+
+  /**
+   * Remove single item from temporary lockout tracking
+   * @param {string} id - Item ID
+   */
+  async function onRemoveTlo(id) {
+    app.requireOperator(async () => {
+      try {
+        await app.fetchApi(`/scanner/temporary-lockouts/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {
+        console.error('[ControlPanel] Remove TLO error:', err);
+      }
+    });
+  }
+
+  /**
+   * Fetch temporary lockouts on startup
+   */
+  async function loadTemporaryLockouts() {
+    try {
+      const data = await app.fetchApi('/scanner/temporary-lockouts');
+      if (data && data.temporaryLockouts) {
+        renderTemporaryLockouts(data.temporaryLockouts);
+      }
+    } catch (err) {
+      console.warn('[ControlPanel] Failed to load temporary lockouts:', err.message);
+    }
   }
 
   /**
@@ -379,22 +483,102 @@ const controlPanel = (() => {
     });
   }
 
+  /**
+   * Setup pointer-based long press and short press bindings for all hardware key buttons
+   */
+  function setupLongPressKeyBindings() {
+    const buttons = document.querySelectorAll('.btn[data-key]');
+    buttons.forEach((btn) => {
+      const key = btn.getAttribute('data-key');
+      if (!key) return;
+
+      let pressTimer = null;
+      let isLongTriggered = false;
+
+      const onPointerDown = (event) => {
+        // Only trigger on primary pointer click (left mouse button / touch)
+        if (event.button !== undefined && event.button !== 0) return;
+
+        isLongTriggered = false;
+        btn.classList.add('is-pressing');
+        requestAnimationFrame(() => {
+          btn.classList.add('charging');
+        });
+
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+        }
+
+        pressTimer = setTimeout(() => {
+          isLongTriggered = true;
+          btn.classList.remove('charging');
+          btn.classList.add('long-press-activated');
+
+          if (navigator.vibrate) {
+            try { navigator.vibrate(35); } catch {}
+          }
+
+          onKey(key, 'H');
+
+          setTimeout(() => {
+            btn.classList.remove('long-press-activated');
+          }, 400);
+        }, LONG_PRESS_DURATION_MS);
+      };
+
+      const onPointerUp = (event) => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+
+        btn.classList.remove('is-pressing', 'charging');
+
+        if (!isLongTriggered) {
+          onKey(key, 'P');
+        }
+      };
+
+      const onPointerCancel = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        btn.classList.remove('is-pressing', 'charging');
+      };
+
+      btn.addEventListener('pointerdown', onPointerDown);
+      btn.addEventListener('pointerup', onPointerUp);
+      btn.addEventListener('pointerleave', onPointerCancel);
+      btn.addEventListener('pointercancel', onPointerCancel);
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    });
+  }
+
   // Load configuration and setup keyboard shortcuts on page initialization
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       loadConfig();
+      loadTemporaryLockouts();
       setupKeyboardShortcuts();
+      setupLongPressKeyBindings();
     });
   } else {
     loadConfig();
+    loadTemporaryLockouts();
     setupKeyboardShortcuts();
+    setupLongPressKeyBindings();
   }
 
-  // Synchronize waiting text on language change
+  // Synchronize waiting text and T-L/O text on language change
   window.addEventListener('languageChanged', () => {
     const output = document.getElementById('command-output');
     if (output && (output.textContent === '待機中...' || output.textContent === 'Waiting...')) {
       output.textContent = typeof i18n !== 'undefined' ? i18n.t('control.waiting') : '待機中...';
+    }
+    const emptyEl = document.querySelector('.tlo-empty-text');
+    if (emptyEl) {
+      emptyEl.textContent = typeof i18n !== 'undefined' ? i18n.t('control.tloEmpty') : '一時ロックアウト中の項目はありません';
     }
   });
 
@@ -403,6 +587,10 @@ const controlPanel = (() => {
     onScan,
     onHold,
     onKey,
+    onUnlockAll,
+    onRemoveTlo,
+    renderTemporaryLockouts,
+    loadTemporaryLockouts,
     onVolumeChange,
     onSquelchChange,
     onToggleAutoRecord,

@@ -62,7 +62,18 @@
     "consoleTitle": "コマンドコンソール",
     "consolePlaceholder": "コマンドを入力 (例: GLG, STS)",
     "send": "送信",
-    "waiting": "待機中..."
+    "waiting": "待機中...",
+    "tloSection": "一時ロックアウト (T-L/O)",
+    "unlockAllBtn": "🔓 全解除",
+    "unlockAllTooltip": "現在の一時ロックアウトをすべて一括解除します (実機L/O長押し)",
+    "tloEmpty": "一時ロックアウト中の項目はありません",
+    "tloRemove": "解除",
+    "unlockAllSuccess": "すべてのT-L/O（一時ロックアウト）を解除しました",
+    "holdTooltip": "短押し: チャンネルホールド / 長押し: システムホールド",
+    "loTooltip": "短押し: 一時ロックアウト / 長押し: 全ロック解除",
+    "dotTooltip": "短押し: 小数点 / 長押し: クイック保存 (Quick Store)",
+    "systemHoldNotice": "🔒 システムホールド (System Hold) を送信しました",
+    "quickStoreNotice": "💾 クイック保存 (Quick Store) を送信しました"
   },
   "log": {
     "title": "📋 受信ログ",

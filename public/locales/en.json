@@ -62,7 +62,18 @@
     "consoleTitle": "Command Console",
     "consolePlaceholder": "Enter command (e.g. GLG, STS)",
     "send": "Send",
-    "waiting": "Waiting..."
+    "waiting": "Waiting...",
+    "tloSection": "Temporary Lockout (T-L/O)",
+    "unlockAllBtn": "🔓 Unlock All",
+    "unlockAllTooltip": "Unlocks all temporary lockouts on hardware (L/O long-press)",
+    "tloEmpty": "No temporary locked out channels",
+    "tloRemove": "Unlock",
+    "unlockAllSuccess": "All temporary lockouts have been unlocked",
+    "holdTooltip": "Short press: Channel Hold / Long press: System Hold",
+    "loTooltip": "Short press: Temporary Lockout / Long press: Unlock All",
+    "dotTooltip": "Short press: Decimal / Long press: Quick Store",
+    "systemHoldNotice": "🔒 System Hold command sent",
+    "quickStoreNotice": "💾 Quick Store command sent"
   },
   "log": {
     "title": "📋 Reception Log",

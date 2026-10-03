@@ -76,6 +76,9 @@ class ScannerState extends EventEmitter {
       ? config.squelch
       : ((config && config.initialSquelch !== undefined) ? config.initialSquelch : 2);
 
+    /** @type {Array<Object>} Web-tracked temporary lockout (T-L/O) channel list */
+    this.temporaryLockouts = [];
+
     /** @type {number|null} Timer for maximum consecutive reception duration */
     this._maxDurationTimer = null;
   }
@@ -431,6 +434,110 @@ class ScannerState extends EventEmitter {
   }
 
   /**
+   * Add a channel to temporary lockout tracking list
+   * @param {Object} channelInfo - Channel info
+   * @param {string} [channelInfo.freqTgid] - Frequency or TGID
+   * @param {string} [channelInfo.system] - System name
+   * @param {string} [channelInfo.department] - Department name
+   * @param {string} [channelInfo.channel] - Channel name
+   * @param {string} [channelInfo.modulation] - Modulation
+   */
+  addTemporaryLockout(channelInfo) {
+    if (!channelInfo || !channelInfo.freqTgid) {
+      return;
+    }
+
+    const item = {
+      id: `${channelInfo.freqTgid}_${Date.now()}`,
+      freqTgid: String(channelInfo.freqTgid).trim(),
+      system: (channelInfo.system || '').trim(),
+      department: (channelInfo.department || '').trim(),
+      channel: (channelInfo.channel || '').trim(),
+      modulation: (channelInfo.modulation || '').trim(),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Remove existing item with same freqTgid to avoid duplicates
+    this.temporaryLockouts = this.temporaryLockouts.filter(
+      (entry) => entry.freqTgid !== item.freqTgid
+    );
+
+    // Prepend to list (keep max 50 items)
+    this.temporaryLockouts.unshift(item);
+    if (this.temporaryLockouts.length > 50) {
+      this.temporaryLockouts.pop();
+    }
+
+    console.log(`[ScannerState] 🚫 Added to temporary lockout tracking: ${item.freqTgid} (${item.channel || item.system || 'N/A'})`);
+    this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
+    this.emit('statusUpdate', this.getStatus());
+  }
+
+  /**
+   * Record current active/recent channel to temporary lockout tracking
+   */
+  recordLockoutFromCurrent() {
+    let target = null;
+    if (this.currentReception && this.currentReception.freqTgid) {
+      target = this.currentReception;
+    } else if (this.latestSts) {
+      // Extract from latest STS response LCD lines
+      const line3 = (this.latestSts.line3 || '').trim();
+      const line4 = (this.latestSts.line4 || '').trim();
+      const freqMatch = line3.match(/(\d{2,4}\.\d{3,5})/);
+      if (freqMatch) {
+        target = {
+          freqTgid: freqMatch[1],
+          system: (this.latestSts.line1 || '').trim(),
+          department: (this.latestSts.line2 || '').trim(),
+          channel: line4 || '',
+          modulation: '',
+        };
+      }
+    } else if (this._receptionLog.length > 0) {
+      target = this._receptionLog[0];
+    }
+
+    if (target && target.freqTgid) {
+      this.addTemporaryLockout(target);
+    }
+  }
+
+  /**
+   * Remove a channel from temporary lockout tracking list
+   * @param {string} idOrFreq - ID or freqTgid
+   */
+  removeTemporaryLockout(idOrFreq) {
+    const beforeCount = this.temporaryLockouts.length;
+    this.temporaryLockouts = this.temporaryLockouts.filter(
+      (entry) => entry.id !== idOrFreq && entry.freqTgid !== idOrFreq
+    );
+    if (this.temporaryLockouts.length !== beforeCount) {
+      console.log(`[ScannerState] 🔓 Removed from temporary lockout tracking: ${idOrFreq}`);
+      this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
+      this.emit('statusUpdate', this.getStatus());
+    }
+  }
+
+  /**
+   * Clear all tracked temporary lockouts
+   */
+  clearTemporaryLockouts() {
+    this.temporaryLockouts = [];
+    console.log('[ScannerState] 🔓 Cleared all temporary lockout tracking');
+    this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
+    this.emit('statusUpdate', this.getStatus());
+  }
+
+  /**
+   * Get all tracked temporary lockouts
+   * @returns {Array<Object>}
+   */
+  getTemporaryLockouts() {
+    return [...this.temporaryLockouts];
+  }
+
+  /**
    * Get current scanner status snapshot
    * @returns {Object} Status snapshot object
    */
@@ -445,6 +552,8 @@ class ScannerState extends EventEmitter {
       maxReceptionDurationSec: this.maxReceptionDurationSec,
       volume: this.volume,
       squelch: this.squelch,
+      temporaryLockouts: this.temporaryLockouts,
+      temporaryLockoutCount: this.temporaryLockouts.length,
       isHoldMode: this.isHoldMode,
       rssi: this.rssi,
       currentReception: this.currentReception ? { ...this.currentReception } : null,

@@ -347,6 +347,15 @@ class SerialController extends EventEmitter {
   }
 
   /**
+   * Unlock all temporary lockouts (Simulates L/O key long-press / hold)
+   * @returns {Promise<string>}
+   */
+  async unlockAll() {
+    // Send KEY,L,H (Hold/Long-press L/O key) to clear temporary lockouts
+    return this.pressKey('L', 'H');
+  }
+
+  /**
    * Set volume level
    * @param {number} level - Volume level (0-15)
    * @returns {Promise<string>}

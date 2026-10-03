@@ -199,8 +199,8 @@
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.scanSection">スキャン制御</div>
           <div class="button-grid button-grid-2">
-            <button class="btn btn-primary" id="btn-scan" onclick="controlPanel.onScan()" data-i18n="control.scanBtn">▶ スキャン</button>
-            <button class="btn btn-danger" id="btn-hold" onclick="controlPanel.onHold()" data-i18n="control.holdBtn">⏸ ホールド</button>
+            <button class="btn btn-primary" id="btn-scan" data-key="S" data-i18n="control.scanBtn">▶ スキャン</button>
+            <button class="btn btn-danger" id="btn-hold" data-key="H" data-i18n="control.holdBtn" data-i18n-title="control.holdTooltip" title="短押し: チャンネルホールド / 長押し: システムホールド">⏸ ホールド</button>
           </div>
           <div class="slider-row" style="margin-top: 8px;">
             <span class="slider-label" style="width: auto; min-width: 64px;" data-i18n="control.maxReceptionLabel" data-i18n-title="control.maxReceptionTooltip" title="一定時間以上受信し続けた場合に強制的にスキャンを再開します（本体ポジティブディレイと併用想定）">最長受信</span>
@@ -237,12 +237,12 @@
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.serviceSection">サービスサーチ & 機能</div>
           <div class="button-grid button-grid-3">
-            <button class="btn" onclick="controlPanel.onKey('P','P')">POL</button>
-            <button class="btn" onclick="controlPanel.onKey('H','P')">HP</button>
-            <button class="btn" onclick="controlPanel.onKey('W','P')">WX</button>
-            <button class="btn" onclick="controlPanel.onKey('T','P')">STATE</button>
-            <button class="btn" onclick="controlPanel.onKey('S','P')">SRCH</button>
-            <button class="btn btn-warning" onclick="controlPanel.onKey('L','P')">L/O</button>
+            <button class="btn" data-key="P">POL</button>
+            <button class="btn" data-key="H">HP</button>
+            <button class="btn" data-key="W">WX</button>
+            <button class="btn" data-key="T">STATE</button>
+            <button class="btn" data-key="S">SRCH</button>
+            <button class="btn btn-warning" data-key="L" data-i18n-title="control.loTooltip" title="短押し: 一時ロックアウト / 長押し: 全ロック解除">L/O</button>
           </div>
         </div>
 
@@ -251,35 +251,54 @@
           <div class="keypad-layout">
             <!-- Left: D-Pad Navigation -->
             <div class="d-pad-container">
-              <button class="btn btn-dpad dpad-up" onclick="controlPanel.onKey('^','P')">▲</button>
-              <button class="btn btn-dpad dpad-left" onclick="controlPanel.onKey('<','P')">◀</button>
-              <button class="btn btn-dpad dpad-center" onclick="controlPanel.onKey('E','P')">E</button>
-              <button class="btn btn-dpad dpad-right" onclick="controlPanel.onKey('>','P')">▶</button>
-              <button class="btn btn-dpad dpad-down" onclick="controlPanel.onKey('V','P')">▼</button>
+              <button class="btn btn-dpad dpad-up" data-key="^">▲</button>
+              <button class="btn btn-dpad dpad-left" data-key="<">◀</button>
+              <button class="btn btn-dpad dpad-center" data-key="E">E</button>
+              <button class="btn btn-dpad dpad-right" data-key=">">▶</button>
+              <button class="btn btn-dpad dpad-down" data-key="V">▼</button>
             </div>
             
             <!-- Right: Numeric Keypad -->
             <div class="numpad-container">
-              <button class="btn" onclick="controlPanel.onKey('1','P')">1</button>
-              <button class="btn" onclick="controlPanel.onKey('2','P')">2</button>
-              <button class="btn" onclick="controlPanel.onKey('3','P')">3</button>
+              <button class="btn" data-key="1">1</button>
+              <button class="btn" data-key="2">2</button>
+              <button class="btn" data-key="3">3</button>
               
-              <button class="btn" onclick="controlPanel.onKey('4','P')">4</button>
-              <button class="btn" onclick="controlPanel.onKey('5','P')">5</button>
-              <button class="btn" onclick="controlPanel.onKey('6','P')">6</button>
+              <button class="btn" data-key="4">4</button>
+              <button class="btn" data-key="5">5</button>
+              <button class="btn" data-key="6">6</button>
               
-              <button class="btn" onclick="controlPanel.onKey('7','P')">7</button>
-              <button class="btn" onclick="controlPanel.onKey('8','P')">8</button>
-              <button class="btn" onclick="controlPanel.onKey('9','P')">9</button>
+              <button class="btn" data-key="7">7</button>
+              <button class="btn" data-key="8">8</button>
+              <button class="btn" data-key="9">9</button>
               
-              <button class="btn" onclick="controlPanel.onKey('.','P')">.</button>
-              <button class="btn" onclick="controlPanel.onKey('0','P')">0</button>
-              <button class="btn" onclick="controlPanel.onKey('F','P')">FUNC</button>
-              <button class="btn btn-menu" onclick="controlPanel.onKey('M','P')">MENU</button>
+              <button class="btn" data-key="." data-i18n-title="control.dotTooltip" title="短押し: 小数点 / 長押し: クイック保存 (Quick Store)">.</button>
+              <button class="btn" data-key="0">0</button>
+              <button class="btn" data-key="F">FUNC</button>
+              <button class="btn btn-menu" data-key="M">MENU</button>
             </div>
           </div>
         </div>
 
+        <!-- Temporary Lockout (T-L/O) Management -->
+        <div class="control-section tlo-section" id="tlo-section">
+          <div class="tlo-section-header">
+            <div class="control-section-title tlo-title-with-badge">
+              <span data-i18n="control.tloSection">一時ロックアウト (T-L/O)</span>
+              <span class="tlo-badge" id="tlo-count-badge">0</span>
+            </div>
+            <button class="btn btn-sm btn-unlock-all" id="btn-unlock-all"
+                    onclick="controlPanel.onUnlockAll()"
+                    data-i18n="control.unlockAllBtn"
+                    data-i18n-title="control.unlockAllTooltip"
+                    title="現在の一時ロックアウトをすべて一括解除します (実機L/O長押し)">
+              🔓 全解除
+            </button>
+          </div>
+          <div class="tlo-list-container" id="tlo-list-container">
+            <div class="tlo-empty-text" data-i18n="control.tloEmpty">一時ロックアウト中の項目はありません</div>
+          </div>
+        </div>
 
         <!-- Recording Settings -->
         <div class="control-section">

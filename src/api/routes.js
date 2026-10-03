@@ -84,6 +84,22 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
         return res.status(400).json({ error: 'Key parameter is required' });
       }
 
+      // Handle L/O key logic
+      if (key === 'L') {
+        if (action === 'H') {
+          // Long press L/O = Unlock All
+          scannerState.clearTemporaryLockouts();
+        } else {
+          // Short press L/O = Temporary Lockout current
+          scannerState.recordLockoutFromCurrent();
+        }
+      }
+
+      // Handle HOLD key logic
+      if (key === 'H') {
+        scannerState.setHoldMode(true);
+      }
+
       const response = await serialController.pressKey(key, action);
       res.json({ key, action, response });
     } catch (err) {
@@ -115,6 +131,38 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  /**
+   * POST /api/scanner/unlock-all - Unlock all temporary lockouts (Simulates L/O key long-press)
+   */
+  router.post('/scanner/unlock-all', requireOperator(authConfig), async (req, res) => {
+    try {
+      const response = await serialController.unlockAll();
+      scannerState.clearTemporaryLockouts();
+      res.json({ action: 'unlock-all', response, cleared: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * GET /api/scanner/temporary-lockouts - Get tracked temporary lockout channels
+   */
+  router.get('/scanner/temporary-lockouts', requireListener(authConfig), (req, res) => {
+    res.json({
+      temporaryLockouts: scannerState.getTemporaryLockouts(),
+      count: scannerState.temporaryLockouts.length,
+    });
+  });
+
+  /**
+   * DELETE /api/scanner/temporary-lockouts/:id - Remove item from temporary lockout tracking
+   */
+  router.delete('/scanner/temporary-lockouts/:id', requireOperator(authConfig), (req, res) => {
+    const { id } = req.params;
+    scannerState.removeTemporaryLockout(id);
+    res.json({ removed: true, id });
   });
 
   /**
