@@ -50,6 +50,7 @@
             <option value="en">🇺🇸 English</option>
           </select>
         </div>
+        <button class="btn btn-secondary" id="btn-manual-toggle" onclick="manualPanel.toggle()" data-i18n="header.manualBtn" title="操作マニュアルを開く">📖 操作ガイド</button>
         <button class="btn btn-primary" id="btn-toggle-editor" onclick="app.toggleEditorMode()" data-i18n="header.editorBtn">📝 エディタ起動</button>
         <div class="connection-status" id="connection-status">
           <span class="status-dot" id="status-dot"></span>
@@ -770,6 +771,223 @@
     </div>
   </div>
 
+  <!-- Manual / User Guide Side Drawer (Simultaneous View & Control) -->
+  <aside class="manual-drawer" id="manual-drawer" aria-label="操作マニュアル">
+    <div class="manual-header">
+      <div class="manual-title-row">
+        <h2 data-i18n="manual.title">📖 操作ガイド & 実践マニュアル</h2>
+        <button class="manual-close-btn" onclick="manualPanel.close()" title="閉じる">✕</button>
+      </div>
+      <div class="manual-search-box">
+        <input type="text" id="manual-search-input" placeholder="マニュアル内を検索 (例: ホールド, ロックアウト...)" data-i18n-placeholder="manual.searchPlaceholder">
+      </div>
+      <nav class="manual-tabs">
+        <button class="manual-tab-btn active" data-tab="practice" onclick="manualPanel.setTab('practice')" data-i18n="manual.tabPractice">🚀 実践操作</button>
+        <button class="manual-tab-btn" data-tab="buttons" onclick="manualPanel.setTab('buttons')" data-i18n="manual.tabButtons">🔘 ボタン一覧</button>
+        <button class="manual-tab-btn" data-tab="shortcuts" onclick="manualPanel.setTab('shortcuts')" data-i18n="manual.tabShortcuts">⌨️ ショートカット</button>
+        <button class="manual-tab-btn" data-tab="overview" onclick="manualPanel.setTab('overview')" data-i18n="manual.tabOverview">💡 画面概要</button>
+      </nav>
+    </div>
+
+    <div class="manual-body" id="manual-body">
+      <!-- Tab 1: Practice Workflows -->
+      <div class="manual-tab-pane active" data-pane="practice">
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice1Title">① 通信を受信中に固定して聞き続けたい (チャンネルホールド)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice1Step1">気になる通信を受信したら、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を短押しします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice1Step2">その周波数に固定され、相手局からの返信や長時間の通信を逃さず聴取できます。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice1Step3">聞き終わったら、<span class="key-badge btn-primary-badge">▶ スキャン</span> を押すとスキャンが再開します。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice2Title">② ノイズや不要な通信を今だけスキップしたい (一時ロックアウト: T-L/O)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice2Step1">不要な通信や微弱ノイズで停止したら、<span class="key-badge btn-warning-badge">L/O</span> を短押しします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice2Step2">即座に次のチャンネルへスキップし、Web画面の「一時ロックアウト」リストに自動登録されます。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice2Step3">一時ロックアウトはスキャナの電源OFFまたは全解除を行うまで有効です。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice3Title">③ 一時ロックアウトした周波数を元に戻したい (T-L/O 一括解除)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">A</span><span data-i18n="manual.practice3Step1">方法A: <span class="key-badge btn-warning-badge">L/O</span> ボタンを約0.65秒長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">B</span><span data-i18n="manual.practice3Step2">方法B: コントロールパネルの <span class="key-badge">🔓 全解除</span> ボタンをクリックします。</span></div>
+            <div class="manual-step"><span class="step-num">C</span><span data-i18n="manual.practice3Step3">方法C: リストの特定周波数の右側にある <span class="key-badge">✕</span> で個別解除も可能です。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice4Title">④ 特定の警察署や管轄だけに集中してスキャンしたい (システムホールド)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice4Step1">対象システムのチャンネルを受信中（またはホールド中）に、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice4Step2">画面に「System Hold」が表示され、現在選択されているシステム内だけを集中巡回します。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice4Step3">もう一度 <span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しするか <span class="key-badge btn-primary-badge">▶ スキャン</span> で解除できます。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice5Title">⑤ 周波数を直接入力して合わせたい (ダイレクト選局)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice5Step1"><span class="key-badge btn-danger-badge">⏸ ホールド</span> を押してホールド状態にします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice5Step2">テンキーで周波数を直接入力します (例: 1 5 5 . 7 0 0)。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice5Step3">最後に <span class="key-badge">E</span> または <span class="key-badge btn-danger-badge">⏸ ホールド</span> を押すとその周波数へジャンプします。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice6Title">⑥ 気に入った周波数をワンタッチでメモリー保存したい (クイックストア)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice6Step1">サーチ中やダイレクト入力で見つけた周波数を受信・ホールドします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice6Step2">テンキーの <span class="key-badge">.</span> ボタンを約0.65秒長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice6Step3">スキャナの「Quick Store」グループに即座に周波数が保存されます。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice7Title">⑦ 特定のグループを素早くON/OFFしたい (グループ・クイックキー)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice7Step1"><span class="key-badge">FUNC</span> ボタンを押します (画面に「F」アイコンが点灯)。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice7Step2">その直後にテンキーの <span class="key-badge">1</span> 〜 <span class="key-badge">9</span> を押すと、グループ・クイックキーが即座に切り替わります。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice7Step3">※直接数字キーを押した場合はシステム・クイックキーが切り替わります。</span></div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <div class="manual-card-title" data-i18n="manual.practice8Title">⑧ 実機の設定メニューを操作したい (メニュー操作手順)</div>
+          <div class="manual-card-body">
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice8Step1"><span class="key-badge btn-menu-badge">MENU</span> を押すと、実機の仮想LCDに設定メニューが表示されます。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice8Step2"><span class="key-badge">▲</span> / <span class="key-badge">▼</span> (またはキーボード ↑ / ↓) で項目を選択します。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice8Step3"><span class="key-badge">E</span> (または Enter) で決定、<span class="key-badge btn-menu-badge">MENU</span> や <span class="key-badge">.</span> (NO) で前の階層へ戻ります。</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Buttons Reference -->
+      <div class="manual-tab-pane" data-pane="buttons">
+        <table class="manual-table">
+          <thead>
+            <tr>
+              <th>ボタン</th>
+              <th data-i18n="manual.shortPress">短押し (クリック)</th>
+              <th data-i18n="manual.longPress">長押し (0.65秒)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="manual-table-row">
+              <td><span class="key-badge btn-primary-badge">▶ スキャン</span></td>
+              <td>スキャン開始 / 再開</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge btn-danger-badge">⏸ ホールド</span></td>
+              <td>チャンネルホールド (現在周波数固定)</td>
+              <td><strong>🔒 システムホールド (現在システムのみ巡回)</strong></td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge btn-warning-badge">L/O</span></td>
+              <td>一時ロックアウト (T-L/O)</td>
+              <td><strong>🔓 全ロック解除 (Unlock All)</strong></td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">.</span> (NO)</td>
+              <td>小数点入力 / NO (戻る)</td>
+              <td><strong>💾 クイック保存 (Quick Store)</strong></td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">FUNC</span></td>
+              <td>ファンクション待機 (画面にF点灯)</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge btn-menu-badge">MENU</span></td>
+              <td>設定メニュー開閉 / 上位階層へ戻る</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">▲</span> <span class="key-badge">▼</span></td>
+              <td>チャンネル送り / 周波数増減 / メニュー選択</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">◀</span> <span class="key-badge">▶</span></td>
+              <td>カーソル移動 / 設定モード切り替え</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">E</span></td>
+              <td>決定 (ENTER)</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">0</span> 〜 <span class="key-badge">9</span></td>
+              <td>システム・クイックキーの有効/無効</td>
+              <td>—</td>
+            </tr>
+            <tr class="manual-table-row">
+              <td><span class="key-badge">POL</span> <span class="key-badge">HP</span> 等</td>
+              <td>各サービスサーチのON/OFF</td>
+              <td>サーチ範囲設定メニューへジャンプ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 3: Keyboard Shortcuts -->
+      <div class="manual-tab-pane" data-pane="shortcuts">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <div class="shortcut-keys"><kbd>↑</kbd> / <kbd>↓</kbd></div>
+            <div class="shortcut-desc">チャンネル送り・戻し / メニュー選択 (▲ / ▼)</div>
+          </div>
+          <div class="shortcut-item">
+            <div class="shortcut-keys"><kbd>←</kbd> / <kbd>→</kbd></div>
+            <div class="shortcut-desc">カーソル移動 (◀ / ▶)</div>
+          </div>
+          <div class="shortcut-item">
+            <div class="shortcut-keys"><kbd>Enter</kbd></div>
+            <div class="shortcut-desc">決定・選択確定 (E / ENTER)</div>
+          </div>
+          <div class="shortcut-item">
+            <div class="shortcut-keys"><kbd>Esc</kbd> / <kbd>M</kbd></div>
+            <div class="shortcut-desc">メニュー開閉 / 前の階層に戻る (MENU)</div>
+          </div>
+          <div class="shortcut-item">
+            <div class="shortcut-keys"><kbd>F</kbd></div>
+            <div class="shortcut-desc">ファンクションモード待機 (FUNC)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Overview -->
+      <div class="manual-tab-pane" data-pane="overview">
+        <div class="manual-card">
+          <div class="manual-card-title">📡 画面構成と各パネルの役割</div>
+          <div class="manual-card-body">
+            <div class="manual-overview-item">
+              <strong>🖥️ スキャナー表示 (サイバー / 実機LCD):</strong>
+              <p>現在受信中の周波数、システム名、デパートメント名、チャンネル名、RSSI信号強度、モードをリアルタイム表示します。「実機LCD」に切り替えると実機と同じ3行/4行テキストとアイコンが忠実に再現されます。</p>
+            </div>
+            <div class="manual-overview-item">
+              <strong>🔊 ライブ音声:</strong>
+              <p>スキャナーからの受信音声を低遅延（100〜300ms）でブラウザへリアルタイム配信します。</p>
+            </div>
+            <div class="manual-overview-item">
+              <strong>🎛️ コントロールパネル:</strong>
+              <p>スキャン制御、VOL/SQハードウェアスライダー、実機キーパッド、一時ロックアウト(T-L/O)管理、自動録音設定を行います。</p>
+            </div>
+            <div class="manual-overview-item">
+              <strong>📋 受信ログ & 録音一覧:</strong>
+              <p>受信した通信の履歴ログ検索・CSVエクスポート、および自動録音されたMP3ファイルの即時再生・波形シークが可能です。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- JavaScript -->
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
@@ -779,5 +997,6 @@
   <script src="/js/controlPanel.js"></script>
   <script src="/js/recordingPanel.js"></script>
   <script src="/js/activityLog.js"></script>
+  <script src="/js/manualPanel.js"></script>
 </body>
 </html>
