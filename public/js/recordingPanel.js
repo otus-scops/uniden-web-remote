@@ -491,30 +491,49 @@ const recordingPanel = (() => {
   }
 
   /**
-   * Play next recording in sequence
+   * 時系列に沿って未来方向（次の録音）を再生
    */
   function onPlayNext() {
     isSinglePlayMode = false;
     if (recordings.length === 0) return;
 
-    let nextIndex = currentIndex + 1;
-    if (nextIndex >= recordings.length) {
-      console.log('[RecordingPanel] Reached end of recording list');
+    // リストのソート順に応じて未来方向（より新しい録音）のインデックスを決定
+    let nextIndex;
+    if (playOrder === 'desc') {
+      // 新しい順（降順：上が最新、下が過去）の場合、未来方向はリストの上（currentIndex - 1）
+      nextIndex = currentIndex - 1;
+    } else {
+      // 古い順（昇順：上が過去、下が最新）の場合、未来方向はリストの下（currentIndex + 1）
+      nextIndex = currentIndex + 1;
+    }
+
+    if (nextIndex < 0 || nextIndex >= recordings.length) {
+      console.log('[RecordingPanel] 録音リストの終端（最新）に到達しました');
       return;
     }
     playAtIndex(nextIndex);
   }
 
   /**
-   * Play previous recording
+   * 時系列に沿って過去方向（前の録音）を再生
    */
   function onPlayPrev() {
     isSinglePlayMode = false;
     if (recordings.length === 0) return;
 
-    let prevIndex = currentIndex - 1;
-    if (prevIndex < 0) {
-      prevIndex = 0;
+    // リストのソート順に応じて過去方向（より古い録音）のインデックスを決定
+    let prevIndex;
+    if (playOrder === 'desc') {
+      // 新しい順の場合、過去方向はリストの下（currentIndex + 1）
+      prevIndex = currentIndex + 1;
+    } else {
+      // 古い順の場合、過去方向はリストの上（currentIndex - 1）
+      prevIndex = currentIndex - 1;
+    }
+
+    if (prevIndex < 0 || prevIndex >= recordings.length) {
+      console.log('[RecordingPanel] 録音リストの終端（最古）に到達しました');
+      return;
     }
     playAtIndex(prevIndex);
   }
