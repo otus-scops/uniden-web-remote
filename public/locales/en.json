@@ -2,6 +2,7 @@
   "header": {
     "title": "BCT15X",
     "pageTitle": "BCT15X Remote Scanner",
+    "metaDescription": "BCT15X Remote Scanner - Remote control & auto recording for your scanner via Web UI",
     "subtitle": "Remote Scanner",
     "manualBtn": "📖 User Guide",
     "editorBtn": "📝 Memory Editor",
@@ -196,6 +197,7 @@
     "tree": {
       "title": "📂 Systems / Groups",
       "addSystem": "➕ System",
+      "addSystemTooltip": "Add a new system",
       "loading": "Loading data...",
       "empty": "No systems found. Click 'Read from Scanner' or '➕ System'.",
       "addGroupTitle": "Add Group",
@@ -212,14 +214,18 @@
       "editGroup": "✏️ Group Settings",
       "addRow": "➕ Add Row",
       "paste": "📋 Batch Paste",
+      "pasteTooltip": "Paste a table from Excel or similar in one go",
       "colNum": "#",
       "colName": "Name (Alpha Tag)",
       "colFreq": "Frequency (MHz)",
       "colMod": "Modulation",
       "colTone": "Tone / Code",
       "colLockout": "L/O",
+      "colLockoutTooltip": "Lockout",
       "colPriority": "PRI",
+      "colPriorityTooltip": "Priority channel",
       "colAttenuator": "ATT",
+      "colAttenuatorTooltip": "Attenuator",
       "colActions": "Actions",
       "empty": "No channels yet. Click '➕ Add Row' or '📋 Batch Paste' to add channels.",
       "clearAll": "🗑️ Clear All Rows",
@@ -282,12 +288,7 @@
       "fetchError": "Fetch error: {error}",
       "restoreError": "Restore error: {error}",
       "communicating": "Communicating..."
-    },
-    "tree.addSystemTooltip": "Add a new system",
-    "grid.pasteTooltip": "Paste a table from Excel or similar in one go",
-    "grid.colLockoutTooltip": "Lockout",
-    "grid.colPriorityTooltip": "Priority channel",
-    "grid.colAttenuatorTooltip": "Attenuator"
+    }
   },
   "manual": {
     "title": "📖 User Guide & Practice Manual",

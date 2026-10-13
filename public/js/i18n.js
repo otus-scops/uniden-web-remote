@@ -222,6 +222,14 @@ const i18n = (function () {
           el.setAttribute('title', this.t(key));
         }
       });
+
+      // Meta content replacement (e.g. meta[name=description])
+      rootElement.querySelectorAll('[data-i18n-content]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-content');
+        if (key) {
+          el.setAttribute('content', this.t(key));
+        }
+      });
     },
   };
 })();

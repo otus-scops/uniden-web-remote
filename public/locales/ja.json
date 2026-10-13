@@ -2,6 +2,7 @@
   "header": {
     "title": "BCT15X",
     "pageTitle": "BCT15X リモートスキャナー",
+    "metaDescription": "BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音",
     "subtitle": "リモートスキャナー",
     "manualBtn": "📖 操作ガイド",
     "editorBtn": "📝 エディタ起動",
@@ -196,6 +197,7 @@
     "tree": {
       "title": "📂 システム / グループ",
       "addSystem": "➕ システム",
+      "addSystemTooltip": "新規システム追加",
       "loading": "データを読み込んでいます...",
       "empty": "システムがありません。「📥 スキャナーから読込」または「➕ システム」を押してください。",
       "addGroupTitle": "グループ追加",
@@ -212,14 +214,18 @@
       "editGroup": "✏️ グループ設定",
       "addRow": "➕ 行追加",
       "paste": "📋 一括貼付",
+      "pasteTooltip": "Excel等から表をまとめて貼り付け",
       "colNum": "#",
       "colName": "名前 (Alpha Tag)",
       "colFreq": "周波数 (MHz)",
       "colMod": "変調",
       "colTone": "トーン / コード",
       "colLockout": "L/O",
+      "colLockoutTooltip": "ロックアウト",
       "colPriority": "PRI",
+      "colPriorityTooltip": "優先チャンネル",
       "colAttenuator": "ATT",
+      "colAttenuatorTooltip": "アッテネータ(減衰)",
       "colActions": "操作",
       "empty": "チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。",
       "clearAll": "🗑️ 全行削除",
@@ -282,12 +288,7 @@
       "fetchError": "取得エラー: {error}",
       "restoreError": "復元エラー: {error}",
       "communicating": "通信中..."
-    },
-    "tree.addSystemTooltip": "新規システム追加",
-    "grid.pasteTooltip": "Excel等から表をまとめて貼り付け",
-    "grid.colLockoutTooltip": "ロックアウト",
-    "grid.colPriorityTooltip": "優先チャンネル",
-    "grid.colAttenuatorTooltip": "アッテネータ(減衰)"
+    }
   },
   "manual": {
     "title": "📖 操作ガイド & 実践マニュアル",
