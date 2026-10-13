@@ -1,13 +1,16 @@
 {
   "header": {
     "title": "BCT15X",
+    "pageTitle": "BCT15X Remote Scanner",
+    "metaDescription": "BCT15X Remote Scanner - Remote control & auto recording for your scanner via Web UI",
     "subtitle": "Remote Scanner",
     "manualBtn": "📖 User Guide",
     "editorBtn": "📝 Memory Editor",
     "returnToScanner": "◀ Return to Scanner",
     "connected": "Connected",
     "disconnected": "Disconnected",
-    "installApp": "Install App"
+    "installApp": "Install App",
+    "manualTooltip": "Open the user guide"
   },
   "scanner": {
     "title": "📡 Scanner",
@@ -37,7 +40,9 @@
     "liveAudioStart": "▶ Live Audio",
     "liveAudioStop": "⏹ Stop",
     "liveAudioConnecting": "⏳ Connecting...",
-    "liveAudioRetry": "Click to retry"
+    "liveAudioRetry": "Click to retry",
+    "modeCyberTooltip": "Large cyber-style display",
+    "modeLcdTooltip": "Virtual LCD like the real radio (supports menu navigation)"
   },
   "control": {
     "title": "🎛️ Controls",
@@ -74,7 +79,13 @@
     "loTooltip": "Short press: Temporary Lockout / Long press: Unlock All",
     "dotTooltip": "Short press: Decimal / Long press: Quick Store",
     "systemHoldNotice": "🔒 System Hold command sent",
-    "quickStoreNotice": "💾 Quick Store command sent"
+    "quickStoreNotice": "💾 Quick Store command sent",
+    "polTooltip": "POL: toggle State Police/DOT search / FUNC+POL: toggle Priority",
+    "hpTooltip": "BearTracker HP: front-panel only. The remote protocol has no matching key, so it cannot be pressed here. Configure via MENU → Set Bear Tracker",
+    "gpsTooltip": "Toggle GPS mode / FUNC+long press: save current location (GPS receiver required)",
+    "wxTooltip": "WX: short press / FUNC+WX: Weather Alert Priority / FUNC+long press: weather scan",
+    "sqTooltip": "SQ knob press: toggle alert mute / FUNC+Q: toggle Close Call / FUNC+long press: CC Only",
+    "srchTooltip": "Shared Scan/SRCH key on the radio: while scanning = resume scan / while searching = resume search / FUNC+S: Quick Search"
   },
   "log": {
     "title": "📋 Reception Log",
@@ -114,7 +125,8 @@
     "colDuration": "Duration",
     "colAudio": "Audio",
     "colPlayback": "Play",
-    "playTooltip": "Play recording"
+    "playTooltip": "Play recording",
+    "dragToReorder": "Drag to reorder"
   },
   "auth": {
     "login": "Login",
@@ -166,7 +178,9 @@
     "orderDesc": "Newest First",
     "playSpeed": "Speed",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "prevTooltip": "Previous recording",
+    "nextTooltip": "Next recording"
   },
   "editor": {
     "statsInitial": "Systems: 0 | Groups: 0 | Channels: 0",
@@ -183,6 +197,7 @@
     "tree": {
       "title": "📂 Systems / Groups",
       "addSystem": "➕ System",
+      "addSystemTooltip": "Add a new system",
       "loading": "Loading data...",
       "empty": "No systems found. Click 'Read from Scanner' or '➕ System'.",
       "addGroupTitle": "Add Group",
@@ -199,14 +214,18 @@
       "editGroup": "✏️ Group Settings",
       "addRow": "➕ Add Row",
       "paste": "📋 Batch Paste",
+      "pasteTooltip": "Paste a table from Excel or similar in one go",
       "colNum": "#",
       "colName": "Name (Alpha Tag)",
       "colFreq": "Frequency (MHz)",
       "colMod": "Modulation",
       "colTone": "Tone / Code",
       "colLockout": "L/O",
+      "colLockoutTooltip": "Lockout",
       "colPriority": "PRI",
+      "colPriorityTooltip": "Priority channel",
       "colAttenuator": "ATT",
+      "colAttenuatorTooltip": "Attenuator",
       "colActions": "Actions",
       "empty": "No channels yet. Click '➕ Add Row' or '📋 Batch Paste' to add channels.",
       "clearAll": "🗑️ Clear All Rows",
@@ -312,7 +331,43 @@
     "practice8Title": "⑧ Navigate hardware configuration menu (Menu Navigation)",
     "practice8Step1": "Click [ MENU ] to display settings on Virtual LCD.",
     "practice8Step2": "Use [ ▲ ] / [ ▼ ] (or keyboard ↑ / ↓) to navigate items.",
-    "practice8Step3": "Press [ E ] (or Enter) to select, [ MENU ] or [ . ] (NO) to go back."
+    "practice8Step3": "Press [ E ] (or Enter) to select, [ MENU ] or [ . ] (NO) to go back.",
+    "closeTooltip": "Close",
+    "ariaLabel": "User guide",
+    "colButton": "Button",
+    "btnScan": "▶ Scan",
+    "btnScanShort": "Start / resume scanning",
+    "btnHold": "⏸ Hold",
+    "btnHoldShort": "Channel Hold (lock the current frequency)",
+    "btnHoldLong": "🔒 System Hold (scan the current system only)",
+    "btnLoShort": "Temporary Lockout (T-L/O)",
+    "btnLoLong": "🔓 Unlock All",
+    "btnDotShort": "Decimal point / NO (back)",
+    "btnDotLong": "💾 Quick Store",
+    "btnFuncShort": "Function standby (\"F\" shows on the display)",
+    "btnMenuShort": "Open/close the settings menu / go up one level",
+    "btnUpDownShort": "Step channel / tune frequency up or down / menu selection",
+    "btnLeftRightShort": "Move cursor / switch setting mode",
+    "btnEnterShort": "Confirm (ENTER)",
+    "btnDigitsShort": "Enable/disable System Quick Keys",
+    "btnServiceShort": "Toggle each Service Search on/off",
+    "btnServiceLong": "Jump to the search range settings menu",
+    "scUpDown": "Next / previous channel / menu selection (▲ / ▼)",
+    "scLeftRight": "Move cursor (◀ / ▶)",
+    "scEnter": "Confirm selection (E / ENTER)",
+    "scMenu": "Open/close menu / go back one level (MENU)",
+    "scFunc": "Function mode standby (FUNC)",
+    "overviewTitle": "📡 Screen layout and what each panel does",
+    "overviewDisplayTitle": "🖥️ Scanner display (Cyber / Virtual LCD):",
+    "overviewDisplayBody": "Shows the frequency being received, system, department, channel, RSSI signal strength and mode in real time. Switch to \"Virtual LCD\" for a faithful copy of the radio's own 3/4-line text and icons.",
+    "overviewAudioTitle": "🔊 Live audio:",
+    "overviewAudioBody": "Streams the scanner's received audio to the browser in real time with low latency (100–300 ms).",
+    "overviewControlTitle": "🎛️ Control panel:",
+    "overviewControlBody": "Scan control, hardware VOL/SQ sliders, the radio's keypad, temporary lockout (T-L/O) management and auto-recording settings.",
+    "overviewLogTitle": "📋 Reception log & recordings:",
+    "overviewLogBody": "Search and CSV-export the history of received transmissions, and instantly play or waveform-seek the auto-recorded MP3 files.",
+    "keyRangeSep": "–",
+    "keyEtc": "etc."
   },
   "settings": {
     "sectionTitle": "Scanner Settings & Shortcuts",

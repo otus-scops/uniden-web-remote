@@ -1,13 +1,16 @@
 {
   "header": {
     "title": "BCT15X",
+    "pageTitle": "BCT15X リモートスキャナー",
+    "metaDescription": "BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音",
     "subtitle": "リモートスキャナー",
     "manualBtn": "📖 操作ガイド",
     "editorBtn": "📝 エディタ起動",
     "returnToScanner": "◀ スキャナーに戻る",
     "connected": "接続中",
     "disconnected": "切断中",
-    "installApp": "アプリをインストール"
+    "installApp": "アプリをインストール",
+    "manualTooltip": "操作マニュアルを開く"
   },
   "scanner": {
     "title": "📡 スキャナー",
@@ -37,7 +40,9 @@
     "liveAudioStart": "▶ LIVE再生",
     "liveAudioStop": "⏹ 停止",
     "liveAudioConnecting": "⏳ 接続中...",
-    "liveAudioRetry": "クリックして再試行"
+    "liveAudioRetry": "クリックして再試行",
+    "modeCyberTooltip": "サイバー大画面表示",
+    "modeLcdTooltip": "実機風 仮想LCD表示（メニュー操作対応）"
   },
   "control": {
     "title": "🎛️ コントロール",
@@ -74,7 +79,13 @@
     "loTooltip": "短押し: 一時ロックアウト / 長押し: 全ロック解除",
     "dotTooltip": "短押し: 小数点 / 長押し: クイック保存 (Quick Store)",
     "systemHoldNotice": "🔒 システムホールド (System Hold) を送信しました",
-    "quickStoreNotice": "💾 クイック保存 (Quick Store) を送信しました"
+    "quickStoreNotice": "💾 クイック保存 (Quick Store) を送信しました",
+    "polTooltip": "POL: 州警察/DOTトグル / FUNC+POL: Priority 切替",
+    "hpTooltip": "BearTracker HP: 本体のみのボタン。リモートプロトコルに対応キーが存在しないため操作不可。MENU → Set Bear Tracker から設定可能",
+    "gpsTooltip": "GPSモード切替 / FUNC+長押し: 現在地保存 (要GPS受信機)",
+    "wxTooltip": "WX: 短押し/FUNC+WX: アラート優先 / FUNC+長押し: WXスキャン",
+    "sqTooltip": "SQノブ押下: アラートミュート切替 / FUNC+Q: クローズコール切替 / FUNC+長押し: CC Only",
+    "srchTooltip": "実機では Scan/SRCH 兼用ボタン: スキャン中=スキャン再開 / サーチ中=サーチ再開 / FUNC+S: クイックサーチ"
   },
   "log": {
     "title": "📋 受信ログ",
@@ -114,7 +125,8 @@
     "colDuration": "秒数",
     "colAudio": "録音",
     "colPlayback": "再生",
-    "playTooltip": "この通信の録音を再生"
+    "playTooltip": "この通信の録音を再生",
+    "dragToReorder": "ドラッグで順序変更"
   },
   "auth": {
     "login": "ログイン",
@@ -166,7 +178,9 @@
     "orderDesc": "新しい順",
     "playSpeed": "再生速度",
     "prev": "前の録音",
-    "next": "次の録音"
+    "next": "次の録音",
+    "prevTooltip": "前の録音",
+    "nextTooltip": "次の録音"
   },
   "editor": {
     "statsInitial": "システム: 0 | グループ: 0 | チャンネル: 0",
@@ -183,6 +197,7 @@
     "tree": {
       "title": "📂 システム / グループ",
       "addSystem": "➕ システム",
+      "addSystemTooltip": "新規システム追加",
       "loading": "データを読み込んでいます...",
       "empty": "システムがありません。「📥 スキャナーから読込」または「➕ システム」を押してください。",
       "addGroupTitle": "グループ追加",
@@ -199,14 +214,18 @@
       "editGroup": "✏️ グループ設定",
       "addRow": "➕ 行追加",
       "paste": "📋 一括貼付",
+      "pasteTooltip": "Excel等から表をまとめて貼り付け",
       "colNum": "#",
       "colName": "名前 (Alpha Tag)",
       "colFreq": "周波数 (MHz)",
       "colMod": "変調",
       "colTone": "トーン / コード",
       "colLockout": "L/O",
+      "colLockoutTooltip": "ロックアウト",
       "colPriority": "PRI",
+      "colPriorityTooltip": "優先チャンネル",
       "colAttenuator": "ATT",
+      "colAttenuatorTooltip": "アッテネータ(減衰)",
       "colActions": "操作",
       "empty": "チャンネルがありません。「➕ 行追加」または「📋 一括貼付」で追加してください。",
       "clearAll": "🗑️ 全行削除",
@@ -312,7 +331,43 @@
     "practice8Title": "⑧ 実機の設定メニューを操作したい (メニュー操作手順)",
     "practice8Step1": "[ MENU ] を押すと、実機の仮想LCDに設定メニューが表示されます。",
     "practice8Step2": "[ ▲ ] / [ ▼ ] (またはキーボード ↑ / ↓) で項目を選択します。",
-    "practice8Step3": "[ E ] (または Enter) で決定、[ MENU ] や [ . ] (NO) で前の階層へ戻ります。"
+    "practice8Step3": "[ E ] (または Enter) で決定、[ MENU ] や [ . ] (NO) で前の階層へ戻ります。",
+    "closeTooltip": "閉じる",
+    "ariaLabel": "操作マニュアル",
+    "colButton": "ボタン",
+    "btnScan": "▶ スキャン",
+    "btnScanShort": "スキャン開始 / 再開",
+    "btnHold": "⏸ ホールド",
+    "btnHoldShort": "チャンネルホールド (現在周波数固定)",
+    "btnHoldLong": "🔒 システムホールド (現在システムのみ巡回)",
+    "btnLoShort": "一時ロックアウト (T-L/O)",
+    "btnLoLong": "🔓 全ロック解除 (Unlock All)",
+    "btnDotShort": "小数点入力 / NO (戻る)",
+    "btnDotLong": "💾 クイック保存 (Quick Store)",
+    "btnFuncShort": "ファンクション待機 (画面にF点灯)",
+    "btnMenuShort": "設定メニュー開閉 / 上位階層へ戻る",
+    "btnUpDownShort": "チャンネル送り / 周波数増減 / メニュー選択",
+    "btnLeftRightShort": "カーソル移動 / 設定モード切り替え",
+    "btnEnterShort": "決定 (ENTER)",
+    "btnDigitsShort": "システム・クイックキーの有効/無効",
+    "btnServiceShort": "各サービスサーチのON/OFF",
+    "btnServiceLong": "サーチ範囲設定メニューへジャンプ",
+    "scUpDown": "チャンネル送り・戻し / メニュー選択 (▲ / ▼)",
+    "scLeftRight": "カーソル移動 (◀ / ▶)",
+    "scEnter": "決定・選択確定 (E / ENTER)",
+    "scMenu": "メニュー開閉 / 前の階層に戻る (MENU)",
+    "scFunc": "ファンクションモード待機 (FUNC)",
+    "overviewTitle": "📡 画面構成と各パネルの役割",
+    "overviewDisplayTitle": "🖥️ スキャナー表示 (サイバー / 実機LCD):",
+    "overviewDisplayBody": "現在受信中の周波数、システム名、デパートメント名、チャンネル名、RSSI信号強度、モードをリアルタイム表示します。「実機LCD」に切り替えると実機と同じ3行/4行テキストとアイコンが忠実に再現されます。",
+    "overviewAudioTitle": "🔊 ライブ音声:",
+    "overviewAudioBody": "スキャナーからの受信音声を低遅延（100〜300ms）でブラウザへリアルタイム配信します。",
+    "overviewControlTitle": "🎛️ コントロールパネル:",
+    "overviewControlBody": "スキャン制御、VOL/SQハードウェアスライダー、実機キーパッド、一時ロックアウト(T-L/O)管理、自動録音設定を行います。",
+    "overviewLogTitle": "📋 受信ログ & 録音一覧:",
+    "overviewLogBody": "受信した通信の履歴ログ検索・CSVエクスポート、および自動録音されたMP3ファイルの即時再生・波形シークが可能です。",
+    "keyRangeSep": "〜",
+    "keyEtc": "等"
   },
   "settings": {
     "sectionTitle": "スキャナー設定・ショートカット",

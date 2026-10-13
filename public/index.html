@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音">
+  <meta name="description" content="BCT15X リモートスキャナー - Web UIでスキャナーをリモートコントロール＆自動録音" data-i18n-content="header.metaDescription">
   <title>BCT15X リモートスキャナー</title>
 
   <!-- PWA Meta Tags -->
@@ -29,7 +29,7 @@
     <!-- Header -->
     <header class="app-header" id="app-header">
       <div class="app-title">
-        <h1>BCT15X</h1>
+        <h1 data-i18n="header.title">BCT15X</h1>
         <span class="subtitle" id="scanner-model" data-i18n="header.subtitle">リモートスキャナー</span>
       </div>
       <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
@@ -50,7 +50,7 @@
             <option value="en">🇺🇸 English</option>
           </select>
         </div>
-        <button class="btn btn-secondary" id="btn-manual-toggle" onclick="manualPanel.toggle()" data-i18n="header.manualBtn" title="操作マニュアルを開く">📖 操作ガイド</button>
+        <button class="btn btn-secondary" id="btn-manual-toggle" onclick="manualPanel.toggle()" data-i18n="header.manualBtn" data-i18n-title="header.manualTooltip" title="操作マニュアルを開く">📖 操作ガイド</button>
         <button class="btn btn-primary" id="btn-toggle-editor" onclick="app.toggleEditorMode()" data-i18n="header.editorBtn">📝 エディタ起動</button>
         <div class="connection-status" id="connection-status">
           <span class="status-dot" id="status-dot"></span>
@@ -69,8 +69,8 @@
         <h2 data-i18n="scanner.title">📡 スキャナー</h2>
         <div class="scanner-header-controls">
           <div class="display-mode-selector">
-            <button class="btn btn-mode active" id="btn-mode-cyber" onclick="scannerDisplay.setDisplayMode('cyber')" data-i18n="scanner.modeCyber" title="サイバー大画面表示">🖥️ サイバー</button>
-            <button class="btn btn-mode" id="btn-mode-lcd" onclick="scannerDisplay.setDisplayMode('lcd')" data-i18n="scanner.modeLcd" title="実機風 仮想LCD表示（メニュー操作対応）">📟 実機LCD</button>
+            <button class="btn btn-mode active" id="btn-mode-cyber" onclick="scannerDisplay.setDisplayMode('cyber')" data-i18n="scanner.modeCyber" data-i18n-title="scanner.modeCyberTooltip" title="サイバー大画面表示">🖥️ サイバー</button>
+            <button class="btn btn-mode" id="btn-mode-lcd" onclick="scannerDisplay.setDisplayMode('lcd')" data-i18n="scanner.modeLcd" data-i18n-title="scanner.modeLcdTooltip" title="実機風 仮想LCD表示（メニュー操作対応）">📟 実機LCD</button>
           </div>
           <div class="status-badges" id="status-badges">
             <span class="badge" id="badge-scan"><span class="badge-dot"></span><span data-i18n="scanner.badgeScan">スキャン</span></span>
@@ -238,12 +238,12 @@
         <div class="control-section">
           <div class="control-section-title" data-i18n="control.serviceSection">サービスサーチ & 機能</div>
           <div class="button-grid button-grid-3">
-            <button class="btn" data-key="P" title="POL: 州警察/DOTトグル / FUNC+POL: Priority 切替">POL</button>
-            <button class="btn" disabled title="BearTracker HP: 本体のみのボタン。リモートプロトコルに対応キーが存在しないため操作不可。MENU → Set Bear Tracker から設定可能">HP</button>
-            <button class="btn" data-key="G" title="GPSモード切替 / FUNC+長押し: 現在地保存 (要GPS受信機)">GPS</button>
-            <button class="btn" data-key="W" title="WX: 短押し/FUNC+WX: アラート優先 / FUNC+長押し: WXスキャン">WX</button>
-            <button class="btn" data-key="Q" title="SQノブ押下: アラートミュート切替 / FUNC+Q: クローズコール切替 / FUNC+長押し: CC Only">SQ</button>
-            <button class="btn" data-key="S" title="実機では Scan/SRCH 兼用ボタン: スキャン中=スキャン再開 / サーチ中=サーチ再開 / FUNC+S: クイックサーチ">SRCH</button>
+            <button class="btn" data-key="P" data-i18n-title="control.polTooltip" title="POL: 州警察/DOTトグル / FUNC+POL: Priority 切替">POL</button>
+            <button class="btn" disabled data-i18n-title="control.hpTooltip" title="BearTracker HP: 本体のみのボタン。リモートプロトコルに対応キーが存在しないため操作不可。MENU → Set Bear Tracker から設定可能">HP</button>
+            <button class="btn" data-key="G" data-i18n-title="control.gpsTooltip" title="GPSモード切替 / FUNC+長押し: 現在地保存 (要GPS受信機)">GPS</button>
+            <button class="btn" data-key="W" data-i18n-title="control.wxTooltip" title="WX: 短押し/FUNC+WX: アラート優先 / FUNC+長押し: WXスキャン">WX</button>
+            <button class="btn" data-key="Q" data-i18n-title="control.sqTooltip" title="SQノブ押下: アラートミュート切替 / FUNC+Q: クローズコール切替 / FUNC+長押し: CC Only">SQ</button>
+            <button class="btn" data-key="S" data-i18n-title="control.srchTooltip" title="実機では Scan/SRCH 兼用ボタン: スキャン中=スキャン再開 / サーチ中=サーチ再開 / FUNC+S: クイックサーチ">SRCH</button>
             <button class="btn btn-warning" data-key="L" data-i18n-title="control.loTooltip" title="短押し: 一時ロックアウト / 長押し: 全ロック解除">L/O</button>
           </div>
         </div>
@@ -539,8 +539,8 @@
         </div>
         <div class="smart-player-controls-row">
           <div class="smart-player-transport">
-            <button class="btn" id="btn-player-prev" onclick="recordingPanel.onPlayPrev()" title="前の録音" data-i18n="recordings.prev">⏮ 前へ</button>
-            <button class="btn" id="btn-player-next" onclick="recordingPanel.onPlayNext()" title="次の録音" data-i18n="recordings.next">次へ ⏭</button>
+            <button class="btn" id="btn-player-prev" onclick="recordingPanel.onPlayPrev()" data-i18n-title="recordings.prevTooltip" title="前の録音" data-i18n="recordings.prev">⏮ 前へ</button>
+            <button class="btn" id="btn-player-next" onclick="recordingPanel.onPlayNext()" data-i18n-title="recordings.nextTooltip" title="次の録音" data-i18n="recordings.next">次へ ⏭</button>
           </div>
           <div class="smart-player-options">
             <label>
@@ -631,7 +631,7 @@
         <div class="panel-header">
           <h2 data-i18n="editor.tree.title">📂 システム / グループ</h2>
           <div class="header-actions">
-            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddNewSystem()" data-i18n="editor.tree.addSystem" title="新規システム追加">➕ システム</button>
+            <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddNewSystem()" data-i18n="editor.tree.addSystem" data-i18n-title="editor.tree.addSystemTooltip" title="新規システム追加">➕ システム</button>
           </div>
         </div>
         <div class="panel-body tree-scroll-body">
@@ -651,7 +651,7 @@
           <div class="header-actions" id="grid-header-actions" style="display: none;">
             <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onEditCurrentGroup()" data-i18n="editor.grid.editGroup">✏️ グループ設定</button>
             <button class="btn btn-sm btn-primary" onclick="memoryEditor.onAddChannelRow()" data-i18n="editor.grid.addRow">➕ 行追加</button>
-            <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onOpenPasteModal()" data-i18n="editor.grid.paste" title="Excel等から表をまとめて貼り付け">📋 一括貼付</button>
+            <button class="btn btn-sm btn-secondary" onclick="memoryEditor.onOpenPasteModal()" data-i18n="editor.grid.paste" data-i18n-title="editor.grid.pasteTooltip" title="Excel等から表をまとめて貼り付け">📋 一括貼付</button>
           </div>
         </div>
 
@@ -666,9 +666,9 @@
                   <th class="col-freq" data-i18n="editor.grid.colFreq">周波数 (MHz)</th>
                   <th class="col-mod" data-i18n="editor.grid.colMod">変調</th>
                   <th class="col-tone" data-i18n="editor.grid.colTone">トーン / コード</th>
-                  <th class="col-chk" title="ロックアウト" data-i18n="editor.grid.colLockout">L/O</th>
-                  <th class="col-chk" title="優先チャンネル" data-i18n="editor.grid.colPriority">PRI</th>
-                  <th class="col-chk" title="アッテネータ(減衰)" data-i18n="editor.grid.colAttenuator">ATT</th>
+                  <th class="col-chk" data-i18n-title="editor.grid.colLockoutTooltip" title="ロックアウト" data-i18n="editor.grid.colLockout">L/O</th>
+                  <th class="col-chk" data-i18n-title="editor.grid.colPriorityTooltip" title="優先チャンネル" data-i18n="editor.grid.colPriority">PRI</th>
+                  <th class="col-chk" data-i18n-title="editor.grid.colAttenuatorTooltip" title="アッテネータ(減衰)" data-i18n="editor.grid.colAttenuator">ATT</th>
                   <th class="col-actions" data-i18n="editor.grid.colActions">操作</th>
                 </tr>
               </thead>
@@ -788,11 +788,11 @@
   </div>
 
   <!-- Manual / User Guide Side Drawer (Simultaneous View & Control) -->
-  <aside class="manual-drawer" id="manual-drawer" aria-label="操作マニュアル">
+  <aside class="manual-drawer" id="manual-drawer" data-i18n-aria-label="manual.ariaLabel" aria-label="操作マニュアル">
     <div class="manual-header">
       <div class="manual-title-row">
         <h2 data-i18n="manual.title">📖 操作ガイド & 実践マニュアル</h2>
-        <button class="manual-close-btn" onclick="manualPanel.close()" title="閉じる">✕</button>
+        <button class="manual-close-btn" onclick="manualPanel.close()" data-i18n-title="manual.closeTooltip" title="閉じる">✕</button>
       </div>
       <div class="manual-search-box">
         <input type="text" id="manual-search-input" placeholder="マニュアル内を検索 (例: ホールド, ロックアウト...)" data-i18n-placeholder="manual.searchPlaceholder">
@@ -886,66 +886,66 @@
         <table class="manual-table">
           <thead>
             <tr>
-              <th>ボタン</th>
+              <th data-i18n="manual.colButton">ボタン</th>
               <th data-i18n="manual.shortPress">短押し (クリック)</th>
               <th data-i18n="manual.longPress">長押し (0.65秒)</th>
             </tr>
           </thead>
           <tbody>
             <tr class="manual-table-row">
-              <td><span class="key-badge btn-primary-badge">▶ スキャン</span></td>
-              <td>スキャン開始 / 再開</td>
+              <td><span data-i18n="manual.btnScan" class="key-badge btn-primary-badge">▶ スキャン</span></td>
+              <td data-i18n="manual.btnScanShort">スキャン開始 / 再開</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
-              <td><span class="key-badge btn-danger-badge">⏸ ホールド</span></td>
-              <td>チャンネルホールド (現在周波数固定)</td>
-              <td><strong>🔒 システムホールド (現在システムのみ巡回)</strong></td>
+              <td><span data-i18n="manual.btnHold" class="key-badge btn-danger-badge">⏸ ホールド</span></td>
+              <td data-i18n="manual.btnHoldShort">チャンネルホールド (現在周波数固定)</td>
+              <td><strong data-i18n="manual.btnHoldLong">🔒 システムホールド (現在システムのみ巡回)</strong></td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge btn-warning-badge">L/O</span></td>
-              <td>一時ロックアウト (T-L/O)</td>
-              <td><strong>🔓 全ロック解除 (Unlock All)</strong></td>
+              <td data-i18n="manual.btnLoShort">一時ロックアウト (T-L/O)</td>
+              <td><strong data-i18n="manual.btnLoLong">🔓 全ロック解除 (Unlock All)</strong></td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge">.</span> (NO)</td>
-              <td>小数点入力 / NO (戻る)</td>
-              <td><strong>💾 クイック保存 (Quick Store)</strong></td>
+              <td data-i18n="manual.btnDotShort">小数点入力 / NO (戻る)</td>
+              <td><strong data-i18n="manual.btnDotLong">💾 クイック保存 (Quick Store)</strong></td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge">FUNC</span></td>
-              <td>ファンクション待機 (画面にF点灯)</td>
+              <td data-i18n="manual.btnFuncShort">ファンクション待機 (画面にF点灯)</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge btn-menu-badge">MENU</span></td>
-              <td>設定メニュー開閉 / 上位階層へ戻る</td>
+              <td data-i18n="manual.btnMenuShort">設定メニュー開閉 / 上位階層へ戻る</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge">▲</span> <span class="key-badge">▼</span></td>
-              <td>チャンネル送り / 周波数増減 / メニュー選択</td>
+              <td data-i18n="manual.btnUpDownShort">チャンネル送り / 周波数増減 / メニュー選択</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge">◀</span> <span class="key-badge">▶</span></td>
-              <td>カーソル移動 / 設定モード切り替え</td>
+              <td data-i18n="manual.btnLeftRightShort">カーソル移動 / 設定モード切り替え</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
               <td><span class="key-badge">E</span></td>
-              <td>決定 (ENTER)</td>
+              <td data-i18n="manual.btnEnterShort">決定 (ENTER)</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
-              <td><span class="key-badge">0</span> 〜 <span class="key-badge">9</span></td>
-              <td>システム・クイックキーの有効/無効</td>
+              <td><span class="key-badge">0</span> <span data-i18n="manual.keyRangeSep">〜</span> <span class="key-badge">9</span></td>
+              <td data-i18n="manual.btnDigitsShort">システム・クイックキーの有効/無効</td>
               <td>—</td>
             </tr>
             <tr class="manual-table-row">
-              <td><span class="key-badge">POL</span> <span class="key-badge">HP</span> 等</td>
-              <td>各サービスサーチのON/OFF</td>
-              <td>サーチ範囲設定メニューへジャンプ</td>
+              <td><span class="key-badge">POL</span> <span class="key-badge">HP</span> <span data-i18n="manual.keyEtc">等</span></td>
+              <td data-i18n="manual.btnServiceShort">各サービスサーチのON/OFF</td>
+              <td data-i18n="manual.btnServiceLong">サーチ範囲設定メニューへジャンプ</td>
             </tr>
           </tbody>
         </table>
@@ -956,23 +956,23 @@
         <div class="shortcuts-grid">
           <div class="shortcut-item">
             <div class="shortcut-keys"><kbd>↑</kbd> / <kbd>↓</kbd></div>
-            <div class="shortcut-desc">チャンネル送り・戻し / メニュー選択 (▲ / ▼)</div>
+            <div data-i18n="manual.scUpDown" class="shortcut-desc">チャンネル送り・戻し / メニュー選択 (▲ / ▼)</div>
           </div>
           <div class="shortcut-item">
             <div class="shortcut-keys"><kbd>←</kbd> / <kbd>→</kbd></div>
-            <div class="shortcut-desc">カーソル移動 (◀ / ▶)</div>
+            <div data-i18n="manual.scLeftRight" class="shortcut-desc">カーソル移動 (◀ / ▶)</div>
           </div>
           <div class="shortcut-item">
             <div class="shortcut-keys"><kbd>Enter</kbd></div>
-            <div class="shortcut-desc">決定・選択確定 (E / ENTER)</div>
+            <div data-i18n="manual.scEnter" class="shortcut-desc">決定・選択確定 (E / ENTER)</div>
           </div>
           <div class="shortcut-item">
             <div class="shortcut-keys"><kbd>Esc</kbd> / <kbd>M</kbd></div>
-            <div class="shortcut-desc">メニュー開閉 / 前の階層に戻る (MENU)</div>
+            <div data-i18n="manual.scMenu" class="shortcut-desc">メニュー開閉 / 前の階層に戻る (MENU)</div>
           </div>
           <div class="shortcut-item">
             <div class="shortcut-keys"><kbd>F</kbd></div>
-            <div class="shortcut-desc">ファンクションモード待機 (FUNC)</div>
+            <div data-i18n="manual.scFunc" class="shortcut-desc">ファンクションモード待機 (FUNC)</div>
           </div>
         </div>
       </div>
@@ -980,23 +980,23 @@
       <!-- Tab 4: Overview -->
       <div class="manual-tab-pane" data-pane="overview">
         <div class="manual-card">
-          <div class="manual-card-title">📡 画面構成と各パネルの役割</div>
+          <div data-i18n="manual.overviewTitle" class="manual-card-title">📡 画面構成と各パネルの役割</div>
           <div class="manual-card-body">
             <div class="manual-overview-item">
-              <strong>🖥️ スキャナー表示 (サイバー / 実機LCD):</strong>
-              <p>現在受信中の周波数、システム名、デパートメント名、チャンネル名、RSSI信号強度、モードをリアルタイム表示します。「実機LCD」に切り替えると実機と同じ3行/4行テキストとアイコンが忠実に再現されます。</p>
+              <strong data-i18n="manual.overviewDisplayTitle">🖥️ スキャナー表示 (サイバー / 実機LCD):</strong>
+              <p data-i18n="manual.overviewDisplayBody">現在受信中の周波数、システム名、デパートメント名、チャンネル名、RSSI信号強度、モードをリアルタイム表示します。「実機LCD」に切り替えると実機と同じ3行/4行テキストとアイコンが忠実に再現されます。</p>
             </div>
             <div class="manual-overview-item">
-              <strong>🔊 ライブ音声:</strong>
-              <p>スキャナーからの受信音声を低遅延（100〜300ms）でブラウザへリアルタイム配信します。</p>
+              <strong data-i18n="manual.overviewAudioTitle">🔊 ライブ音声:</strong>
+              <p data-i18n="manual.overviewAudioBody">スキャナーからの受信音声を低遅延（100〜300ms）でブラウザへリアルタイム配信します。</p>
             </div>
             <div class="manual-overview-item">
-              <strong>🎛️ コントロールパネル:</strong>
-              <p>スキャン制御、VOL/SQハードウェアスライダー、実機キーパッド、一時ロックアウト(T-L/O)管理、自動録音設定を行います。</p>
+              <strong data-i18n="manual.overviewControlTitle">🎛️ コントロールパネル:</strong>
+              <p data-i18n="manual.overviewControlBody">スキャン制御、VOL/SQハードウェアスライダー、実機キーパッド、一時ロックアウト(T-L/O)管理、自動録音設定を行います。</p>
             </div>
             <div class="manual-overview-item">
-              <strong>📋 受信ログ & 録音一覧:</strong>
-              <p>受信した通信の履歴ログ検索・CSVエクスポート、および自動録音されたMP3ファイルの即時再生・波形シークが可能です。</p>
+              <strong data-i18n="manual.overviewLogTitle">📋 受信ログ & 録音一覧:</strong>
+              <p data-i18n="manual.overviewLogBody">受信した通信の履歴ログ検索・CSVエクスポート、および自動録音されたMP3ファイルの即時再生・波形シークが可能です。</p>
             </div>
           </div>
         </div>

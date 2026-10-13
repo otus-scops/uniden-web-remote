@@ -528,7 +528,7 @@ const activityLog = (() => {
 
       const colLabel = getColumnLabel(col);
       item.innerHTML = `
-        <span class="column-drag-handle" title="ドラッグで順序変更">⋮⋮</span>
+        <span class="column-drag-handle" title="${typeof i18n !== 'undefined' ? i18n.t('log.dragToReorder') : 'ドラッグで順序変更'}">⋮⋮</span>
         <label class="column-checkbox-label">
           <input type="checkbox" ${isActive ? 'checked' : ''} 
                  onchange="activityLog.onColumnToggle('${col.id}', this.checked)">

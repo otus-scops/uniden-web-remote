@@ -94,6 +94,14 @@ const i18n = (function () {
       if (select) {
         select.value = currentLanguage;
       }
+
+      // Modules that render from JS (e.g. the reception log header) drew
+      // before the locale loaded; let them re-render in the active language.
+      window.dispatchEvent(
+        new CustomEvent('languageChanged', {
+          detail: { language: currentLanguage },
+        })
+      );
     },
 
     /**
@@ -167,6 +175,14 @@ const i18n = (function () {
      * @param {HTMLElement} [rootElement=document]
      */
     applyTranslations(rootElement = document) {
+      if (rootElement === document) {
+        document.documentElement.lang = currentLanguage;
+        const pageTitle = this.t('header.pageTitle');
+        if (pageTitle !== 'header.pageTitle') {
+          document.title = pageTitle;
+        }
+      }
+
       // Text replacement
       rootElement.querySelectorAll('[data-i18n]').forEach((el) => {
         const key = el.getAttribute('data-i18n');
@@ -191,11 +207,27 @@ const i18n = (function () {
         }
       });
 
+      // aria-label replacement (screen readers)
+      rootElement.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-aria-label');
+        if (key) {
+          el.setAttribute('aria-label', this.t(key));
+        }
+      });
+
       // Title attribute replacement (tooltips)
       rootElement.querySelectorAll('[data-i18n-title]').forEach((el) => {
         const key = el.getAttribute('data-i18n-title');
         if (key) {
           el.setAttribute('title', this.t(key));
+        }
+      });
+
+      // Meta content replacement (e.g. meta[name=description])
+      rootElement.querySelectorAll('[data-i18n-content]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-content');
+        if (key) {
+          el.setAttribute('content', this.t(key));
         }
       });
     },
