@@ -318,7 +318,7 @@
                    placeholder="{system}/{department}/{channel}/{date}_{time}_{freq}"
                    onchange="controlPanel.onTemplateChange(this.value)"
                    oninput="controlPanel.onTemplatePreview(this.value)">
-            <div class="template-help" data-i18n="control.templateHelp">
+            <div class="template-help" data-i18n-html="control.templateHelp">
               <code>/</code> でディレクトリ分割可能（例: <code>{date}/{channel}/{time}_{freq}</code>）
             </div>
             <div class="template-preview" id="template-preview">
@@ -811,16 +811,16 @@
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice1Title">① 通信を受信中に固定して聞き続けたい (チャンネルホールド)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice1Step1">気になる通信を受信したら、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を短押しします。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice1Step1">気になる通信を受信したら、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を短押しします。</span></div>
             <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice1Step2">その周波数に固定され、相手局からの返信や長時間の通信を逃さず聴取できます。</span></div>
-            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice1Step3">聞き終わったら、<span class="key-badge btn-primary-badge">▶ スキャン</span> を押すとスキャンが再開します。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n-html="manual.practice1Step3">聞き終わったら、<span class="key-badge btn-primary-badge">▶ スキャン</span> を押すとスキャンが再開します。</span></div>
           </div>
         </div>
 
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice2Title">② ノイズや不要な通信を今だけスキップしたい (一時ロックアウト: T-L/O)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice2Step1">不要な通信や微弱ノイズで停止したら、<span class="key-badge btn-warning-badge">L/O</span> を短押しします。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice2Step1">不要な通信や微弱ノイズで停止したら、<span class="key-badge btn-warning-badge">L/O</span> を短押しします。</span></div>
             <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice2Step2">即座に次のチャンネルへスキップし、Web画面の「一時ロックアウト」リストに自動登録されます。</span></div>
             <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice2Step3">一時ロックアウトはスキャナの電源OFFまたは全解除を行うまで有効です。</span></div>
           </div>
@@ -829,27 +829,27 @@
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice3Title">③ 一時ロックアウトした周波数を元に戻したい (T-L/O 一括解除)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">A</span><span data-i18n="manual.practice3Step1">方法A: <span class="key-badge btn-warning-badge">L/O</span> ボタンを約0.65秒長押しします。</span></div>
-            <div class="manual-step"><span class="step-num">B</span><span data-i18n="manual.practice3Step2">方法B: コントロールパネルの <span class="key-badge">🔓 全解除</span> ボタンをクリックします。</span></div>
-            <div class="manual-step"><span class="step-num">C</span><span data-i18n="manual.practice3Step3">方法C: リストの特定周波数の右側にある <span class="key-badge">✕</span> で個別解除も可能です。</span></div>
+            <div class="manual-step"><span class="step-num">A</span><span data-i18n-html="manual.practice3Step1">方法A: <span class="key-badge btn-warning-badge">L/O</span> ボタンを約0.65秒長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">B</span><span data-i18n-html="manual.practice3Step2">方法B: コントロールパネルの <span class="key-badge">🔓 全解除</span> ボタンをクリックします。</span></div>
+            <div class="manual-step"><span class="step-num">C</span><span data-i18n-html="manual.practice3Step3">方法C: リストの特定周波数の右側にある <span class="key-badge">✕</span> で個別解除も可能です。</span></div>
           </div>
         </div>
 
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice4Title">④ 特定の警察署や管轄だけに集中してスキャンしたい (システムホールド)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice4Step1">対象システムのチャンネルを受信中（またはホールド中）に、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice4Step1">対象システムのチャンネルを受信中（またはホールド中）に、<span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しします。</span></div>
             <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice4Step2">画面に「System Hold」が表示され、現在選択されているシステム内だけを集中巡回します。</span></div>
-            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice4Step3">もう一度 <span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しするか <span class="key-badge btn-primary-badge">▶ スキャン</span> で解除できます。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n-html="manual.practice4Step3">もう一度 <span class="key-badge btn-danger-badge">⏸ ホールド</span> を長押しするか <span class="key-badge btn-primary-badge">▶ スキャン</span> で解除できます。</span></div>
           </div>
         </div>
 
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice5Title">⑤ 周波数を直接入力して合わせたい (ダイレクト選局)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice5Step1"><span class="key-badge btn-danger-badge">⏸ ホールド</span> を押してホールド状態にします。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice5Step1"><span class="key-badge btn-danger-badge">⏸ ホールド</span> を押してホールド状態にします。</span></div>
             <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice5Step2">テンキーで周波数を直接入力します (例: 1 5 5 . 7 0 0)。</span></div>
-            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice5Step3">最後に <span class="key-badge">E</span> または <span class="key-badge btn-danger-badge">⏸ ホールド</span> を押すとその周波数へジャンプします。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n-html="manual.practice5Step3">最後に <span class="key-badge">E</span> または <span class="key-badge btn-danger-badge">⏸ ホールド</span> を押すとその周波数へジャンプします。</span></div>
           </div>
         </div>
 
@@ -857,7 +857,7 @@
           <div class="manual-card-title" data-i18n="manual.practice6Title">⑥ 気に入った周波数をワンタッチでメモリー保存したい (クイックストア)</div>
           <div class="manual-card-body">
             <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice6Step1">サーチ中やダイレクト入力で見つけた周波数を受信・ホールドします。</span></div>
-            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice6Step2">テンキーの <span class="key-badge">.</span> ボタンを約0.65秒長押しします。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n-html="manual.practice6Step2">テンキーの <span class="key-badge">.</span> ボタンを約0.65秒長押しします。</span></div>
             <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice6Step3">スキャナの「Quick Store」グループに即座に周波数が保存されます。</span></div>
           </div>
         </div>
@@ -865,8 +865,8 @@
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice7Title">⑦ 特定のグループを素早くON/OFFしたい (グループ・クイックキー)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice7Step1"><span class="key-badge">FUNC</span> ボタンを押します (画面に「F」アイコンが点灯)。</span></div>
-            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice7Step2">その直後にテンキーの <span class="key-badge">1</span> 〜 <span class="key-badge">9</span> を押すと、グループ・クイックキーが即座に切り替わります。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice7Step1"><span class="key-badge">FUNC</span> ボタンを押します (画面に「F」アイコンが点灯)。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n-html="manual.practice7Step2">その直後にテンキーの <span class="key-badge">1</span> 〜 <span class="key-badge">9</span> を押すと、グループ・クイックキーが即座に切り替わります。</span></div>
             <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice7Step3">※直接数字キーを押した場合はシステム・クイックキーが切り替わります。</span></div>
           </div>
         </div>
@@ -874,9 +874,9 @@
         <div class="manual-card">
           <div class="manual-card-title" data-i18n="manual.practice8Title">⑧ 実機の設定メニューを操作したい (メニュー操作手順)</div>
           <div class="manual-card-body">
-            <div class="manual-step"><span class="step-num">1</span><span data-i18n="manual.practice8Step1"><span class="key-badge btn-menu-badge">MENU</span> を押すと、実機の仮想LCDに設定メニューが表示されます。</span></div>
-            <div class="manual-step"><span class="step-num">2</span><span data-i18n="manual.practice8Step2"><span class="key-badge">▲</span> / <span class="key-badge">▼</span> (またはキーボード ↑ / ↓) で項目を選択します。</span></div>
-            <div class="manual-step"><span class="step-num">3</span><span data-i18n="manual.practice8Step3"><span class="key-badge">E</span> (または Enter) で決定、<span class="key-badge btn-menu-badge">MENU</span> や <span class="key-badge">.</span> (NO) で前の階層へ戻ります。</span></div>
+            <div class="manual-step"><span class="step-num">1</span><span data-i18n-html="manual.practice8Step1"><span class="key-badge btn-menu-badge">MENU</span> を押すと、実機の仮想LCDに設定メニューが表示されます。</span></div>
+            <div class="manual-step"><span class="step-num">2</span><span data-i18n-html="manual.practice8Step2"><span class="key-badge">▲</span> / <span class="key-badge">▼</span> (またはキーボード ↑ / ↓) で項目を選択します。</span></div>
+            <div class="manual-step"><span class="step-num">3</span><span data-i18n-html="manual.practice8Step3"><span class="key-badge">E</span> (または Enter) で決定、<span class="key-badge btn-menu-badge">MENU</span> や <span class="key-badge">.</span> (NO) で前の階層へ戻ります。</span></div>
           </div>
         </div>
       </div>
