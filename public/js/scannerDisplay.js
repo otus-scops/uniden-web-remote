@@ -327,11 +327,6 @@ const scannerDisplay = (() => {
 
     // Status badges
     updateBadges(el, status);
-
-    // If status contains LCD STS snapshot, update virtual LCD
-    if (status.lcd) {
-      onStsUpdate(status.lcd);
-    }
   }
 
   /** @type {boolean} Last known connection state */

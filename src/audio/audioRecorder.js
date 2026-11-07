@@ -17,6 +17,7 @@ const RecordingStore = require('./recordingStore');
  * @extends EventEmitter
  * @fires AudioRecorder#recordingStart - On recording start
  * @fires AudioRecorder#recordingStop - On recording stop
+ * @fires AudioRecorder#recordingAdded - On recording metadata being indexed
  * @fires AudioRecorder#recordingError - On recording error
  */
 class AudioRecorder extends EventEmitter {
@@ -237,7 +238,7 @@ class AudioRecorder extends EventEmitter {
               } catch {
                 // Ignore
               }
-              this._recordingStore.add({
+              const recordingRecord = {
                 filename: result.filename,
                 size: stat.size,
                 sizeFormatted: formatFileSize(stat.size),
@@ -250,7 +251,9 @@ class AudioRecorder extends EventEmitter {
                 frequency: metadata.frequency || '',
                 modulation: metadata.modulation || '',
                 meta: metadata,
-              });
+              };
+              this._recordingStore.add(recordingRecord);
+              this.emit('recordingAdded', recordingRecord);
               console.log(`[AudioRecorder] Successfully added recording to store: ${result.filename} (${stat.size} bytes)`);
             }
           }

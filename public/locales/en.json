@@ -147,6 +147,8 @@
   "recordings": {
     "title": "🎙️ Recordings",
     "refresh": "🔄 Refresh",
+    "loadMore": "Load more",
+    "loading": "Loading...",
     "searchPlaceholder": "🔍 Search by filename or tag...",
     "empty": "No recordings yet",
     "nowPlaying": "🔊 Playing",

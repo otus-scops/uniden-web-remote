@@ -187,6 +187,7 @@ All configurable options supported in `.env` or `docker-compose.yml`.
 | `MAX_LOG_ENTRIES` | `10000` | Maximum reception activity log records retained in memory |
 | `TZ` | `Asia/Tokyo` | Container timezone |
 | `MOCK_MODE` | `false` | Enable simulation mode without physical hardware |
+| `DEBUG_SERIAL` | `false` | Forward raw serial responses to WebSocket clients for debugging |
 
 > [!TIP]
 > **💡 Design Intent for Max Reception Duration (Forced Scan Resume)**:

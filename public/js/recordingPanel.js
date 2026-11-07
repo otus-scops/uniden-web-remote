@@ -43,6 +43,21 @@ const recordingPanel = (() => {
   /** @type {number|null} Search debounce timer ID */
   let searchTimeoutId = null;
 
+  /** @type {number} Records fetched per page */
+  const PAGE_SIZE = 200;
+
+  /** @type {number} Total records matching the current filters */
+  let totalRecordings = 0;
+
+  /** @type {boolean} Whether another server page is available */
+  let hasMoreRecordings = false;
+
+  /** @type {boolean} Whether a page request is in flight */
+  let isLoadingMore = false;
+
+  /** @type {number} Generation used to discard stale responses */
+  let requestGeneration = 0;
+
   /** @type {boolean} Tags fetched flag */
   let tagsLoaded = false;
 
@@ -144,9 +159,10 @@ const recordingPanel = (() => {
 
   /**
    * Build query URL from active filters
+   * @param {number} offset - First filtered record to return
    * @returns {string}
    */
-  function buildQueryUrl() {
+  function buildQueryUrl(offset = 0) {
     const params = new URLSearchParams();
     if (currentFilters.datePreset && currentFilters.datePreset !== 'custom') {
       params.set('datePreset', currentFilters.datePreset);
@@ -158,28 +174,69 @@ const recordingPanel = (() => {
     if (currentFilters.channel) params.set('channel', currentFilters.channel);
     if (currentFilters.minDuration) params.set('minDuration', currentFilters.minDuration);
     if (currentFilters.search) params.set('search', currentFilters.search);
+    params.set('sort', playOrder);
+    params.set('limit', String(PAGE_SIZE));
+    params.set('offset', String(offset));
 
-    const queryString = params.toString();
-    return queryString ? `/recordings?${queryString}` : '/recordings';
+    return `/recordings?${params.toString()}`;
   }
 
   /**
-   * Refresh recording file list
+   * Fetch one page and ignore responses superseded by a newer filter or refresh
+   * @param {boolean} append - Whether to append the next page
+   * @param {number} generation - Request generation
+   * @returns {Promise<boolean>} Whether new records were loaded
+   */
+  async function fetchRecordingsPage(append, generation) {
+    if (append && (isLoadingMore || !hasMoreRecordings)) {
+      return false;
+    }
+
+    isLoadingMore = true;
+    const offset = append ? recordings.length : 0;
+
+    try {
+      const data = await app.fetchApi(buildQueryUrl(offset));
+      if (generation !== requestGeneration) {
+        return false;
+      }
+
+      const page = data.recordings || [];
+      recordings = append ? recordings.concat(page) : page;
+      totalRecordings = typeof data.total === 'number' ? data.total : recordings.length;
+      hasMoreRecordings = recordings.length < totalRecordings;
+      sortRecordings();
+      return page.length > 0;
+    } catch (err) {
+      if (generation === requestGeneration) {
+        console.error('[RecordingPanel] Failed to fetch list:', err);
+      }
+      return false;
+    } finally {
+      if (generation === requestGeneration) {
+        isLoadingMore = false;
+        renderList();
+      }
+    }
+  }
+
+  /**
+   * Refresh recording file list from the first page
    */
   async function onRefresh() {
     if (!tagsLoaded) {
       fetchTags();
     }
 
-    try {
-      const url = buildQueryUrl();
-      const data = await app.fetchApi(url);
-      recordings = data.recordings || [];
-      sortRecordings();
-      renderList();
-    } catch (err) {
-      console.error('[RecordingPanel] Failed to fetch list:', err);
-    }
+    const generation = ++requestGeneration;
+    return fetchRecordingsPage(false, generation);
+  }
+
+  /**
+   * Load the next page using the current filters and sort order
+   */
+  async function onLoadMore() {
+    return fetchRecordingsPage(true, requestGeneration);
   }
 
   /**
@@ -354,7 +411,7 @@ const recordingPanel = (() => {
 
     empty.classList.add('hidden');
 
-    list.innerHTML = recordings
+    const recordingHtml = recordings
       .map((rec) => {
         const isPlaying = rec.filename === currentlyPlaying;
         const activeClass = isPlaying ? ' active' : '';
@@ -392,6 +449,22 @@ const recordingPanel = (() => {
         `;
       })
       .join('');
+
+    let loadMoreHtml = '';
+    if (hasMoreRecordings || isLoadingMore) {
+      const label = typeof i18n !== 'undefined'
+        ? i18n.t(isLoadingMore ? 'recordings.loading' : 'recordings.loadMore')
+        : (isLoadingMore ? '読み込み中...' : 'もっと読み込む');
+      loadMoreHtml = `
+        <li style="display: flex; justify-content: center; padding: 12px;">
+          <button class="btn" onclick="recordingPanel.onLoadMore()" ${isLoadingMore ? 'disabled' : ''}>
+            ${label} (${recordings.length}/${totalRecordings})
+          </button>
+        </li>
+      `;
+    }
+
+    list.innerHTML = recordingHtml + loadMoreHtml;
   }
 
   /**
@@ -491,51 +564,44 @@ const recordingPanel = (() => {
   }
 
   /**
-   * 時系列に沿って未来方向（次の録音）を再生
+   * Play an adjacent recording, loading another page only when needed
+   * @param {'next'|'prev'} direction - Chronological direction
    */
-  function onPlayNext() {
-    isSinglePlayMode = false;
+  async function playAdjacent(direction) {
     if (recordings.length === 0) return;
 
-    // リストのソート順に応じて未来方向（より新しい録音）のインデックスを決定
-    let nextIndex;
-    if (playOrder === 'desc') {
-      // 新しい順（降順：上が最新、下が過去）の場合、未来方向はリストの上（currentIndex - 1）
-      nextIndex = currentIndex - 1;
-    } else {
-      // 古い順（昇順：上が過去、下が最新）の場合、未来方向はリストの下（currentIndex + 1）
-      nextIndex = currentIndex + 1;
+    const step = direction === 'next'
+      ? (playOrder === 'desc' ? -1 : 1)
+      : (playOrder === 'desc' ? 1 : -1);
+    let targetIndex = currentIndex + step;
+
+    if (targetIndex >= recordings.length && hasMoreRecordings) {
+      await onLoadMore();
+      targetIndex = currentIndex + step;
     }
 
-    if (nextIndex < 0 || nextIndex >= recordings.length) {
-      console.log('[RecordingPanel] 録音リストの終端（最新）に到達しました');
+    if (targetIndex < 0 || targetIndex >= recordings.length) {
+      console.log(`[RecordingPanel] 録音リストの終端（${direction === 'next' ? '最新' : '最古'}）に到達しました`);
       return;
     }
-    playAtIndex(nextIndex);
+
+    playAtIndex(targetIndex);
+  }
+
+  /**
+   * 時系列に沿って未来方向（次の録音）を再生
+   */
+  async function onPlayNext() {
+    isSinglePlayMode = false;
+    await playAdjacent('next');
   }
 
   /**
    * 時系列に沿って過去方向（前の録音）を再生
    */
-  function onPlayPrev() {
+  async function onPlayPrev() {
     isSinglePlayMode = false;
-    if (recordings.length === 0) return;
-
-    // リストのソート順に応じて過去方向（より古い録音）のインデックスを決定
-    let prevIndex;
-    if (playOrder === 'desc') {
-      // 新しい順の場合、過去方向はリストの下（currentIndex + 1）
-      prevIndex = currentIndex + 1;
-    } else {
-      // 古い順の場合、過去方向はリストの上（currentIndex - 1）
-      prevIndex = currentIndex - 1;
-    }
-
-    if (prevIndex < 0 || prevIndex >= recordings.length) {
-      console.log('[RecordingPanel] 録音リストの終端（最古）に到達しました');
-      return;
-    }
-    playAtIndex(prevIndex);
+    await playAdjacent('prev');
   }
 
   /**
@@ -551,9 +617,9 @@ const recordingPanel = (() => {
    * @param {'desc'|'asc'} order
    */
   function onChangePlayOrder(order) {
+    if (order !== 'asc' && order !== 'desc') return;
     playOrder = order;
-    sortRecordings();
-    renderList();
+    onRefresh();
   }
 
   /**
@@ -642,8 +708,11 @@ const recordingPanel = (() => {
           currentIndex = -1;
         }
 
-        // Remove from list
+        // Remove from list and keep pagination counters aligned with the server
         recordings = recordings.filter((r) => r.filename !== filename);
+        totalRecordings = Math.max(0, totalRecordings - 1);
+        hasMoreRecordings = recordings.length < totalRecordings;
+        sortRecordings();
         renderList();
       } catch (err) {
         console.error('[RecordingPanel] Delete error:', err);
@@ -669,7 +738,37 @@ const recordingPanel = (() => {
    */
   function onRecordingStop(data) {
     console.log('[RecordingPanel] Recording stopped:', data.filename);
-    setTimeout(() => onRefresh(), 500);
+  }
+
+  /**
+   * Add an indexed recording without refetching the default newest-first list
+   * @param {Object} data - Complete recording metadata
+   */
+  function onRecordingAdded(data) {
+    if (!data || !data.filename) return;
+
+    // Prevent an in-flight page response from overwriting the newly arrived record
+    if (isLoadingMore) {
+      onRefresh();
+      return;
+    }
+
+    const existingIndex = recordings.findIndex((rec) => rec.filename === data.filename);
+    if (existingIndex >= 0) {
+      recordings[existingIndex] = data;
+    } else {
+      const hasFilters = Object.values(currentFilters).some((value) => value !== '');
+      if (playOrder === 'asc' || hasFilters) {
+        onRefresh();
+        return;
+      }
+      recordings.unshift(data);
+      totalRecordings++;
+    }
+
+    hasMoreRecordings = recordings.length < totalRecordings;
+    sortRecordings();
+    renderList();
   }
 
   /**
@@ -738,6 +837,7 @@ const recordingPanel = (() => {
   // Public API
   return {
     onRefresh,
+    onLoadMore,
     onPlay,
     onPlayNext,
     onPlayPrev,
@@ -748,6 +848,7 @@ const recordingPanel = (() => {
     onDelete,
     onRecordingStart,
     onRecordingStop,
+    onRecordingAdded,
     onSearchChange,
     onDatePresetChange,
     onDateRangeChange,
