@@ -183,7 +183,6 @@ docker compose logs -f scanner
 | `MAX_LOG_ENTRIES` | `10000` | メモリ内に保持する受信ログの最大件数 |
 | `TZ` | `Asia/Tokyo` | タイムゾーン |
 | `MOCK_MODE` | `false` | 実機なしテストモード (`true` でハードウェアなしシミュレーション動作) |
-| `DEBUG_SERIAL` | `false` | デバッグ用に生のシリアル応答をWebSocketクライアントへ転送 |
 
 > [!TIP]
 > **💡 最長受信時間制限（強制スキャン再開）の意図とおすすめの併用設定**:

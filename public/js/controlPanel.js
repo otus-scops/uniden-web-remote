@@ -10,9 +10,6 @@ const controlPanel = (() => {
   /** @type {number} Long press threshold duration in ms */
   const LONG_PRESS_DURATION_MS = 650;
 
-  /** @type {string|null} Last rendered temporary lockout list */
-  let lastTemporaryLockoutsSnapshot = null;
-
   /**
    * Handle Scan button click
    */
@@ -273,13 +270,9 @@ const controlPanel = (() => {
       }
     }
 
-    // Synchronize temporary lockouts (T-L/O) only when their contents change
+    // Synchronize temporary lockouts (T-L/O)
     if (status.temporaryLockouts !== undefined) {
-      const snapshot = JSON.stringify(status.temporaryLockouts);
-      if (snapshot !== lastTemporaryLockoutsSnapshot) {
-        lastTemporaryLockoutsSnapshot = snapshot;
-        renderTemporaryLockouts(status.temporaryLockouts);
-      }
+      renderTemporaryLockouts(status.temporaryLockouts);
     }
   }
 

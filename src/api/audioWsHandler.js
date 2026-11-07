@@ -6,8 +6,6 @@
 const WebSocket = require('ws');
 const { verifyToken } = require('./authMiddleware');
 
-const MAX_BUFFERED_BYTES = 128 * 1024;
-
 /**
  * Audio WebSocket Handler Class
  * Distributes real-time PCM audio chunks to connected browser clients via WebSocket
@@ -103,20 +101,12 @@ class AudioWsHandler {
       }
 
       for (const client of this._clients) {
-        if (client.readyState !== WebSocket.OPEN) {
-          continue;
-        }
-
-        if (client.bufferedAmount > MAX_BUFFERED_BYTES) {
-          console.warn('[AudioWsHandler] Closing slow audio client');
-          client.close(1013, 'Slow consumer');
-          continue;
-        }
-
-        try {
-          client.send(chunk, { binary: true });
-        } catch (err) {
-          console.error('[AudioWsHandler] Client send error:', err.message);
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(chunk, { binary: true });
+          } catch (err) {
+            console.error('[AudioWsHandler] Client send error:', err.message);
+          }
         }
       }
     };

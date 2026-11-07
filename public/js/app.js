@@ -315,12 +315,6 @@ const app = (() => {
         }
         break;
 
-      case 'recordingAdded':
-        if (typeof recordingPanel !== 'undefined') {
-          recordingPanel.onRecordingAdded(message.data);
-        }
-        break;
-
       case 'recordingError':
         console.error('[App] Recording error:', message.data);
         break;

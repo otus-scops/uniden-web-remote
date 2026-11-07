@@ -81,9 +81,6 @@ class ScannerState extends EventEmitter {
 
     /** @type {number|null} Timer for maximum consecutive reception duration */
     this._maxDurationTimer = null;
-
-    /** @type {string|null} Last broadcast state, excluding volatile fields */
-    this._lastStatusSnapshot = null;
   }
 
   /**
@@ -101,7 +98,7 @@ class ScannerState extends EventEmitter {
       this._onNoSignal();
     }
 
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -301,7 +298,7 @@ class ScannerState extends EventEmitter {
     this.currentReception = null;
     this._receptionStartTime = null;
 
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -354,7 +351,7 @@ class ScannerState extends EventEmitter {
    */
   setConnected(connected) {
     this.isConnected = connected;
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -379,7 +376,7 @@ class ScannerState extends EventEmitter {
    */
   setRecording(isRecording) {
     this.isRecording = isRecording;
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -393,7 +390,7 @@ class ScannerState extends EventEmitter {
     } else if (this.isReceiving && this.maxReceptionDurationSec > 0) {
       this._setMaxDurationTimer();
     }
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -420,7 +417,7 @@ class ScannerState extends EventEmitter {
     const parsed = parseInt(level, 10);
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 15) {
       this.volume = parsed;
-      this._emitStatusUpdate();
+      this.emit('statusUpdate', this.getStatus());
     }
   }
 
@@ -432,7 +429,7 @@ class ScannerState extends EventEmitter {
     const parsed = parseInt(level, 10);
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 15) {
       this.squelch = parsed;
-      this._emitStatusUpdate();
+      this.emit('statusUpdate', this.getStatus());
     }
   }
 
@@ -473,7 +470,7 @@ class ScannerState extends EventEmitter {
 
     console.log(`[ScannerState] 🚫 Added to temporary lockout tracking: ${item.freqTgid} (${item.channel || item.system || 'N/A'})`);
     this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -518,7 +515,7 @@ class ScannerState extends EventEmitter {
     if (this.temporaryLockouts.length !== beforeCount) {
       console.log(`[ScannerState] 🔓 Removed from temporary lockout tracking: ${idOrFreq}`);
       this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
-      this._emitStatusUpdate();
+      this.emit('statusUpdate', this.getStatus());
     }
   }
 
@@ -529,7 +526,7 @@ class ScannerState extends EventEmitter {
     this.temporaryLockouts = [];
     console.log('[ScannerState] 🔓 Cleared all temporary lockout tracking');
     this.emit('temporaryLockoutsUpdate', this.temporaryLockouts);
-    this._emitStatusUpdate();
+    this.emit('statusUpdate', this.getStatus());
   }
 
   /**
@@ -538,25 +535,6 @@ class ScannerState extends EventEmitter {
    */
   getTemporaryLockouts() {
     return [...this.temporaryLockouts];
-  }
-
-  /**
-   * Emit status only when a client-visible field other than LCD or timestamp changes
-   * @private
-   */
-  _emitStatusUpdate() {
-    const status = this.getStatus();
-    const comparable = { ...status };
-    delete comparable.lcd;
-    delete comparable.timestamp;
-
-    const snapshot = JSON.stringify(comparable);
-    if (snapshot === this._lastStatusSnapshot) {
-      return;
-    }
-
-    this._lastStatusSnapshot = snapshot;
-    this.emit('statusUpdate', status);
   }
 
   /**

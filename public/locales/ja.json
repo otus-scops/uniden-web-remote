@@ -147,8 +147,6 @@
   "recordings": {
     "title": "🎙️ 録音ファイル",
     "refresh": "🔄 更新",
-    "loadMore": "もっと読み込む",
-    "loading": "読み込み中...",
     "searchPlaceholder": "🔍 ファイル名 / 局名で検索...",
     "empty": "録音ファイルはまだありません",
     "nowPlaying": "🔊 再生中",

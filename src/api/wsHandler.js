@@ -19,9 +19,8 @@ class WsHandler {
    * @param {import('../scanner/serialController')} deps.serialController - Serial controller
    * @param {import('../audio/audioRecorder')} deps.audioRecorder - Audio recorder
    * @param {Object} [deps.authConfig={}] - Authentication configuration
-   * @param {boolean} [deps.enableSerialData=false] - Whether to forward raw serial responses
    */
-  constructor({ server, noServer = false, scannerState, serialController, audioRecorder, authConfig = {}, enableSerialData = false }) {
+  constructor({ server, noServer = false, scannerState, serialController, audioRecorder, authConfig = {} }) {
     /** @type {WebSocket.Server} WebSocket server instance */
     if (noServer || !server) {
       this._wss = new WebSocket.Server({ noServer: true });
@@ -40,9 +39,6 @@ class WsHandler {
 
     /** @type {Object} */
     this._authConfig = authConfig;
-
-    /** @type {boolean} */
-    this._enableSerialData = enableSerialData;
 
     /** @type {Set<WebSocket>} Connected client sockets */
     this._clients = new Set();
@@ -72,14 +68,11 @@ class WsHandler {
       console.log('[WsHandler] Client connected');
       this._clients.add(ws);
 
-      // Send initial status and LCD snapshot as separate channels
-      this._sendToClient(ws, this._createStatusMessage());
-      if (this._scannerState.latestSts) {
-        this._sendToClient(ws, {
-          type: 'stsUpdate',
-          data: this._scannerState.latestSts,
-        });
-      }
+      // Send initial status on connection
+      this._sendToClient(ws, {
+        type: 'status',
+        data: this._scannerState.getStatus(),
+      });
 
       // Handle client messages
       ws.on('message', (message) => {
@@ -101,27 +94,16 @@ class WsHandler {
   }
 
   /**
-   * Build a status message without the independently streamed LCD payload
-   * @param {Object} [status] - Status snapshot
-   * @returns {Object} WebSocket message
-   * @private
-   */
-  _createStatusMessage(status = this._scannerState.getStatus()) {
-    const { lcd, ...statusWithoutLcd } = status;
-    return {
-      type: 'status',
-      data: statusWithoutLcd,
-    };
-  }
-
-  /**
    * Forward scanner and audio recording events to WebSocket clients
    * @private
    */
   _setupEventForwarding() {
     // Scanner status update
     this._scannerState.on('statusUpdate', (status) => {
-      this._broadcast(this._createStatusMessage(status));
+      this._broadcast({
+        type: 'status',
+        data: status,
+      });
     });
 
     // Real-time LCD display update (STS)
@@ -195,14 +177,6 @@ class WsHandler {
       });
     });
 
-    // Recording indexed with complete metadata
-    this._audioRecorder.on('recordingAdded', (data) => {
-      this._broadcast({
-        type: 'recordingAdded',
-        data,
-      });
-    });
-
     // Recording error
     this._audioRecorder.on('recordingError', (data) => {
       this._broadcast({
@@ -211,15 +185,13 @@ class WsHandler {
       });
     });
 
-    // Raw serial debug data is opt-in because clients normally ignore it
-    if (this._enableSerialData) {
-      this._serialController.on('data', (rawData) => {
-        this._broadcast({
-          type: 'serialData',
-          data: { raw: rawData },
-        });
+    // Raw serial debug data
+    this._serialController.on('data', (rawData) => {
+      this._broadcast({
+        type: 'serialData',
+        data: { raw: rawData },
       });
-    }
+    });
   }
 
   /**
@@ -270,7 +242,10 @@ class WsHandler {
 
         case 'getStatus':
           // Request status snapshot
-          this._sendToClient(ws, this._createStatusMessage());
+          this._sendToClient(ws, {
+            type: 'status',
+            data: this._scannerState.getStatus(),
+          });
           break;
 
         case 'getLog':
@@ -284,7 +259,10 @@ class WsHandler {
         case 'toggleAutoRecord':
           // Toggle auto-recording setting
           this._scannerState.autoRecordEnabled = !this._scannerState.autoRecordEnabled;
-          this._broadcast(this._createStatusMessage());
+          this._broadcast({
+            type: 'status',
+            data: this._scannerState.getStatus(),
+          });
           break;
 
         default:

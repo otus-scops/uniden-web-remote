@@ -54,8 +54,6 @@ const defaultConfig = {
     pollIntervalMs: parseInt(process.env.POLL_INTERVAL, 10) || 200,
     /** STS polling interval (ms) */
     statusIntervalMs: parseInt(process.env.STATUS_INTERVAL, 10) || 1000,
-    /** Forward raw serial responses over WebSocket for debugging */
-    debugSerial: process.env.DEBUG_SERIAL === 'true',
     /** Reception timeout threshold (ms) - mark signal end if GLG empty for this duration */
     receptionTimeoutMs: parseInt(process.env.RECEPTION_TIMEOUT, 10) || 1500,
     /** Serial reconnection retry interval (ms) */

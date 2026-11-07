@@ -174,14 +174,34 @@ class RecordingStore extends EventEmitter {
   }
 
   /**
-   * Retrieve recordings from the in-memory index with multi-dimensional filtering
-   * Physical files are validated during reconciliation and when opened for playback.
+   * Retrieve list of recordings with multi-dimensional filtering
+   * Automatically validates file existence to prune externally deleted files on the fly.
    * @param {Object} [filters={}]
-   * @param {'asc'|'desc'} [filters.sortOrder='desc'] - Creation date sort order
    * @returns {Array<Object>}
    */
   query(filters = {}) {
-    let filtered = Array.from(this._index.values());
+    const list = Array.from(this._index.values());
+    const validList = [];
+    let prunedCount = 0;
+
+    // Verify physical existence to catch external deletes
+    for (const item of list) {
+      const fullPath = path.join(this._recordingsDir, item.filename);
+      if (fs.existsSync(fullPath)) {
+        validList.push(item);
+      } else {
+        // File was removed externally from disk
+        this._index.delete(item.filename);
+        prunedCount++;
+      }
+    }
+
+    if (prunedCount > 0) {
+      this._persistIndex();
+      console.log(`[RecordingStore] Pruned ${prunedCount} externally deleted recordings from index`);
+    }
+
+    let filtered = validList;
 
     // Handle date presets and custom ranges
     const now = new Date();
@@ -256,9 +276,8 @@ class RecordingStore extends EventEmitter {
       );
     }
 
-    // Sort by creation date in the same order used by API pagination
-    const direction = filters.sortOrder === 'asc' ? 1 : -1;
-    filtered.sort((a, b) => direction * (new Date(a.createdAt) - new Date(b.createdAt)));
+    // Sort descending by creation date
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return filtered;
   }
