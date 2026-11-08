@@ -9,6 +9,8 @@ const { spawn } = require('child_process');
 const { PassThrough } = require('stream');
 const fs = require('fs');
 
+const MAX_CLIENT_BUFFER_BYTES = 128 * 1024;
+
 /**
  * Live audio streaming & recording integrated controller class
  * Captures audio via SOX, distributes MP3 stream to multiple connected clients,
@@ -75,6 +77,12 @@ class AudioStreamer extends EventEmitter {
 
     /** @type {boolean} Recording in-progress flag */
     this._isRecording = false;
+
+    /** @type {boolean} Whether recording backpressure has paused audio capture */
+    this._isRecordingBackpressured = false;
+
+    /** @type {Function|null} Listener waiting for the recording stream to drain */
+    this._recordingDrainHandler = null;
   }
 
   /**
@@ -259,6 +267,46 @@ class AudioStreamer extends EventEmitter {
   }
 
   /**
+   * Pause capture while the recording encoder applies backpressure
+   * @private
+   */
+  _pauseForRecordingBackpressure() {
+    if (this._isRecordingBackpressured || !this._recordingStream) {
+      return;
+    }
+
+    this._isRecordingBackpressured = true;
+    if (this._soxProcess && this._soxProcess.stdout) {
+      this._soxProcess.stdout.pause();
+    }
+
+    this._recordingDrainHandler = () => {
+      this._recordingDrainHandler = null;
+      this._isRecordingBackpressured = false;
+      if (this._isStreaming && this._soxProcess && this._soxProcess.stdout) {
+        this._soxProcess.stdout.resume();
+      }
+    };
+    this._recordingStream.once('drain', this._recordingDrainHandler);
+  }
+
+  /**
+   * Clear recording backpressure without leaking it into the next session
+   * @private
+   */
+  _clearRecordingBackpressure() {
+    if (this._recordingStream && this._recordingDrainHandler) {
+      this._recordingStream.removeListener('drain', this._recordingDrainHandler);
+    }
+    this._recordingDrainHandler = null;
+
+    if (this._isRecordingBackpressured && this._soxProcess && this._soxProcess.stdout) {
+      this._soxProcess.stdout.resume();
+    }
+    this._isRecordingBackpressured = false;
+  }
+
+  /**
    * Stop recording pipe (terminate file writing)
    * @returns {Object|null} Recording outcome metadata
    */
@@ -268,6 +316,8 @@ class AudioStreamer extends EventEmitter {
     }
 
     const filePath = this._recordingFilePath;
+
+    this._clearRecordingBackpressure();
 
     // Close file/stdin stream
     if (this._recordingStream) {
@@ -450,7 +500,7 @@ class AudioStreamer extends EventEmitter {
     this._mockSilenceFrame = Buffer.alloc(frameSizeBytes, 0);
 
     this._mockTimer = setInterval(() => {
-      if ((this.getClientCount() > 0 || this._isRecording) && this._mockSilenceFrame) {
+      if ((this.getClientCount() > 0 || this._isRecording) && this._mockSilenceFrame && !this._isRecordingBackpressured) {
         this._broadcastChunk(this._mockSilenceFrame);
       }
     }, frameIntervalMs);
@@ -467,21 +517,28 @@ class AudioStreamer extends EventEmitter {
     // Emit event for WebSocket listeners and subscribers
     this.emit('audioData', chunk);
 
-    // Distribute to HTTP streaming clients
+    // Disconnect only HTTP clients that exceed their bounded queue
     for (const client of this._clients) {
       try {
         if (!client.destroyed) {
           client.write(chunk);
+          if (client.writableLength > MAX_CLIENT_BUFFER_BYTES) {
+            console.warn('[AudioStreamer] Closing slow HTTP audio client');
+            this._removeClient(client);
+            client.destroy();
+          }
         }
       } catch {
         // Erroneous clients are cleaned up in error event handler
       }
     }
 
-    // Write to recording pipe
-    if (this._isRecording && this._recordingStream && !this._recordingStream.destroyed) {
+    // Pause capture instead of buffering unlimited PCM when recording is slow
+    if (this._isRecording && !this._isRecordingBackpressured && this._recordingStream && !this._recordingStream.destroyed) {
       try {
-        this._recordingStream.write(chunk);
+        if (this._recordingStream.write(chunk) === false) {
+          this._pauseForRecordingBackpressure();
+        }
       } catch {
         // Write error handled in recordingStream error event listener
       }

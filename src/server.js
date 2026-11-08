@@ -84,6 +84,7 @@ class AppServer {
       serialController: this._serialController,
       audioRecorder: this._audioRecorder,
       authConfig: config.auth,
+      enableSerialData: config.scanner.debugSerial,
     });
 
     this._audioWsHandler = new AudioWsHandler({

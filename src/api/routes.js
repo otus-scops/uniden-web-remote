@@ -380,6 +380,9 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
    * @query {string} [channel] - Channel name filter
    * @query {number} [minDuration] - Minimum duration in seconds
    * @query {string} [search] - Substring search on filename or metadata
+   * @query {number} [limit=200] - Maximum records to return (up to 500)
+   * @query {number} [offset=0] - Number of filtered records to skip
+   * @query {string} [sort=desc] - Creation date order ('asc' or 'desc')
    */
   router.get('/recordings', requireListener(authConfig), (req, res) => {
     const filters = {};
@@ -392,11 +395,17 @@ function createRoutes({ serialController, scannerState, audioRecorder, audioStre
     if (req.query.channel) filters.channel = req.query.channel;
     if (req.query.minDuration) filters.minDuration = req.query.minDuration;
     if (req.query.search) filters.search = req.query.search;
+    filters.sortOrder = req.query.sort === 'asc' ? 'asc' : 'desc';
 
-    const recordings = audioRecorder.getRecordings(filters);
+    const parsedLimit = parseInt(req.query.limit, 10);
+    const parsedOffset = parseInt(req.query.offset, 10);
+    const limit = Math.min(Math.max(Number.isFinite(parsedLimit) ? parsedLimit : 200, 1), 500);
+    const offset = Math.max(Number.isFinite(parsedOffset) ? parsedOffset : 0, 0);
+    const filteredRecordings = audioRecorder.getRecordings(filters);
+
     res.json({
-      recordings,
-      total: recordings.length,
+      recordings: filteredRecordings.slice(offset, offset + limit),
+      total: filteredRecordings.length,
       isRecording: audioRecorder.isRecording(),
     });
   });
