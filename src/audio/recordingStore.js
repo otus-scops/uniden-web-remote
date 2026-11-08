@@ -38,10 +38,25 @@ class RecordingStore extends EventEmitter {
     /** @type {NodeJS.Timeout|null} Scheduled cleanup timer */
     this._cleanupTimer = null;
 
-    // Initialize store
+    /** @type {Promise<void>|null} Active disk reconciliation */
+    this._reconcilePromise = null;
+
+    /** @type {boolean} Whether disk reconciliation is running */
+    this._isReconciling = false;
+
+    /** @type {Map<string, Object|null>} Index changes made during reconciliation */
+    this._pendingIndexChanges = new Map();
+
+    /** @type {boolean} Whether the store has been destroyed */
+    this._destroyed = false;
+
+    // Serve the cached index immediately while disk reconciliation runs asynchronously
     this._ensureDir();
-    this.reconcile();
+    this._loadIndex();
     this._startCleanupJob();
+    this.reconcile().catch((err) => {
+      console.error('[RecordingStore] Background reconciliation failed:', err.message);
+    });
   }
 
   /**
@@ -55,99 +70,186 @@ class RecordingStore extends EventEmitter {
   }
 
   /**
-   * Reconcile memory index with physical disk storage.
-   * - Scans disk for audio files and sidecar JSONs
-   * - Removes missing entries from index if files were deleted externally
-   * - Registers any newly added files
+   * Load the persisted index without scanning recording files
+   * @private
    */
-  reconcile() {
+  _loadIndex() {
+    try {
+      const records = JSON.parse(fs.readFileSync(this._indexPath, 'utf8'));
+      if (!Array.isArray(records)) {
+        throw new Error('Index cache is not an array');
+      }
+
+      this._index = new Map(
+        records
+          .filter((record) => record && typeof record.filename === 'string')
+          .map((record) => [record.filename, record])
+      );
+      console.log(`[RecordingStore] Loaded index cache: ${this._index.size} recordings`);
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.warn('[RecordingStore] Failed to load index cache; rebuilding from disk:', err.message);
+      }
+    }
+  }
+
+  /**
+   * Reconcile memory index with physical disk storage without blocking HTTP requests.
+   * Changes made through add/delete during the scan are applied to the final index.
+   * @returns {Promise<void>}
+   */
+  async reconcile() {
+    if (this._reconcilePromise) {
+      return this._reconcilePromise;
+    }
+
+    this._isReconciling = true;
+    this._pendingIndexChanges.clear();
+    this._reconcilePromise = this._reconcileWithDisk();
+
+    try {
+      await this._reconcilePromise;
+    } finally {
+      this._reconcilePromise = null;
+      this._isReconciling = false;
+      this._pendingIndexChanges.clear();
+    }
+  }
+
+  /**
+   * Scan audio files with bounded asynchronous I/O
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _reconcileWithDisk() {
     this._ensureDir();
 
-    const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac'];
-    const diskFiles = new Map();
+    const audioExtensions = new Set(['.mp3', '.wav', '.ogg', '.flac']);
+    const audioFiles = [];
 
-    // Recursive directory traversal
-    const scanDir = (currentDir) => {
+    const scanDir = async (currentDir) => {
       let entries;
       try {
-        entries = fs.readdirSync(currentDir, { withFileTypes: true });
+        entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
       } catch {
         return;
       }
 
       for (const entry of entries) {
-        if (entry.name.startsWith('.')) continue; // Skip hidden files/directories (.index.json, etc.)
+        if (entry.name.startsWith('.')) continue;
 
         const fullPath = path.join(currentDir, entry.name);
         if (entry.isDirectory()) {
-          scanDir(fullPath);
-        } else if (entry.isFile()) {
-          const ext = path.extname(entry.name).toLowerCase();
-          if (audioExtensions.includes(ext)) {
-            try {
-              const stat = fs.statSync(fullPath);
-              const relativePath = path.relative(this._recordingsDir, fullPath).replace(/\\/g, '/');
-
-              // Sidecar JSON check
-              const jsonPath = fullPath.replace(/\.[^.]+$/, '.json');
-              let meta = null;
-              if (fs.existsSync(jsonPath)) {
-                try {
-                  meta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-                } catch {
-                  // Ignore parse error
-                }
-              }
-
-              // Fallback parse from folder hierarchy
-              let system = meta ? meta.system : '';
-              let department = meta ? meta.department : '';
-              let channel = meta ? meta.channel : '';
-              let frequency = meta ? meta.frequency : '';
-              let modulation = meta ? meta.modulation : '';
-              let durationSec = meta && meta.durationSec !== undefined ? meta.durationSec : null;
-
-              if (!meta) {
-                const parts = relativePath.split('/');
-                if (parts.length >= 4) {
-                  system = parts[0];
-                  department = parts[1];
-                  channel = parts[2];
-                } else if (parts.length === 3) {
-                  system = parts[0];
-                  channel = parts[1];
-                }
-              }
-
-              diskFiles.set(relativePath, {
-                filename: relativePath,
-                size: stat.size,
-                sizeFormatted: formatFileSize(stat.size),
-                createdAt: meta && meta.startTime ? meta.startTime : stat.birthtime.toISOString(),
-                modifiedAt: meta && meta.endTime ? meta.endTime : stat.mtime.toISOString(),
-                durationSec,
-                system: system || 'General',
-                department: department || 'Default',
-                channel: channel || 'Ch',
-                frequency: frequency || '',
-                modulation: modulation || '',
-                meta: meta || null,
-              });
-            } catch {
-              // Ignore unreadable files
-            }
-          }
+          await scanDir(fullPath);
+        } else if (entry.isFile() && audioExtensions.has(path.extname(entry.name).toLowerCase())) {
+          audioFiles.push(fullPath);
         }
       }
+
+      if (this._destroyed) return;
     };
 
-    scanDir(this._recordingsDir);
+    await scanDir(this._recordingsDir);
+    if (this._destroyed) return;
 
-    // Update in-memory index
+    const diskFiles = new Map();
+    let nextIndex = 0;
+    const workerCount = Math.min(16, audioFiles.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (nextIndex < audioFiles.length && !this._destroyed) {
+        const fullPath = audioFiles[nextIndex++];
+        try {
+          const record = await this._readRecordingRecord(fullPath);
+          diskFiles.set(record.filename, record);
+        } catch {
+          // Ignore unreadable files
+        }
+      }
+    });
+    await Promise.all(workers);
+    if (this._destroyed) return;
+
+    for (const [filename, record] of this._pendingIndexChanges) {
+      if (record === null) {
+        diskFiles.delete(filename);
+      } else {
+        diskFiles.set(filename, record);
+      }
+    }
+
     this._index = diskFiles;
     this._persistIndex();
-
     console.log(`[RecordingStore] Reconciled index: ${this._index.size} recordings active`);
+  }
+
+  /**
+   * Read one audio file and its optional sidecar metadata
+   * @param {string} fullPath - Absolute audio file path
+   * @returns {Promise<Object>} Recording index record
+   * @private
+   */
+  async _readRecordingRecord(fullPath) {
+    const relativePath = path.relative(this._recordingsDir, fullPath).replace(/\\/g, '/');
+    const jsonPath = fullPath.replace(/\.[^.]+$/, '.json');
+    const [stat, metadataText] = await Promise.all([
+      fs.promises.stat(fullPath),
+      fs.promises.readFile(jsonPath, 'utf8').catch(() => null),
+    ]);
+
+    let meta = null;
+    if (metadataText) {
+      try {
+        meta = JSON.parse(metadataText);
+      } catch {
+        // Ignore parse error
+      }
+    }
+
+    let system = meta ? meta.system : '';
+    let department = meta ? meta.department : '';
+    let channel = meta ? meta.channel : '';
+    let frequency = meta ? meta.frequency : '';
+    let modulation = meta ? meta.modulation : '';
+    const durationSec = meta && meta.durationSec !== undefined ? meta.durationSec : null;
+
+    if (!meta) {
+      const parts = relativePath.split('/');
+      if (parts.length >= 4) {
+        system = parts[0];
+        department = parts[1];
+        channel = parts[2];
+      } else if (parts.length === 3) {
+        system = parts[0];
+        channel = parts[1];
+      }
+    }
+
+    return {
+      filename: relativePath,
+      size: stat.size,
+      sizeFormatted: formatFileSize(stat.size),
+      createdAt: meta && meta.startTime ? meta.startTime : stat.birthtime.toISOString(),
+      modifiedAt: meta && meta.endTime ? meta.endTime : stat.mtime.toISOString(),
+      durationSec,
+      system: system || 'General',
+      department: department || 'Default',
+      channel: channel || 'Ch',
+      frequency: frequency || '',
+      modulation: modulation || '',
+      meta: meta || null,
+    };
+  }
+
+  /**
+   * Preserve an index mutation made while a disk scan is in progress
+   * @param {string} filename - Relative recording path
+   * @param {Object|null} record - New record, or null when deleted
+   * @private
+   */
+  _recordIndexChange(filename, record) {
+    if (this._isReconciling) {
+      this._pendingIndexChanges.set(filename, record);
+    }
   }
 
   /**
@@ -169,6 +271,7 @@ class RecordingStore extends EventEmitter {
    */
   add(recordingRecord) {
     this._index.set(recordingRecord.filename, recordingRecord);
+    this._recordIndexChange(recordingRecord.filename, recordingRecord);
     this._persistIndex();
     this.emit('recordingAdded', recordingRecord);
   }
@@ -350,6 +453,7 @@ class RecordingStore extends EventEmitter {
 
       // Remove from index
       this._index.delete(normalized);
+      this._recordIndexChange(normalized, null);
       this._persistIndex();
 
       this.emit('recordingDeleted', { filename: normalized });
@@ -359,6 +463,7 @@ class RecordingStore extends EventEmitter {
     // Even if physical file was already missing, remove from index
     if (this._index.has(normalized)) {
       this._index.delete(normalized);
+      this._recordIndexChange(normalized, null);
       this._persistIndex();
       return true;
     }
@@ -470,6 +575,7 @@ class RecordingStore extends EventEmitter {
    * Destroy and clean up resources
    */
   destroy() {
+    this._destroyed = true;
     if (this._cleanupTimer) {
       clearInterval(this._cleanupTimer);
       this._cleanupTimer = null;
